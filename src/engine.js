@@ -1,0 +1,66 @@
+import {ACTORS, BLOCKS, WIDTH, HEIGHT, QUEST} from './demo-data.js';
+export const SAVE_VERSION = 1;
+export function initialState() {
+  return {version:SAVE_VERSION, player:{x:5,y:8,hp:100,maxHp:100,silver:10},
+    quest:'unstarted',inventory:[],flags:{herbTaken:false,banditBeaten:false},
+    combat:null,dialog:'',journal:['抵达青竹村，江湖之路由此开始。']};
+}
+const copy = s => structuredClone(s);
+const dist = (a,b) => Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
+const addLog = (s,msg) => {s.journal.unshift(msg);s.journal=s.journal.slice(0,6);};
+export function move(state,dx,dy) {
+  const s=copy(state); if(s.combat || s.dialog) return s;
+  const x=s.player.x+dx,y=s.player.y+dy;
+  if(x<0||x>=WIDTH||y<0||y>=HEIGHT||BLOCKS.has(`${x},${y}`))return s;
+  if(Object.entries(ACTORS).some(([id,p])=>(id!=='herb'||!s.flags.herbTaken)&&(id!=='bandit'||!s.flags.banditBeaten)&&p.x===x&&p.y===y)) return s;
+  s.player.x=x;s.player.y=y;return s;
+}
+export function interact(state) {
+  const s=copy(state);
+  if(s.combat) return s;
+  if(s.dialog){s.dialog='';return s;}
+  const near=Object.entries(ACTORS).find(([id,p])=>dist(s.player,p)<=1&&(id!=='herb'||!s.flags.herbTaken)&&(id!=='bandit'||!s.flags.banditBeaten));
+  if(!near){s.dialog='此处宁静无事。靠近人物或闪光草药后再按 E。';return s;}
+  const [id]=near;
+  if(id==='elder'){
+    if(s.quest==='unstarted') {s.quest='active';s.dialog='竹隐老人：山间有清心草，也有试炼者。带回药草，通过试炼，便算你踏出了江湖第一步。';addLog(s,'接受原创演示任务：竹影试炼。');}
+    else if(s.quest==='active'&&s.flags.banditBeaten&&s.flags.herbTaken){s.quest='completed';s.player.silver+=30;s.dialog='竹隐老人：很好！今日起，你便有了闯荡江湖的底气。';addLog(s,'竹影试炼完成，获得银两 30。');}
+    else if(s.quest==='completed'){s.dialog='竹隐老人：江湖路远，且行且珍重。';}
+    else s.dialog='竹隐老人：清心草与竹林试炼，缺一不可。';
+  } else if(id==='merchant'){
+    if(s.player.silver>=5){s.player.silver-=5;s.inventory.push('回春散');s.dialog='行脚商人：五两银子一包回春散，少侠拿好。';addLog(s,'购买回春散，花费 5 银两。');}
+    else s.dialog='行脚商人：银两不足，改日再来吧。';
+  } else if(id==='herb'){
+    s.flags.herbTaken=true;s.inventory.push('清心草');s.dialog='获得清心草。叶片带着清香，像把竹林的晨露也收进了行囊。';addLog(s,'采集：清心草。');
+  } else if(id==='bandit'){
+    s.combat={enemyHp:28,enemyMaxHp:28,guard:false};addLog(s,'进入试炼战斗。');
+  }
+  return s;
+}
+export function battle(state,action){
+  const s=copy(state); if(!s.combat) return s;
+  if(!['attack','guard','drink','flee'].includes(action))return s;
+  if(action==='flee'){s.combat=null;addLog(s,'退出试炼，随时可以再次挑战。');return s;}
+  if(action==='drink'){
+    const at=s.inventory.indexOf('回春散');
+    if(at<0){addLog(s,'行囊里没有回春散。');return s;}
+    s.inventory.splice(at,1);s.player.hp=Math.min(s.player.maxHp,s.player.hp+30);addLog(s,'使用回春散，恢复 30 点气血（上限 100）。');
+  }
+  if(action==='guard'){s.combat.guard=true;addLog(s,'凝神防御，下次受击伤害减半。');}
+  if(action==='attack'){s.combat.enemyHp=Math.max(0,s.combat.enemyHp-12);addLog(s,'使出一式青竹剑，造成 12 点伤害。');}
+  if(s.combat.enemyHp<=0){s.flags.banditBeaten=true;s.combat=null;addLog(s,'试炼胜利！返回竹隐老人处复命。');return s;}
+  const damage=s.combat.guard?3:6;s.player.hp=Math.max(0,s.player.hp-damage);s.combat.guard=false;
+  addLog(s,`试炼者反击，气血减少 ${damage}。`);
+  if(s.player.hp===0){s.player.hp=50;s.player.x=5;s.player.y=8;s.combat=null;addLog(s,'气血耗尽，被送回村口，恢复至 50 点。');}
+  return s;
+}
+export function questStatus(s){
+ if(s.quest==='completed')return {title:QUEST.name,description:'试炼已经完成。',progress:'已完成 · 银两 +30'};
+ if(s.quest==='unstarted')return {title:'初入江湖',description:'找到青竹村的竹隐老人，开启原创试玩任务。',progress:'未接受'};
+ return {title:QUEST.name,description:QUEST.description,progress:`清心草 ${s.flags.herbTaken?'✓':'○'}　试炼 ${s.flags.banditBeaten?'✓':'○'}`};
+}
+export function parseSave(raw){
+  let s;try{s=JSON.parse(raw);}catch{return null;}
+  if(!s || s.version!==SAVE_VERSION || !s.player || !Number.isInteger(s.player.x)||!Number.isInteger(s.player.y)||s.player.x<0||s.player.x>=WIDTH||s.player.y<0||s.player.y>=HEIGHT||typeof s.player.hp!=='number'||!Number.isFinite(s.player.hp)||s.player.hp<0||s.player.hp>100||!['unstarted','active','completed'].includes(s.quest)||!Array.isArray(s.inventory)||!s.flags||typeof s.flags.herbTaken!=='boolean'||typeof s.flags.banditBeaten!=='boolean'||!Array.isArray(s.journal)||typeof s.dialog!=='string'||(s.combat!==null&&(!s.combat||typeof s.combat.enemyHp!=='number')))return null;
+  return s;
+}

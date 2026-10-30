@@ -1,0 +1,32 @@
+name: HTML5 foundation CI
+on:
+  push:
+    branches: [main, 'feature/**']
+  pull_request:
+  workflow_dispatch:
+jobs:
+  html5-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Static parse and unit tests
+        run: npm run check
+      - name: Check original illustration files
+        run: |
+          for file in hero elder merchant herb bandit; do test -s "assets/${file}.svg" || exit 1; done
+  swf-inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Inventory SWF header and tags without exporting protected content
+        run: python tools/inspect_swf.py jin.swf --out reports/swf_inventory.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-structural-inventory
+          path: reports/swf_inventory.json
