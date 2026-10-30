@@ -25,7 +25,7 @@ test('merchant sells potion; battle healing caps HP; missing potion is non-consu
 });
 test('save parsing rejects invalid / incompatible structures',()=>{
  const s=initialState();assert.ok(parseSave(JSON.stringify(s)));
- assert.equal(parseSave('{'),null);assert.equal(parseSave(JSON.stringify({...s,version:2})),null);
+ assert.equal(parseSave('{'),null);assert.equal(parseSave(JSON.stringify({...s,version:3})),null);
  assert.equal(parseSave(JSON.stringify({...s,player:{x:100,y:0,hp:100}})),null);
 });
 test('quest status phases',()=>{
