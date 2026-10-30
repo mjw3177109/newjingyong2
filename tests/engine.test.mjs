@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {initialState, move, interact, battle, parseSave, questStatus, equipWeapon, attackDamage, DEMO_SWORD} from '../src/engine.js';
+import {initialState, move, interact, battle, parseSave, questStatus, equipWeapon, attackDamage, DEMO_SWORD, discardPotion, MAX_INVENTORY, MAX_POTIONS} from '../src/engine.js';
 const at=(s,x,y)=>({...s,player:{...s.player,x,y}});
 test('world movement obeys boundaries, solid tiles, actor collision',()=>{
  let s=initialState();assert.equal(move(at(s,0,0),-1,0).player.x,0);
@@ -95,4 +95,45 @@ test('save rejects forged sword, invalid equipment and tampered legacy format',(
  assert.equal(parseSave(JSON.stringify({...s,equipment:{weapon:'未知武器'}})),null);
  assert.equal(parseSave(JSON.stringify({...s,version:1,inventory:[DEMO_SWORD]})),null);
  assert.equal(parseSave(JSON.stringify({...s,version:1})),null);
+});
+
+
+test('merchant reserves inventory slots for quest items and reward',()=>{
+ let s=initialState();s.inventory=Array(MAX_POTIONS).fill('回春散');s.player.silver=1000;
+ s=interact(at(s,16,8));
+ assert.equal(s.inventory.length,MAX_POTIONS);
+ assert.equal(s.player.silver,1000);
+ assert.match(s.dialog,/整理行囊/);
+});
+test('legacy full bag blocks reward safely, then recovers after explicit discard',()=>{
+ let s=initialState();s.quest='active';s.flags.herbTaken=true;s.flags.banditBeaten=true;
+ s.inventory=['清心草',...Array(64).fill('回春散')];
+ assert.equal(s.inventory.length,MAX_INVENTORY);
+ assert.ok(parseSave(JSON.stringify(s)));
+ s=interact(at(s,7,7));
+ assert.equal(s.quest,'active');assert.equal(s.inventory.length,MAX_INVENTORY);
+ assert.match(s.dialog,/行囊已满/);
+ s=interact(s);s=discardPotion(s);
+ assert.equal(s.inventory.length,MAX_INVENTORY-1);
+ s=interact(at(s,7,7));
+ assert.equal(s.quest,'completed');assert.equal(s.inventory.length,MAX_INVENTORY);
+ assert.equal(s.inventory.filter(x=>x===DEMO_SWORD).length,1);
+ assert.deepEqual(parseSave(JSON.stringify(s)),s);
+});
+test('herb pickup never exceeds bag capacity and can resume after discard',()=>{
+ let s=initialState();s.inventory=Array(MAX_INVENTORY).fill('回春散');
+ s=interact(at(s,12,9));
+ assert.equal(s.flags.herbTaken,false);assert.equal(s.inventory.length,MAX_INVENTORY);
+ assert.match(s.dialog,/行囊已满/);
+ s=interact(s);s=discardPotion(s);s=interact(at(s,12,9));
+ assert.equal(s.flags.herbTaken,true);assert.equal(s.inventory.length,MAX_INVENTORY);
+ assert.deepEqual(parseSave(JSON.stringify(s)),s);
+});
+test('discard is explicit and forbidden during dialog or combat',()=>{
+ let s=initialState();s.inventory=['回春散'];
+ assert.equal(discardPotion({...s,dialog:'交谈中'}).inventory.length,1);
+ assert.equal(discardPotion({...s,combat:{enemyHp:28,enemyMaxHp:28,guard:false}}).inventory.length,1);
+ s=discardPotion(s);assert.equal(s.inventory.length,0);
+ assert.match(s.journal[0],/丢弃一包回春散/);
+ assert.equal(discardPotion(s).inventory.length,0);
 });

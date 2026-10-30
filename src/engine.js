@@ -1,6 +1,9 @@
 import {ACTORS, BLOCKS, WIDTH, HEIGHT, QUEST} from './demo-data.js';
 export const SAVE_VERSION = 2;
 export const DEMO_SWORD = '竹纹短剑';
+export const MAX_INVENTORY = 65;
+export const MAX_POTIONS = 63;
+const potionCount = s => s.inventory.filter(item => item === '回春散').length;
 export const attackDamage = s => 12 + (s.equipment?.weapon === DEMO_SWORD ? 4 : 0);
 export function initialState() {
   return {version:SAVE_VERSION, player:{x:5,y:8,hp:100,maxHp:100,silver:10},
@@ -26,15 +29,19 @@ export function interact(state) {
   const [id]=near;
   if(id==='elder'){
     if(s.quest==='unstarted') {s.quest='active';s.dialog='竹隐老人：山间有清心草，也有试炼者。带回药草，通过试炼，便算你踏出了江湖第一步。';addLog(s,'接受原创演示任务：竹影试炼。');}
-    else if(s.quest==='active'&&s.flags.banditBeaten&&s.flags.herbTaken){s.quest='completed';s.player.silver+=30;s.inventory.push(DEMO_SWORD);s.dialog='竹隐老人：很好！今日起，你便有了闯荡江湖的底气。';addLog(s,'竹影试炼完成，获得银两 30 与原创竹纹短剑。');}
+    else if(s.quest==='active'&&s.flags.banditBeaten&&s.flags.herbTaken){
+      if(s.inventory.length>=MAX_INVENTORY){s.dialog='竹隐老人：行囊已满，先整理一包回春散，再来领取奖励。';}
+      else {s.quest='completed';s.player.silver+=30;s.inventory.push(DEMO_SWORD);s.dialog='竹隐老人：很好！今日起，你便有了闯荡江湖的底气。';addLog(s,'竹影试炼完成，获得银两 30 与原创竹纹短剑。');}
+    }
     else if(s.quest==='completed'){s.dialog='竹隐老人：江湖路远，且行且珍重。';}
     else s.dialog='竹隐老人：清心草与竹林试炼，缺一不可。';
   } else if(id==='merchant'){
-    if(s.inventory.length>=64){s.dialog='行脚商人：行囊已满，请先整理物品。';}
+    if(s.inventory.length>=MAX_INVENTORY||potionCount(s)>=MAX_POTIONS){s.dialog='行脚商人：回春散已足够多，请先整理行囊再购买。';}
     else if(s.player.silver>=5){s.player.silver-=5;s.inventory.push('回春散');s.dialog='行脚商人：五两银子一包回春散，少侠拿好。';addLog(s,'购买回春散，花费 5 银两。');}
     else s.dialog='行脚商人：银两不足，改日再来吧。';
   } else if(id==='herb'){
-    s.flags.herbTaken=true;s.inventory.push('清心草');s.dialog='获得清心草。叶片带着清香，像把竹林的晨露也收进了行囊。';addLog(s,'采集：清心草。');
+    if(s.inventory.length>=MAX_INVENTORY){s.dialog='行囊已满，请先整理回春散再采集清心草。';}
+    else {s.flags.herbTaken=true;s.inventory.push('清心草');s.dialog='获得清心草。叶片带着清香，像把竹林的晨露也收进了行囊。';addLog(s,'采集：清心草。');}
   } else if(id==='bandit'){
     s.combat={enemyHp:28,enemyMaxHp:28,guard:false};addLog(s,'进入试炼战斗。');
   }
@@ -55,6 +62,15 @@ export function battle(state,action){
   const damage=s.combat.guard?3:6;s.player.hp=Math.max(0,s.player.hp-damage);s.combat.guard=false;
   addLog(s,`试炼者反击，气血减少 ${damage}。`);
   if(s.player.hp===0){s.player.hp=50;s.player.x=5;s.player.y=8;s.combat=null;addLog(s,'气血耗尽，被送回村口，恢复至 50 点。');}
+  return s;
+}
+export function discardPotion(state){
+  const s=copy(state);
+  if(s.combat||s.dialog)return s;
+  const index=s.inventory.indexOf('回春散');
+  if(index<0)return s;
+  s.inventory.splice(index,1);
+  addLog(s,'整理行囊：丢弃一包回春散。');
   return s;
 }
 export function equipWeapon(state){
@@ -86,7 +102,7 @@ export function parseSave(raw){
   if(!Number.isSafeInteger(p.silver)||p.silver<0||p.silver>1_000_000_000)return null;
   if(!['unstarted','active','completed'].includes(s.quest))return null;
   if(!s.flags||typeof s.flags.herbTaken!=='boolean'||typeof s.flags.banditBeaten!=='boolean')return null;
-  if(!Array.isArray(s.inventory)||s.inventory.length>65||s.inventory.some(item=>!['清心草','回春散',DEMO_SWORD].includes(item)))return null;
+  if(!Array.isArray(s.inventory)||s.inventory.length>MAX_INVENTORY||s.inventory.some(item=>!['清心草','回春散',DEMO_SWORD].includes(item)))return null;
   if(s.inventory.filter(item=>item===DEMO_SWORD).length>1 ||
      (s.inventory.includes(DEMO_SWORD) && s.quest!=='completed'))return null;
   if(!s.equipment || typeof s.equipment!=='object' || Array.isArray(s.equipment) ||
