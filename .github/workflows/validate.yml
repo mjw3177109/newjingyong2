@@ -32,6 +32,8 @@ jobs:
         run: python tools/index_swf_sprite_timeline.py jin.swf --out reports/swf_sprite_timeline_evidence.json
       - name: Index direct root sprite placement references (source-free)
         run: python tools/index_swf_sprite_placements.py jin.swf --out reports/swf_root_sprite_placements.json
+      - name: Index root depth assignments and removals (source-free)
+        run: python tools/index_swf_root_depth.py jin.swf --out reports/swf_root_depth_evidence.json
       - name: Test source-free script index and review queue
         run: python -m unittest discover -s tests -p 'test_*.py'
       - name: Smoke-test standalone audit CLI imports
@@ -56,6 +58,12 @@ jobs:
         with:
           name: swf-root-sprite-placement-evidence
           path: reports/swf_root_sprite_placements.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-root-depth-evidence
+          path: reports/swf_root_depth_evidence.json
           if-no-files-found: error
 
   ffdec-java8-probe:
