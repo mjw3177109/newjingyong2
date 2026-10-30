@@ -15,3 +15,11 @@
 ## 验收与下一步
 
 使用 \`python -m unittest discover -s tests -p 'test_*.py'\` 验证合成输入；真实数据以 GitHub Actions 的 \`ffdec-source-free-reproducibility\` Artifact 为准。后续若同轮稳定而跨轮仍不稳定，比较不同 Actions 的匿名指纹和候选重叠；若同轮不稳定，先定位 FFDec 导出或排序问题。**已核实原作剧情事件仍为 0 条**，不把语法统计接入正式剧情。
+
+## 真实线上双导出验收（2026-10-30 13:25 UTC）
+
+- 功能提交：[aa963cb](https://github.com/mjw3177109/newjingyong2/commit/aa963cb03a5998fc7d15f78e53d57fcc9ec5fc0b)。
+- [GitHub Actions #41062957723](https://github.com/mjw3177109/newjingyong2/actions/runs/41062957723)：三个作业均 success；Python 19/19、Node 13/13。FFDec Java 8 两次退出码均为 0。
+- 同一 CI 作业内，两次独立导出各 **4,560** 个脚本文件、各 **2,323** 个控制流候选，前 100 个候选各检测到 **474** 个字面跳转与 **3** 个简单 if 守卫；匿名索引和逐候选语法统计对比结果 **stable**，同路径脚本内容变化数 **0**。
+- 对照 [早前 Actions #41054786935](https://github.com/mjw3177109/newjingyong2/actions/runs/41054786935) 的 **469/2**，说明 **跨运行仍有未解释差异**。同轮 stable 不能证明跨机器或跨时间稳定，也不能直接认定 FFDec 存在缺陷。
+- 下一步：对比两个 Actions 的 `ffdec-source-free-script-index`、`ffdec-source-free-review-queue` 和 `ffdec-source-free-frame-jumps` 归档，先区分导出内容差异、排序差异还是扫描器差异；必要时增加跨运行指纹基线。当前原作剧情语义核实仍为 **0 条**。

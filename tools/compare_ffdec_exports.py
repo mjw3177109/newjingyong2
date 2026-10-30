@@ -118,7 +118,8 @@ def compare_runs(index_a, index_b, queue_a, queue_b, jumps_a, jumps_b):
             'common_paths_with_changed_content': sum(paths_a[p] != paths_b[p] for p in common),
             'selected_only_a': len(selected_a.keys() - selected_b.keys()),
             'selected_only_b': len(selected_b.keys() - selected_a.keys()),
-            'common_candidates_with_changed_jump_counts': sum(entry_a[p] != entry_b[p] for p in selected_common),
+            'common_candidates_with_changed_jump_counts': sum(entry_a[p][0] != entry_b[p][0] for p in selected_common),
+            'common_candidates_with_changed_guard_counts': sum(entry_a[p][1] != entry_b[p][1] for p in selected_common),
         },
         'verified_story_event_count': 0,
         'warning': 'Stable means two exports in the same CI environment match; no original story, map, combat or event semantics are verified. No raw paths or source are published.',
@@ -139,6 +140,7 @@ def main():
     print('FFDec independent-export comparison:', report['comparison_status'])
     print('Content-changed scripts:', report['difference']['common_paths_with_changed_content'])
     print('Candidate jump count differences:', report['difference']['common_candidates_with_changed_jump_counts'])
+    print('Candidate guard count differences:', report['difference']['common_candidates_with_changed_guard_counts'])
 
 
 if __name__ == '__main__':

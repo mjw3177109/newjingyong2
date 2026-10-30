@@ -7,7 +7,7 @@ from tools.compare_ffdec_exports import compare_runs
 SWF = 'a' * 64
 
 
-def fixture(content='b', jump_count=2):
+def fixture(content='b', jump_count=2, guard_count=1):
     path, blob = '1' * 64, content * 64
     cid = 'SRC-' + hashlib.sha256(f'{SWF}:{path}:{blob}'.encode('ascii')).hexdigest()[:20]
     index = {'schema_version': 1, 'source_swf_sha256': SWF, 'script_file_count': 1,
@@ -16,7 +16,7 @@ def fixture(content='b', jump_count=2):
              'selected_count': 1, 'candidates': [{'path_sha256': path, 'content_sha256': blob,
                                                   'candidate_id': cid, 'semantic_status': 'unverified'}]}
     jumps = {'schema_version': 1, 'source_swf_sha256': SWF, 'indexed_script_count': 1,
-             'candidate_count': 1, 'literal_jump_count': jump_count, 'direct_guard_count': 1,
+             'candidate_count': 1, 'literal_jump_count': jump_count, 'direct_guard_count': guard_count,
              'verified_story_event_count': 0,
              'entries': [{'path_sha256': path, 'content_sha256': blob, 'candidate_id': cid,
                           'literal_jump_count': jump_count, 'direct_guard_count': 1}]}
@@ -45,6 +45,14 @@ class CompareFFDecTests(unittest.TestCase):
         r = compare_runs(i, i, q, q, j, j2)
         self.assertEqual(r['comparison_status'], 'divergent')
         self.assertEqual(r['difference']['common_candidates_with_changed_jump_counts'], 1)
+
+    def test_same_content_changed_guards_is_divergent(self):
+        i, q, j = fixture()
+        _, _, j2 = fixture(guard_count=0)
+        r = compare_runs(i, i, q, q, j, j2)
+        self.assertEqual(r['comparison_status'], 'divergent')
+        self.assertEqual(r['difference']['common_candidates_with_changed_jump_counts'], 0)
+        self.assertEqual(r['difference']['common_candidates_with_changed_guard_counts'], 1)
 
     def test_reject_cross_swf_and_tampered_queue(self):
         i, q, j = fixture()
