@@ -13,13 +13,33 @@ except ModuleNotFoundError:
     from index_swf_sprite_timeline import load_swf, iter_tags
 
 
+def placeobject3_character_id(payload):
+    """Read only optional CharacterId; never expose PlaceObject3 ClassName."""
+    if len(payload) < 4:
+        raise ValueError("truncated PlaceObject3 flags/depth")
+    flags, flags2 = payload[0], payload[1]
+    has_character = bool(flags & 0x02)
+    pos = 4  # flags1, flags2, depth UI16
+    if flags2 & 0x08 or (flags2 & 0x10 and has_character):
+        end = payload.find(bytes([0]), pos)
+        if end == -1:
+            raise ValueError("unterminated PlaceObject3 class name")
+        pos = end + 1
+    if not has_character:
+        return None
+    if len(payload) - pos < 2:
+        raise ValueError("truncated PlaceObject3 character id")
+    return struct.unpack_from("<H", payload, pos)[0]
+
+
 def index_placements(path):
     raw, data, start = load_swf(path)
     defined = set()
     placements = []
     root_frames = 0
-    tag_counts = {"placeobject_tag_count": 0, "placeobject2_tag_count": 0, "placeobject3_unparsed_tag_count": 0}
+    tag_counts = {"placeobject_tag_count": 0, "placeobject2_tag_count": 0, "placeobject3_tag_count": 0}
     move_only = 0
+    move_only3 = 0
     for code, payload in iter_tags(data, start, len(data)):
         if code == 39:
             if len(payload) < 6:
@@ -49,10 +69,14 @@ def index_placements(path):
             else:
                 move_only += 1
         elif code == 70:
-            # PlaceObject3 has optional class-name fields; never guess its ID offset.
-            tag_counts["placeobject3_unparsed_tag_count"] += 1
+            tag_counts["placeobject3_tag_count"] += 1
+            character_id = placeobject3_character_id(payload)
+            if character_id is None:
+                move_only3 += 1
+            else:
+                placements.append((root_frames + 1, character_id, "placeobject3")
 
-    grouped = defaultdict(lambda: {"placeobject": 0, "placeobject2": 0})
+    grouped = defaultdict(lambda: {"placeobject": 0, "placeobject2": 0, "placeobject3": 0})
     unresolved = 0
     for frame, character_id, kind in placements:
         if character_id in defined:
@@ -61,25 +85,28 @@ def index_placements(path):
             unresolved += 1  # May be a shape or other character; not necessarily invalid.
     rows = [
         {"sprite_id": sid, "root_frame": frame, "placeobject_count": counts["placeobject"],
-         "placeobject2_count": counts["placeobject2"]}
+         "placeobject2_count": counts["placeobject2"],
+         "placeobject3_count": counts["placeobject3"]}
         for (sid, frame), counts in sorted(grouped.items())
     ]
     referenced = {row["sprite_id"] for row in rows}
     return {
-        "schema": "swf-root-sprite-placement-evidence-v1",
+        "schema": "swf-root-sprite-placement-evidence-v2",
         "source_swf_sha256": hashlib.sha256(raw).hexdigest(),
         "root_showframe_tags": root_frames,
         "defined_sprite_count": len(defined),
         **tag_counts,
         "placeobject2_without_character_count": move_only,
+        "placeobject3_without_character_count": move_only3,
         "non_sprite_character_placement_count": unresolved,
-        "direct_sprite_placement_tag_count": sum(r["placeobject_count"] + r["placeobject2_count"] for r in rows),
+        "direct_sprite_placement_tag_count": sum(r["placeobject_count"] + r["placeobject2_count"] + r["placeobject3_count"] for r in rows),
         "directly_referenced_sprite_count": len(referenced),
         "sprite_definitions_without_direct_root_placement": len(defined - referenced),
         "direct_root_sprite_placements": rows,
-        "interpretation": "Only direct root placements using PlaceObject/PlaceObject2. "
-                          "PlaceObject3 and nested sprite placements are NOT resolved; "
-                          "a placement is not proof of a story event, NPC, map or visible instance."
+        "interpretation": "Only direct root placements using PlaceObject/PlaceObject2/PlaceObject3. "
+                          "PlaceObject3 optional ClassName is skipped without disclosure; "
+                          "nested placements and runtime display state are NOT resolved. "
+                          "A placement is not proof of a story event, NPC, map or visible instance."
     }
 
 
@@ -92,9 +119,9 @@ def main():
     target = Path(args.out)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print("Root sprite placements: {} tags, {} distinct sprites, {} PlaceObject3 tags not parsed".format(
+    print("Root sprite placements: {} tags, {} distinct sprites, {} PlaceObject3 tags parsed".format(
         report["direct_sprite_placement_tag_count"], report["directly_referenced_sprite_count"],
-        report["placeobject3_unparsed_tag_count"]))
+        report["placeobject3_tag_count"]))
 
 
 if __name__ == "__main__":
