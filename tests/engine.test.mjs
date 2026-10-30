@@ -31,3 +31,33 @@ test('save parsing rejects invalid / incompatible structures',()=>{
 test('quest status phases',()=>{
  let s=initialState();assert.equal(questStatus(s).progress,'未接受');s.quest='completed';assert.match(questStatus(s).progress,/已完成/);
 });
+
+test('save parser accepts a legitimate combat checkpoint',()=>{
+ let s=interact(at(initialState(),19,8));
+ assert.ok(s.combat);
+ assert.deepEqual(parseSave(JSON.stringify(s)),s);
+});
+test('save parser rejects impossible world coordinates and economy',()=>{
+ const s=initialState();
+ for(const p of [
+  {...s.player,x:2,y:2},
+  {...s.player,maxHp:0},
+  {...s.player,hp:101},
+  {...s.player,silver:-5},
+  {...s.player,silver:1.25}
+ ])assert.equal(parseSave(JSON.stringify({...s,player:p})),null);
+});
+test('save parser rejects malformed inventory and contradictory quest flags',()=>{
+ const s=initialState();
+ assert.equal(parseSave(JSON.stringify({...s,inventory:[42]})),null);
+ assert.equal(parseSave(JSON.stringify({...s,inventory:['未知物品']})),null);
+ assert.equal(parseSave(JSON.stringify({...s,quest:'completed'})),null);
+ assert.equal(parseSave(JSON.stringify({...s,flags:{...s.flags,herbTaken:true}})),null);
+});
+test('save parser rejects malformed combat and unbounded UI strings',()=>{
+ const s=initialState();
+ for(const combat of [{enemyHp:-1,enemyMaxHp:28,guard:false},{enemyHp:28,enemyMaxHp:28,guard:'no'}])
+  assert.equal(parseSave(JSON.stringify({...s,combat})),null);
+ assert.equal(parseSave(JSON.stringify({...s,dialog:'x'.repeat(501)})),null);
+ assert.equal(parseSave(JSON.stringify({...s,journal:['x'.repeat(301)]})),null);
+});

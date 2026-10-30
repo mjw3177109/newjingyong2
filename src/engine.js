@@ -61,6 +61,23 @@ export function questStatus(s){
 }
 export function parseSave(raw){
   let s;try{s=JSON.parse(raw);}catch{return null;}
-  if(!s || s.version!==SAVE_VERSION || !s.player || !Number.isInteger(s.player.x)||!Number.isInteger(s.player.y)||s.player.x<0||s.player.x>=WIDTH||s.player.y<0||s.player.y>=HEIGHT||typeof s.player.hp!=='number'||!Number.isFinite(s.player.hp)||s.player.hp<0||s.player.hp>100||!['unstarted','active','completed'].includes(s.quest)||!Array.isArray(s.inventory)||!s.flags||typeof s.flags.herbTaken!=='boolean'||typeof s.flags.banditBeaten!=='boolean'||!Array.isArray(s.journal)||typeof s.dialog!=='string'||(s.combat!==null&&(!s.combat||typeof s.combat.enemyHp!=='number')))return null;
+  if(!s || s.version!==SAVE_VERSION || !s.player || typeof s.player!=='object')return null;
+  const p=s.player;
+  if(!Number.isInteger(p.x)||!Number.isInteger(p.y)||p.x<0||p.x>=WIDTH||p.y<0||p.y>=HEIGHT||BLOCKS.has(`${p.x},${p.y}`))return null;
+  if(!Number.isInteger(p.maxHp)||p.maxHp<1||p.maxHp>100||!Number.isInteger(p.hp)||p.hp<0||p.hp>p.maxHp)return null;
+  if(!Number.isSafeInteger(p.silver)||p.silver<0||p.silver>1_000_000_000)return null;
+  if(!['unstarted','active','completed'].includes(s.quest))return null;
+  if(!s.flags||typeof s.flags.herbTaken!=='boolean'||typeof s.flags.banditBeaten!=='boolean')return null;
+  if(!Array.isArray(s.inventory)||s.inventory.length>64||s.inventory.some(item=>!['清心草','回春散'].includes(item)))return null;
+  if(s.flags.herbTaken!==s.inventory.includes('清心草'))return null;
+  if(s.quest==='completed'&&(!s.flags.herbTaken||!s.flags.banditBeaten))return null;
+  if(!Array.isArray(s.journal)||s.journal.length>6||s.journal.some(line=>typeof line!=='string'||line.length>300))return null;
+  if(typeof s.dialog!=='string'||s.dialog.length>500)return null;
+  if(s.combat!==null){
+    const c=s.combat;
+    if(!c||!Number.isInteger(c.enemyMaxHp)||c.enemyMaxHp<1||c.enemyMaxHp>100||
+       !Number.isInteger(c.enemyHp)||c.enemyHp<1||c.enemyHp>c.enemyMaxHp||
+       typeof c.guard!=='boolean'||s.flags.banditBeaten)return null;
+  }
   return s;
 }

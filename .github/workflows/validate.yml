@@ -30,3 +30,35 @@ jobs:
         with:
           name: swf-structural-inventory
           path: reports/swf_inventory.json
+
+  ffdec-java8-probe:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Check legacy FFDec CLI on original SWF (private ephemeral export)
+        shell: bash
+        run: |
+          set -euo pipefail
+          java -version
+          test -s FFDec/ffdec.jar
+          scratch="$(mktemp -d)"
+          trap 'rm -rf "$scratch"' EXIT
+          set +e
+          timeout 300s java -Djava.awt.headless=true -Xmx2g -jar FFDec/ffdec.jar -cli -export script "$scratch/scripts" jin.swf > "$scratch/ffdec.log" 2>&1
+          status=$?
+          set -e
+          echo "FFDec exit status: $status"
+          if [[ "$status" -ne 0 ]]; then
+            echo "FFDec Java 8 CLI export did not complete. Raw log remains ephemeral."
+            exit 1
+          fi
+          count=$(find "$scratch/scripts" -type f | wc -l)
+          echo "Exported script files (count only): $count"
+          test "$count" -gt 0
+          echo "No decompiled scripts or source graphics are uploaded or committed."
