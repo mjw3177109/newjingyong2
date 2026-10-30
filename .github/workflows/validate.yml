@@ -67,7 +67,8 @@ jobs:
           indexed=$(python3 -c 'import json; print(json.load(open("reports/ffdec_script_index.json"))["script_file_count"])')
           test "$indexed" -eq "$count"
           python3 tools/build_review_queue.py reports/ffdec_script_index.json --out reports/ffdec_review_queue.json --limit 100
-          echo "Only SHA-256 fingerprints and heuristic counts are exported; all candidates remain unverified."
+          python3 tools/build_evidence_ledger.py "$scratch/scripts" --source-swf jin.swf --queue reports/ffdec_review_queue.json --out reports/ffdec_syntax_evidence_ledger.json
+          echo "Only hashed script fingerprints and syntax locations are exported; all candidates remain unverified."
           echo "No decompiled scripts or source graphics are uploaded or committed."
       - name: Upload source-free script evidence only
         uses: actions/upload-artifact@v4
@@ -80,4 +81,11 @@ jobs:
         with:
           name: ffdec-source-free-review-queue
           path: reports/ffdec_review_queue.json
+          if-no-files-found: error
+
+      - name: Upload source-free syntax evidence only
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffdec-source-free-syntax-evidence
+          path: reports/ffdec_syntax_evidence_ledger.json
           if-no-files-found: error
