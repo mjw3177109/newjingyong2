@@ -38,6 +38,7 @@ class CompareFFDecTests(unittest.TestCase):
         r = compare_runs(i, i2, q, q2, j, j2)
         self.assertEqual(r['comparison_status'], 'divergent')
         self.assertEqual(r['difference']['common_paths_with_changed_content'], 1)
+        self.assertEqual(r['difference']['changed_content_path_hashes'], ['1' * 64])
 
     def test_same_content_changed_jumps_is_divergent(self):
         i, q, j = fixture()

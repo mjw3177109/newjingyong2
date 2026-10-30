@@ -85,6 +85,9 @@ jobs:
             --queue-a reports/ffdec_review_queue.json --queue-b "$scratch/queue_repeat.json" \
             --jumps-a reports/ffdec_frame_jump_evidence.json --jumps-b "$scratch/jumps_repeat.json" \
             --out reports/ffdec_reproducibility.json
+          if [[ "$(python3 -c 'import json; print(json.load(open("reports/ffdec_reproducibility.json"))["comparison_status"])')" == "divergent" ]]; then
+            echo "::warning title=FFDec export drift::Two Java 8 exports of the same SWF diverged. Syntax counts must not be treated as stable story evidence."
+          fi
           echo "Only hashed script fingerprints and syntax locations are exported; all candidates remain unverified."
           echo "No decompiled scripts or source graphics are uploaded or committed."
       - name: Upload source-free script evidence only

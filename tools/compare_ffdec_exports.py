@@ -116,6 +116,8 @@ def compare_runs(index_a, index_b, queue_a, queue_b, jumps_a, jumps_b):
             'paths_only_a': len(paths_a.keys() - paths_b.keys()),
             'paths_only_b': len(paths_b.keys() - paths_a.keys()),
             'common_paths_with_changed_content': sum(paths_a[p] != paths_b[p] for p in common),
+            'changed_content_path_hashes': sorted(p for p in common if paths_a[p] != paths_b[p])[:20],
+            'changed_content_hashes_truncated': sum(paths_a[p] != paths_b[p] for p in common) > 20,
             'selected_only_a': len(selected_a.keys() - selected_b.keys()),
             'selected_only_b': len(selected_b.keys() - selected_a.keys()),
             'common_candidates_with_changed_jump_counts': sum(entry_a[p][0] != entry_b[p][0] for p in selected_common),
@@ -141,6 +143,8 @@ def main():
     print('Content-changed scripts:', report['difference']['common_paths_with_changed_content'])
     print('Candidate jump count differences:', report['difference']['common_candidates_with_changed_jump_counts'])
     print('Candidate guard count differences:', report['difference']['common_candidates_with_changed_guard_counts'])
+    print('Candidate membership only A/B:', report['difference']['selected_only_a'], '/', report['difference']['selected_only_b'])
+    print('Path membership only A/B:', report['difference']['paths_only_a'], '/', report['difference']['paths_only_b'])
 
 
 if __name__ == '__main__':

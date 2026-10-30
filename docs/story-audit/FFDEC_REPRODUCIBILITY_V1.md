@@ -23,3 +23,10 @@
 - 同一 CI 作业内，两次独立导出各 **4,560** 个脚本文件、各 **2,323** 个控制流候选，前 100 个候选各检测到 **474** 个字面跳转与 **3** 个简单 if 守卫；匿名索引和逐候选语法统计对比结果 **stable**，同路径脚本内容变化数 **0**。
 - 对照 [早前 Actions #41054786935](https://github.com/mjw3177109/newjingyong2/actions/runs/41054786935) 的 **469/2**，说明 **跨运行仍有未解释差异**。同轮 stable 不能证明跨机器或跨时间稳定，也不能直接认定 FFDec 存在缺陷。
 - 下一步：对比两个 Actions 的 `ffdec-source-free-script-index`、`ffdec-source-free-review-queue` 和 `ffdec-source-free-frame-jumps` 归档，先区分导出内容差异、排序差异还是扫描器差异；必要时增加跨运行指纹基线。当前原作剧情语义核实仍为 **0 条**。
+
+## 同一作业内出现真实差异（2026-10-30 13:27 UTC）
+
+- [GitHub Actions #41063299964](https://github.com/mjw3177109/newjingyong2/actions/runs/41063299964) 在相同 Java 8、FFDec JAR 和 `jin.swf` 下，**第一次 474/3、第二次 469/2**，两次各导出 4,560 个脚本文件、筛选 2,323 个控制流候选。
+- 脱敏比较结果为 **divergent**：**至少 1 个相同匿名路径的导出脚本内容发生变化**；共同入选候选的跳转/守卫计数没有差异。具体候选集合是否变化应继续查 `ffdec-source-free-reproducibility` Artifact，不能仅凭总数推断。
+- 这证明同环境连续导出也可能不一致。上一轮双导出稳定是单次观察，不能概括为 FFDec 全局稳定。后续需固定/复核该匿名脚本，并对剧情审计只采纳经复核的稳定证据。
+- 本次 CI 的 20 项 Python 测试、13 项 Node 测试均通过；FFDec 可执行性成功，但**导出可复现性不通过**。诊断工作流保留成功并发出警告，PR 继续 Draft。
