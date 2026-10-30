@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {initialState, move, interact, battle, parseSave, questStatus} from '../src/engine.js';
+import {initialState, move, interact, battle, parseSave, questStatus, equipWeapon, attackDamage, DEMO_SWORD} from '../src/engine.js';
 const at=(s,x,y)=>({...s,player:{...s.player,x,y}});
 test('world movement obeys boundaries, solid tiles, actor collision',()=>{
  let s=initialState();assert.equal(move(at(s,0,0),-1,0).player.x,0);
@@ -60,4 +60,38 @@ test('save parser rejects malformed combat and unbounded UI strings',()=>{
   assert.equal(parseSave(JSON.stringify({...s,combat})),null);
  assert.equal(parseSave(JSON.stringify({...s,dialog:'x'.repeat(501)})),null);
  assert.equal(parseSave(JSON.stringify({...s,journal:['x'.repeat(301)]})),null);
+});
+
+
+test('original demo quest grants unique sword and equipment toggles',()=>{
+ let s=initialState();s.quest='active';s.flags.herbTaken=true;s.flags.banditBeaten=true;s.inventory=['清心草'];
+ s=interact(at(s,7,7));assert.equal(s.quest,'completed');assert.equal(s.inventory.filter(x=>x===DEMO_SWORD).length,1);
+ s=interact(s);s=interact(s);assert.equal(s.inventory.filter(x=>x===DEMO_SWORD).length,1);
+ assert.equal(attackDamage(s),12);s=equipWeapon(s);assert.equal(s.equipment.weapon,DEMO_SWORD);
+ assert.equal(attackDamage(s),16);assert.deepEqual(parseSave(JSON.stringify(s)),s);
+ s=equipWeapon(s);assert.equal(s.equipment.weapon,null);assert.equal(attackDamage(s),12);
+});
+test('equipped sword changes combat damage but cannot toggle during battle',()=>{
+ let s=initialState();s.quest='completed';s.flags.herbTaken=true;s.flags.banditBeaten=true;s.inventory=['清心草',DEMO_SWORD];
+ s=equipWeapon(s);s.flags.banditBeaten=false;s.quest='active';s.inventory=['清心草',DEMO_SWORD];
+ // Battle mechanics test with a synthetic state, independent of story mapping.
+ s.combat={enemyHp:28,enemyMaxHp:28,guard:false};
+ const locked=equipWeapon(s);assert.equal(locked.equipment.weapon,DEMO_SWORD);
+ s=battle(s,'attack');assert.equal(s.combat.enemyHp,12);
+});
+test('version 1 save migrates without losing quest and receives demo reward if completed',()=>{
+ const s=initialState();s.version=1;delete s.equipment;
+ const old=parseSave(JSON.stringify(s));assert.equal(old.version,2);assert.deepEqual(old.equipment,{weapon:null});
+ assert.equal(old.inventory.length,0);
+ s.quest='completed';s.flags.herbTaken=true;s.flags.banditBeaten=true;s.inventory=['清心草'];
+ const migrated=parseSave(JSON.stringify(s));assert.ok(migrated.inventory.includes(DEMO_SWORD));
+ assert.equal(migrated.quest,'completed');assert.equal(migrated.player.silver,10);
+});
+test('save rejects forged sword, invalid equipment and tampered legacy format',()=>{
+ const s=initialState();
+ assert.equal(parseSave(JSON.stringify({...s,equipment:{weapon:DEMO_SWORD}})),null);
+ assert.equal(parseSave(JSON.stringify({...s,inventory:[DEMO_SWORD]})),null);
+ assert.equal(parseSave(JSON.stringify({...s,equipment:{weapon:'未知武器'}})),null);
+ assert.equal(parseSave(JSON.stringify({...s,version:1,inventory:[DEMO_SWORD]})),null);
+ assert.equal(parseSave(JSON.stringify({...s,version:1})),null);
 });

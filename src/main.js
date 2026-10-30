@@ -1,4 +1,4 @@
-import {initialState,move,interact,battle,questStatus,parseSave} from './engine.js';
+import {initialState,move,interact,battle,questStatus,parseSave,equipWeapon,attackDamage,DEMO_SWORD} from './engine.js';
 import {ACTORS,WIDTH,HEIGHT,TILE,BLOCKS} from './demo-data.js';
 let state=initialState();
 const $=id=>document.getElementById(id), canvas=$('game'),ctx=canvas.getContext('2d');
@@ -23,6 +23,7 @@ document.addEventListener('keydown',e=>{
  else if(key==='j')toast(questStatus(state).progress);
 });
 $('interact').onclick=action;$('save').onclick=save;$('load').onclick=load;
+$('equip-weapon').onclick=()=>update(equipWeapon(state));
 for(const a of ['attack','guard','drink','flee'])$(a).onclick=()=>update(battle(state,a));
 for(const b of document.querySelectorAll('[data-direction]')) b.onclick=()=>{const d={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[b.dataset.direction];doMove(...d);};
 function poly(points,fill){ctx.beginPath();ctx.moveTo(...points[0]);for(const p of points.slice(1))ctx.lineTo(...p);ctx.closePath();ctx.fillStyle=fill;ctx.fill();}
@@ -71,6 +72,9 @@ function paint(){
  const d=$('dialog');d.textContent=state.dialog?state.dialog+'　[按 E 继续]':'';d.classList.toggle('hidden',!state.dialog);
  const c=$('combat');c.classList.toggle('hidden',!state.combat);
  if(state.combat)$('combat-info').textContent=`试炼者气血 ${state.combat.enemyHp}/${state.combat.enemyMaxHp}　｜　少侠气血 ${state.player.hp}/100`;
+ $('attack-num').textContent=attackDamage(state);
+ const equip=$('equip-weapon');equip.disabled=!state.inventory.includes(DEMO_SWORD)||!!state.combat||!!state.dialog;
+ equip.textContent=state.equipment.weapon===DEMO_SWORD?'卸下竹纹短剑':'装备竹纹短剑（攻击 +4）';
  $('hp-num').textContent=`${state.player.hp} / 100`;$('hp-bar').style.width=state.player.hp+'%';$('silver').textContent=state.player.silver;
  const q=questStatus(state);$('quest-title').textContent=q.title;$('quest-desc').textContent=q.description;$('quest-progress').textContent=q.progress;
  const inv=$('inventory');inv.replaceChildren();for(const item of state.inventory){const b=document.createElement('span');b.className='item';b.textContent=item;inv.appendChild(b);}if(!state.inventory.length){const n=document.createElement('span');n.className='empty';n.textContent='暂无物品';inv.appendChild(n);}
