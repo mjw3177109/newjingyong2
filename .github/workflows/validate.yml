@@ -28,6 +28,8 @@ jobs:
         run: python tools/inspect_swf.py jin.swf --out reports/swf_inventory.json
       - name: Index main-timeline action tags and frame labels (source-free)
         run: python tools/index_swf_timeline.py jin.swf --out reports/swf_main_timeline_evidence.json
+      - name: Index sprite timelines and init actions (source-free)
+        run: python tools/index_swf_sprite_timeline.py jin.swf --out reports/swf_sprite_timeline_evidence.json
       - name: Test source-free script index and review queue
         run: python -m unittest discover -s tests -p 'test_*.py'
       - name: Smoke-test standalone audit CLI imports
@@ -40,6 +42,12 @@ jobs:
         with:
           name: swf-main-timeline-evidence
           path: reports/swf_main_timeline_evidence.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-sprite-timeline-evidence
+          path: reports/swf_sprite_timeline_evidence.json
           if-no-files-found: error
 
   ffdec-java8-probe:
