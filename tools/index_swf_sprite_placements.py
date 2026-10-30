@@ -18,7 +18,7 @@ def index_placements(path):
     defined = set()
     placements = []
     root_frames = 0
-    tag_counts = {"placeobject": 0, "placeobject2": 0, "placeobject3_unparsed": 0}
+    tag_counts = {"placeobject_tag_count": 0, "placeobject2_tag_count": 0, "placeobject3_unparsed_tag_count": 0}
     move_only = 0
     for code, payload in iter_tags(data, start, len(data)):
         if code == 39:
@@ -34,12 +34,12 @@ def index_placements(path):
             if len(payload) < 4:
                 raise ValueError("truncated PlaceObject")
             character_id = struct.unpack_from("<H", payload)[0]
-            tag_counts["placeobject"] += 1
+            tag_counts["placeobject_tag_count"] += 1
             placements.append((root_frames + 1, character_id, "placeobject"))
         elif code == 26:
             if len(payload) < 3:
                 raise ValueError("truncated PlaceObject2")
-            tag_counts["placeobject2"] += 1
+            tag_counts["placeobject2_tag_count"] += 1
             flags = payload[0]
             if flags & 0x02:  # HasCharacter: flags + UI16 depth + UI16 character ID
                 if len(payload) < 5:
@@ -50,7 +50,7 @@ def index_placements(path):
                 move_only += 1
         elif code == 70:
             # PlaceObject3 has optional class-name fields; never guess its ID offset.
-            tag_counts["placeobject3_unparsed"] += 1
+            tag_counts["placeobject3_unparsed_tag_count"] += 1
 
     grouped = defaultdict(lambda: {"placeobject": 0, "placeobject2": 0})
     unresolved = 0
