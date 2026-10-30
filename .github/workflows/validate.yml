@@ -26,7 +26,7 @@ jobs:
           python-version: '3.11'
       - name: Inventory SWF header and tags without exporting protected content
         run: python tools/inspect_swf.py jin.swf --out reports/swf_inventory.json
-      - name: Test source-free script index generator
+      - name: Test source-free script index and review queue
         run: python -m unittest discover -s tests -p 'test_*.py'
       - uses: actions/upload-artifact@v4
         with:
@@ -66,11 +66,18 @@ jobs:
           python3 tools/index_ffdec_scripts.py "$scratch/scripts" --source-swf jin.swf --out reports/ffdec_script_index.json
           indexed=$(python3 -c 'import json; print(json.load(open("reports/ffdec_script_index.json"))["script_file_count"])')
           test "$indexed" -eq "$count"
-          echo "Only SHA-256 fingerprints, byte/line counts and heuristic token counts are exported."
+          python3 tools/build_review_queue.py reports/ffdec_script_index.json --out reports/ffdec_review_queue.json --limit 100
+          echo "Only SHA-256 fingerprints and heuristic counts are exported; all candidates remain unverified."
           echo "No decompiled scripts or source graphics are uploaded or committed."
       - name: Upload source-free script evidence only
         uses: actions/upload-artifact@v4
         with:
           name: ffdec-source-free-script-index
           path: reports/ffdec_script_index.json
+          if-no-files-found: error
+      - name: Upload source-free review queue only
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffdec-source-free-review-queue
+          path: reports/ffdec_review_queue.json
           if-no-files-found: error
