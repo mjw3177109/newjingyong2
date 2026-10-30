@@ -19,7 +19,7 @@ def tag(code, payload=b""):
 
 def swf(tags, compressed=False, frames=2):
     # Minimal 1-bit RECT, 12 fps, two frames.
-    body = b"\\x08\\x00" + struct.pack("<HH", 12 * 256, frames) + tags
+    body = b"\x08\x00" + struct.pack("<HH", 12 * 256, frames) + tags
     raw = b"FWS" + bytes([8]) + struct.pack("<I", 8 + len(body)) + body
     return raw[:3].replace(b"FWS", b"CWS") + raw[3:8] + zlib.compress(body) if compressed else raw
 
@@ -31,7 +31,7 @@ class TimelineEvidenceTests(unittest.TestCase):
             return mod.index_timeline(p)
 
     def test_main_timeline_positions_and_source_free_output(self):
-        body = tag(43, b"private-scene-name\\x00") + tag(12, b"private-script-bytes")
+        body = tag(43, b"private-scene-name\x00") + tag(12, b"private-script-bytes")
         body += tag(1) + tag(12, b"another-script") + tag(1) + tag(0)
         report = self.scan(swf(body))
         self.assertEqual(report["observed_showframe_tags"], 2)
@@ -44,7 +44,7 @@ class TimelineEvidenceTests(unittest.TestCase):
         self.assertNotIn("fixture.swf", str(report))
 
     def test_compressed_and_uncompressed_have_same_frame_evidence(self):
-        tags = tag(12, b"abc") + tag(1) + tag(43, b"label\\x00") + tag(1) + tag(0)
+        tags = tag(12, b"abc") + tag(1) + tag(43, b"label\x00") + tag(1) + tag(0)
         a = self.scan(swf(tags))
         b = self.scan(swf(tags, compressed=True))
         self.assertEqual(a["evidence_frames"], b["evidence_frames"])
