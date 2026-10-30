@@ -68,6 +68,7 @@ jobs:
           test "$indexed" -eq "$count"
           python3 tools/build_review_queue.py reports/ffdec_script_index.json --out reports/ffdec_review_queue.json --limit 100
           python3 tools/build_evidence_ledger.py "$scratch/scripts" --source-swf jin.swf --queue reports/ffdec_review_queue.json --out reports/ffdec_syntax_evidence_ledger.json
+          python3 tools/build_frame_jump_evidence.py "$scratch/scripts" --source-swf jin.swf --queue reports/ffdec_review_queue.json --out reports/ffdec_frame_jump_evidence.json
           echo "Only hashed script fingerprints and syntax locations are exported; all candidates remain unverified."
           echo "No decompiled scripts or source graphics are uploaded or committed."
       - name: Upload source-free script evidence only
@@ -88,4 +89,11 @@ jobs:
         with:
           name: ffdec-source-free-syntax-evidence
           path: reports/ffdec_syntax_evidence_ledger.json
+          if-no-files-found: error
+
+      - name: Upload source-free literal frame jump evidence only
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffdec-source-free-frame-jumps
+          path: reports/ffdec_frame_jump_evidence.json
           if-no-files-found: error
