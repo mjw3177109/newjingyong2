@@ -21,7 +21,7 @@ def sprite(sid, inner=None):
 
 
 def swf(tags, compressed=False):
-    body = b"\\x08\\x00" + struct.pack("<HH", 12 * 256, 2) + tags
+    body = b"\x08\x00" + struct.pack("<HH", 12 * 256, 2) + tags
     data = b"FWS" + bytes([8]) + struct.pack("<I", len(body) + 8) + body
     return b"CWS" + data[3:8] + zlib.compress(body) if compressed else data
 
@@ -74,8 +74,8 @@ class RootPlacementTests(unittest.TestCase):
         self.assertNotIn("secret", str(report))
 
     def test_malformed_tags_fail_closed(self):
-        for bad in (tag(4, b"\\x01"), tag(26, b"\\x02\\x01\\x00"),
-                    tag(39, b"\\x01"), tag(1)):
+        for bad in (tag(4, b"\x01"), tag(26, b"\x02\x01\x00"),
+                    tag(39, b"\x01"), tag(1)):
             with self.subTest(bad=bad):
                 with self.assertRaises(ValueError):
                     self.scan(swf(bad + tag(1) + tag(1) + tag(0)) if bad != tag(1)
