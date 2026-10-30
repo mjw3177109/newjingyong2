@@ -34,6 +34,21 @@ jobs:
         run: python tools/index_swf_sprite_placements.py jin.swf --out reports/swf_root_sprite_placements.json
       - name: Index root depth assignments and removals (source-free)
         run: python tools/index_swf_root_depth.py jin.swf --out reports/swf_root_depth_evidence.json
+      - name: Cross-check depth assignments against independent placement index
+        run: |
+          python - <<'PY'
+          import json
+          a = json.load(open("reports/swf_root_depth_evidence.json", encoding="utf-8"))
+          b = json.load(open("reports/swf_root_sprite_placements.json", encoding="utf-8"))
+          assert a["source_swf_sha256"] == b["source_swf_sha256"]
+          assert a["defined_sprite_count"] == b["defined_sprite_count"]
+          assert a["root_showframe_tags"] == b["root_showframe_tags"]
+          assert a["sprite_character_assignment_tags"] == b["direct_sprite_placement_tag_count"]
+          print("Depth/placement cross-check passed:", a["sprite_character_assignment_tags"], "sprite assignments")
+          print("RemoveObject2 tags:", a["removeobject2_tags"],
+                "sprite removals:", a["sprite_removal_tags"],
+                "max sprite depths:", a["max_sprite_depths_at_showframe"])
+          PY
       - name: Test source-free script index and review queue
         run: python -m unittest discover -s tests -p 'test_*.py'
       - name: Smoke-test standalone audit CLI imports
