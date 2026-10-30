@@ -67,6 +67,7 @@ test('original demo quest grants unique sword and equipment toggles',()=>{
  let s=initialState();s.quest='active';s.flags.herbTaken=true;s.flags.banditBeaten=true;s.inventory=['清心草'];
  s=interact(at(s,7,7));assert.equal(s.quest,'completed');assert.equal(s.inventory.filter(x=>x===DEMO_SWORD).length,1);
  s=interact(s);s=interact(s);assert.equal(s.inventory.filter(x=>x===DEMO_SWORD).length,1);
+ s=interact(s); // Close the repeated elder dialog before using equipment.
  assert.equal(attackDamage(s),12);s=equipWeapon(s);assert.equal(s.equipment.weapon,DEMO_SWORD);
  assert.equal(attackDamage(s),16);assert.deepEqual(parseSave(JSON.stringify(s)),s);
  s=equipWeapon(s);assert.equal(s.equipment.weapon,null);assert.equal(attackDamage(s),12);
