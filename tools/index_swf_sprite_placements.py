@@ -74,7 +74,7 @@ def index_placements(path):
             if character_id is None:
                 move_only3 += 1
             else:
-                placements.append((root_frames + 1, character_id, "placeobject3")
+                placements.append((root_frames + 1, character_id, "placeobject3"))
 
     grouped = defaultdict(lambda: {"placeobject": 0, "placeobject2": 0, "placeobject3": 0})
     unresolved = 0
