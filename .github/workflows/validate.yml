@@ -28,6 +28,8 @@ jobs:
         run: python tools/inspect_swf.py jin.swf --out reports/swf_inventory.json
       - name: Test source-free script index and review queue
         run: python -m unittest discover -s tests -p 'test_*.py'
+      - name: Smoke-test standalone audit CLI imports
+        run: python tools/build_stable_audit_set.py --help > /dev/null
       - uses: actions/upload-artifact@v4
         with:
           name: swf-structural-inventory
