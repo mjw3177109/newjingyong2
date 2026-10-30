@@ -30,7 +30,7 @@ jobs:
         run: python tools/index_swf_timeline.py jin.swf --out reports/swf_main_timeline_evidence.json
       - name: Index sprite timelines and init actions (source-free)
         run: python tools/index_swf_sprite_timeline.py jin.swf --out reports/swf_sprite_timeline_evidence.json
-      - name: Test source-free script index and review queue
+      - name: Index direct root sprite placement references (source-free)\n        run: python tools/index_swf_sprite_placements.py jin.swf --out reports/swf_root_sprite_placements.json\n      - name: Test source-free script index and review queue
         run: python -m unittest discover -s tests -p 'test_*.py'
       - name: Smoke-test standalone audit CLI imports
         run: python tools/build_stable_audit_set.py --help > /dev/null
@@ -50,7 +50,7 @@ jobs:
           path: reports/swf_sprite_timeline_evidence.json
           if-no-files-found: error
 
-  ffdec-java8-probe:
+      - uses: actions/upload-artifact@v4\n        with:\n          name: swf-root-sprite-placement-evidence\n          path: reports/swf_root_sprite_placements.json\n          if-no-files-found: error\n\n  ffdec-java8-probe:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/')
     runs-on: ubuntu-latest
     timeout-minutes: 8
