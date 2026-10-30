@@ -26,6 +26,8 @@ jobs:
           python-version: '3.11'
       - name: Inventory SWF header and tags without exporting protected content
         run: python tools/inspect_swf.py jin.swf --out reports/swf_inventory.json
+      - name: Test source-free script index generator
+        run: python -m unittest discover -s tests -p 'test_*.py'
       - uses: actions/upload-artifact@v4
         with:
           name: swf-structural-inventory
@@ -61,4 +63,14 @@ jobs:
           count=$(find "$scratch/scripts" -type f | wc -l)
           echo "Exported script files (count only): $count"
           test "$count" -gt 0
+          python3 tools/index_ffdec_scripts.py "$scratch/scripts" --source-swf jin.swf --out reports/ffdec_script_index.json
+          indexed=$(python3 -c 'import json; print(json.load(open("reports/ffdec_script_index.json"))["script_file_count"])')
+          test "$indexed" -eq "$count"
+          echo "Only SHA-256 fingerprints, byte/line counts and heuristic token counts are exported."
           echo "No decompiled scripts or source graphics are uploaded or committed."
+      - name: Upload source-free script evidence only
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffdec-source-free-script-index
+          path: reports/ffdec_script_index.json
+          if-no-files-found: error
