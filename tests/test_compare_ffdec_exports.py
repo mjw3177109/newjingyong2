@@ -19,7 +19,7 @@ def fixture(content='b', jump_count=2, guard_count=1):
              'candidate_count': 1, 'literal_jump_count': jump_count, 'direct_guard_count': guard_count,
              'verified_story_event_count': 0,
              'entries': [{'path_sha256': path, 'content_sha256': blob, 'candidate_id': cid,
-                          'literal_jump_count': jump_count, 'direct_guard_count': 1}]}
+                          'literal_jump_count': jump_count, 'direct_guard_count': guard_count}]}
     return index, queue, jumps
 
 
