@@ -85,6 +85,11 @@ jobs:
             --queue-a reports/ffdec_review_queue.json --queue-b "$scratch/queue_repeat.json" \
             --jumps-a reports/ffdec_frame_jump_evidence.json --jumps-b "$scratch/jumps_repeat.json" \
             --out reports/ffdec_reproducibility.json
+          python3 tools/build_stable_audit_set.py \
+            --index-a reports/ffdec_script_index.json --index-b "$scratch/index_repeat.json" \
+            --queue-a reports/ffdec_review_queue.json --queue-b "$scratch/queue_repeat.json" \
+            --jumps-a reports/ffdec_frame_jump_evidence.json --jumps-b "$scratch/jumps_repeat.json" \
+            --out reports/ffdec_stable_audit_set.json
           if [[ "$(python3 -c 'import json; print(json.load(open("reports/ffdec_reproducibility.json"))["comparison_status"])')" == "divergent" ]]; then
             echo "::warning title=FFDec export drift::Two Java 8 exports of the same SWF diverged. Syntax counts must not be treated as stable story evidence."
           fi
@@ -122,4 +127,11 @@ jobs:
         with:
           name: ffdec-source-free-reproducibility
           path: reports/ffdec_reproducibility.json
+          if-no-files-found: error
+
+      - name: Upload reproducible syntax candidate manifest only
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffdec-source-free-stable-audit-set
+          path: reports/ffdec_stable_audit_set.json
           if-no-files-found: error
