@@ -19,3 +19,12 @@
 CI 产物：`swf-root-sprite-placement-evidence`。统计以具体成功的 GitHub Actions 运行日志和 Artifact 为准，不预先填写未经运行的真实数量。
 
 **放置标签不是 NPC、地图或剧情事件**，一个 SpriteID 也不等于一个角色。尤其 PlaceObject3、嵌套精灵和时间轴运行时状态未解析，不能声称已恢复可见对象、地图关系或剧情。原作剧情语义已核实事件仍为 **0**。下一步在有权利的隔离环境中将结构证据与 FFDec 私有脚本、实际变量变化和触发条件交叉核验，逐事件登记，且不公开原作受保护素材。
+
+## 2026-10-30：PlaceObject3 增量解析（v2）
+
+- `tools/index_swf_sprite_placements.py` 新增 SWF tag 70 的安全 CharacterId 读取：先读 Flags1、Flags2、Depth，再按 HasClassName 或 (HasImage 且 HasCharacter) 跳过 NUL 结尾的可选类名，最后仅在 HasCharacter 存在时读取 UI16 CharacterId。
+- 类名原文、后续可选字段、原始美术与脚本均不进入输出；无字符 ID 的移动/更新标签只计数。未知 CharacterId 仅进入非精灵合计，不猜测对象身份。
+- 新增合成测试覆盖无 CharacterId、普通 CharacterId、ClassName、HasImage、CWS/FWS、非精灵 ID、截断与未终止类名；旧的“PlaceObject3 全部未解析”口径已废弃。
+- 输出 schema 升级为 `swf-root-sprite-placement-evidence-v2`，新增 `placeobject3_tag_count`、`placeobject3_without_character_count` 和每帧 `placeobject3_count`。原 v1 数字不能与 v2 直接混用。
+- **仅解析主时间轴的直接引用**；没有处理嵌套放置、运行时遮挡、实例生命周期或语义关联。后续仍需从隔离环境中的 FFDec 脚本逐条核实剧情/地图/战斗事件。已核实原作剧情事件仍为 0。
+- 实际 SWF 计数和 CI 通过状态必须以本次提交对应的成功 Actions 日志为准，不能预先推定全部 1,188 个 PlaceObject3 标签均为精灵放置。
