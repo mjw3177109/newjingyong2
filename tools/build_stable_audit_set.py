@@ -10,7 +10,10 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from tools.compare_ffdec_exports import _index, _jumps, _queue
+if __package__:
+    from .compare_ffdec_exports import _index, _jumps, _queue
+else:
+    from compare_ffdec_exports import _index, _jumps, _queue
 
 
 def build_stable_set(index_a, index_b, queue_a, queue_b, jumps_a, jumps_b):
