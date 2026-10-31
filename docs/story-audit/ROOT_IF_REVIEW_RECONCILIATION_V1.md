@@ -17,3 +17,9 @@ python -m unittest discover -s tests -p 'test_*.py'
 **重要限制：** 该工具只能验证对账一致性，不能独立读取或理解私有脚本、验证布尔确认的真实性，也不能授予改编权。即使出现 `reviewed_private`，输出 `verified_story_events` 和 `ready_for_html5_mapping` 仍固定为 **0**。真实事件必须经过来源定位、运行时核验、独立复核及权利审查，才能在另外的正式剧情对照表登记。
 
 当前没有任何真实复核结果，本轮新增的是可测试的防伪/防泄漏门禁，不是剧情恢复成果。FFDec 导出偶发漂移仍待解决。
+
+## 2026-10-31 审查入口身份复核补强
+
+复核 CLI 现在不再假设传入的 `--handoff` 一定来自上游生成器：它会对基线和填写后的副本分别校验 `source_location` 的字段集合、整数类型和范围、动作 SHA-256，并根据 SWF SHA-256、DoAction 序号、动作 SHA-256、IF 偏移**重新计算 review_id**。伪造 ID、变更源坐标、混入额外地图声明或使用布尔/浮点数伪装偏移，均会拒绝。
+
+新增 3 项 Python 回归测试，保持 `verified_story_events=0` 和 `ready_for_html5_mapping=0`。这是对证据身份完整性的修复，不是原作剧情语义的人工核实；仍需在隔离环境中查看原始脚本、验证运行时效果和确认改编权利。
