@@ -1,4 +1,4 @@
-import {initialState,move,interact,battle,questStatus,parseSave,equipWeapon,attackDamage,DEMO_SWORD,discardPotion} from './engine.js';
+import {initialState,move,interact,battle,questStatus,parseSave,equipWeapon,attackDamage,DEMO_SWORD,discardPotion,usePotion} from './engine.js';
 import {ACTORS,WIDTH,HEIGHT,TILE,BLOCKS} from './demo-data.js';
 let state=initialState();
 const $=id=>document.getElementById(id), canvas=$('game'),ctx=canvas.getContext('2d');
@@ -19,12 +19,14 @@ document.addEventListener('keydown',e=>{
  const key=e.key.length===1?e.key.toLowerCase():e.key;
  if(dirs[key]){e.preventDefault();doMove(...dirs[key]);}
  else if(key==='e'||key==='Enter'||key===' '){e.preventDefault();action();}
+ else if(key==='h'){e.preventDefault();update(usePotion(state));}
  else if(key==='b')toast(`背包：${state.inventory.join('、')||'空空如也'}`);
  else if(key==='j')toast(questStatus(state).progress);
 });
 $('interact').onclick=action;$('save').onclick=save;$('load').onclick=load;
 $('equip-weapon').onclick=()=>update(equipWeapon(state));
 $('discard-potion').onclick=()=>update(discardPotion(state));
+$('use-potion').onclick=()=>update(usePotion(state));
 for(const a of ['attack','guard','drink','flee'])$(a).onclick=()=>update(battle(state,a));
 for(const b of document.querySelectorAll('[data-direction]')) b.onclick=()=>{const d={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[b.dataset.direction];doMove(...d);};
 function poly(points,fill){ctx.beginPath();ctx.moveTo(...points[0]);for(const p of points.slice(1))ctx.lineTo(...p);ctx.closePath();ctx.fillStyle=fill;ctx.fill();}
@@ -75,6 +77,7 @@ function paint(){
  if(state.combat)$('combat-info').textContent=`试炼者气血 ${state.combat.enemyHp}/${state.combat.enemyMaxHp}　｜　少侠气血 ${state.player.hp}/100`;
  $('attack-num').textContent=attackDamage(state);
  $('discard-potion').disabled=!state.inventory.includes('回春散')||!!state.combat||!!state.dialog;
+ $('use-potion').disabled=!state.inventory.includes('回春散')||state.player.hp>=state.player.maxHp||!!state.combat||!!state.dialog;
  const equip=$('equip-weapon');equip.disabled=!state.inventory.includes(DEMO_SWORD)||!!state.combat||!!state.dialog;
  equip.textContent=state.equipment.weapon===DEMO_SWORD?'卸下竹纹短剑':'装备竹纹短剑（攻击 +4）';
  $('hp-num').textContent=`${state.player.hp} / 100`;$('hp-bar').style.width=state.player.hp+'%';$('silver').textContent=state.player.silver;
