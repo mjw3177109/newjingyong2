@@ -3,6 +3,7 @@ export const SAVE_VERSION = 2;
 export const DEMO_SWORD = '竹纹短剑';
 export const MAX_INVENTORY = 65;
 export const MAX_POTIONS = 63;
+const DEMO_ENEMY_MAX_HP = 28;
 const potionCount = s => s.inventory.filter(item => item === '回春散').length;
 export const attackDamage = s => 12 + (s.equipment?.weapon === DEMO_SWORD ? 4 : 0);
 export function initialState() {
@@ -43,7 +44,7 @@ export function interact(state) {
     if(s.inventory.length>=MAX_INVENTORY){s.dialog='行囊已满，请先整理回春散再采集清心草。';}
     else {s.flags.herbTaken=true;s.inventory.push('清心草');s.dialog='获得清心草。叶片带着清香，像把竹林的晨露也收进了行囊。';addLog(s,'采集：清心草。');}
   } else if(id==='bandit'){
-    s.combat={enemyHp:28,enemyMaxHp:28,guard:false};addLog(s,'进入试炼战斗。');
+    s.combat={enemyHp:DEMO_ENEMY_MAX_HP,enemyMaxHp:DEMO_ENEMY_MAX_HP,guard:false};addLog(s,'进入试炼战斗。');
   }
   return s;
 }
@@ -112,7 +113,7 @@ export function parseSave(raw){
   if(s.version!==SAVE_VERSION || !s.player || typeof s.player!=='object' || Array.isArray(s.player))return null;
   const p=s.player;
   if(!Number.isInteger(p.x)||!Number.isInteger(p.y)||p.x<0||p.x>=WIDTH||p.y<0||p.y>=HEIGHT||BLOCKS.has(`${p.x},${p.y}`))return null;
-  if(!Number.isInteger(p.maxHp)||p.maxHp<1||p.maxHp>100||!Number.isInteger(p.hp)||p.hp<0||p.hp>p.maxHp)return null;
+  if(!Number.isInteger(p.maxHp)||p.maxHp<1||p.maxHp>100||!Number.isInteger(p.hp)||p.hp<1||p.hp>p.maxHp)return null;
   if(!Number.isSafeInteger(p.silver)||p.silver<0||p.silver>1_000_000_000)return null;
   if(!['unstarted','active','completed'].includes(s.quest))return null;
   if(!s.flags||typeof s.flags.herbTaken!=='boolean'||typeof s.flags.banditBeaten!=='boolean')return null;
@@ -135,8 +136,8 @@ export function parseSave(raw){
   if(typeof s.dialog!=='string'||s.dialog.length>500)return null;
   if(s.combat!==null){
     const c=s.combat;
-    if(!c||!Number.isInteger(c.enemyMaxHp)||c.enemyMaxHp<1||c.enemyMaxHp>100||
-       !Number.isInteger(c.enemyHp)||c.enemyHp<1||c.enemyHp>c.enemyMaxHp||
+    if(s.dialog || !c || c.enemyMaxHp!==DEMO_ENEMY_MAX_HP ||
+       !Number.isInteger(c.enemyHp)||c.enemyHp<1||c.enemyHp>DEMO_ENEMY_MAX_HP||
        typeof c.guard!=='boolean'||s.flags.banditBeaten||dist(p,ACTORS.bandit)!==1)return null;
   }
   return s;
