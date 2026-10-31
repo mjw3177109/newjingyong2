@@ -43,12 +43,27 @@ class ReviewPacketsTests(unittest.TestCase):
         result = build_packets(*fixture())
         self.assertEqual(result['total_if_review_packets'], 1)
         packet = result['manual_review_queue'][0]
-        self.assertEqual(packet['structural_priority'], 7)
+        self.assertEqual(packet['structural_priority'], 15)
+        self.assertEqual(result['syntactically_reachable_if_count'], 1)
+        self.assertEqual(result['syntactically_unreachable_if_count'], 0)
+        self.assertEqual(result['selected_syntactically_reachable_count'], 1)
         self.assertEqual(packet['if_source_offset'], 5)
         self.assertIsNone(packet['trigger'])
         self.assertIsNone(packet['effects'])
         self.assertEqual(result['verified_story_events'], 0)
         self.assertEqual(result, build_packets(*fixture()))
+
+    def test_unreachable_if_has_lower_priority_and_is_not_verified(self):
+        rows = fixture()
+        rows[3]['candidates'][0]['if_successors'][0]['if_record_reachable'] = False
+        result = build_packets(*rows)
+        packet = result['manual_review_queue'][0]
+        self.assertFalse(packet['if_record_reachable'])
+        self.assertEqual(packet['structural_priority'], 7)
+        self.assertEqual(result['syntactically_reachable_if_count'], 0)
+        self.assertEqual(result['syntactically_unreachable_if_count'], 1)
+        self.assertEqual(result['selected_syntactically_reachable_count'], 0)
+        self.assertEqual(result['verified_story_events'], 0)
 
     def test_rejects_source_mismatch(self):
         rows = fixture()
