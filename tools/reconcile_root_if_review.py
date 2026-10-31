@@ -5,6 +5,7 @@ The result counts reviewer ATTESTATIONS, not independently verified story events
 Source scripts, semantic text, original art and audio are never emitted.
 """
 import argparse
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -49,8 +50,30 @@ def reconcile(handoff, reviewed):
             rid = entry['review_id']
             if not isinstance(rid, str) or not HEX24.fullmatch(rid) or rid in result:
                 raise ValueError('invalid or duplicate review ID')
-            if not isinstance(entry['source_location'], dict) or not isinstance(entry['checks'], dict) or set(entry['checks']) != CHECKS:
+            location = entry['source_location']
+            if not isinstance(location, dict) or not isinstance(entry['checks'], dict) or set(entry['checks']) != CHECKS:
                 raise ValueError('invalid review evidence structure')
+            expected_fields = {
+                'root_frame', 'action_tag_ordinal', 'action_sha256',
+                'if_source_offset', 'branch_target_offset', 'fallthrough_offset',
+            }
+            if set(location) != expected_fields:
+                raise ValueError('unexpected source location fields')
+            if (type(location['root_frame']) is not int or location['root_frame'] < 1
+                    or type(location['action_tag_ordinal']) is not int or location['action_tag_ordinal'] < 1
+                    or any(type(location[key]) is not int or location[key] < 0 for key in (
+                        'if_source_offset', 'branch_target_offset', 'fallthrough_offset'))
+                    or not isinstance(location['action_sha256'], str)
+                    or not HEX64.fullmatch(location['action_sha256'])):
+                raise ValueError('invalid source location coordinates')
+            # The baseline may be passed directly to this CLI. Validate its
+            # deterministic identity even when it did not come from the
+            # upstream handoff generator.
+            identity = (f"{report['source_swf_sha256']}:{location['action_tag_ordinal']}:"
+                        f"{location['action_sha256']}:{location['if_source_offset']}")
+            expected_id = hashlib.sha256(identity.encode('ascii')).hexdigest()[:24]
+            if rid != expected_id:
+                raise ValueError('review ID does not match SWF source coordinates')
             if entry['html5_event_id'] is not None:
                 raise ValueError('review handoff cannot authorize HTML5 event mapping')
             result[rid] = entry
