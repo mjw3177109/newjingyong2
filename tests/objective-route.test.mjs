@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {nextObjective, pathToObjective} from '../src/objectives.js';
+import {nextObjective, pathToObjective, stepTowardObjective} from '../src/objectives.js';
 import {ACTORS, BLOCKS, WIDTH, HEIGHT} from '../src/demo-data.js';
 
 const fresh = () => ({quest:'unstarted', flags:{herbTaken:false,banditBeaten:false}, player:{x:5,y:8}});
@@ -51,4 +51,34 @@ test('route calculation is deterministic and does not mutate game state', () => 
   const s=fresh();const before=structuredClone(s);
   assert.deepEqual(pathToObjective(s),pathToObjective(s));
   assert.deepEqual(s,before);
+});
+
+test('route-step advances exactly one cardinal tile and never mutates its input', () => {
+  const s=fresh(), before=structuredClone(s), first=pathToObjective(s)[0];
+  const next=stepTowardObjective(s);
+  assert.deepEqual(next.player,{...s.player,x:first.x,y:first.y});
+  assert.equal(distance(s.player,next.player),1);
+  assert.deepEqual(s,before);
+});
+test('route-step can be repeated to reach an interaction tile without entering NPC tile', () => {
+  let s=fresh();const target=nextObjective(s);
+  for(let i=0;i<20 && pathToObjective(s)?.length;i++) s=stepTowardObjective(s);
+  assert.equal(distance(s.player,target),1);
+  assert.deepEqual(pathToObjective(s),[]);
+  assert.deepEqual(stepTowardObjective(s),s);
+});
+test('route-step is inert during dialog, combat, invalid and completed objectives', () => {
+  const s=fresh();
+  for(const patch of [{dialog:'对话中'}, {combat:{enemyHp:10}}, {quest:'completed'}, {player:{x:2,y:2}}]) {
+    const blocked={...s,...patch};
+    assert.deepEqual(stepTowardObjective(blocked),blocked);
+  }
+  assert.equal(stepTowardObjective(null),null);
+});
+test('route-step recomputes after quest progress and does not skip interactions', () => {
+  let s=fresh();
+  while(pathToObjective(s)?.length) s=stepTowardObjective(s);
+  assert.equal(s.quest,'unstarted');
+  assert.equal(s.flags.herbTaken,false);
+  assert.equal(s.flags.banditBeaten,false);
 });
