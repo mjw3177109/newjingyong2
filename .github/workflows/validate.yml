@@ -42,6 +42,8 @@ jobs:
         run: python tools/build_root_conditional_review_queue.py --opcodes reports/swf_root_action_opcode_evidence.json --correlation reports/swf_root_action_depth_correlation.json --out reports/swf_root_conditional_review_queue.json --limit 50
       - name: Locate source-free conditional branch edges in original SWF
         run: python tools/index_root_conditional_edges.py jin.swf --opcodes reports/swf_root_action_opcode_evidence.json --queue reports/swf_root_conditional_review_queue.json --out reports/swf_root_conditional_edges.json
+      - name: Locate source-free AVM1 state access hints near root IF branches
+        run: python tools/index_root_state_access.py jin.swf --opcodes reports/swf_root_action_opcode_evidence.json --queue reports/swf_root_conditional_review_queue.json --edges reports/swf_root_conditional_edges.json --out reports/swf_root_state_access_hints.json
       - name: Cross-check depth assignments against independent placement index
         run: |
           python - <<'PY'
@@ -87,6 +89,12 @@ jobs:
         with:
           name: swf-root-conditional-edges
           path: reports/swf_root_conditional_edges.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-root-state-access-hints
+          path: reports/swf_root_state_access_hints.json
           if-no-files-found: error
 
       - uses: actions/upload-artifact@v4
