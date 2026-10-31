@@ -112,8 +112,12 @@ def main():
     target = Path(args.out)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
-    print('Root DoAction opcode index: {} tags, {} conditional records, {} parse warnings; verified events: 0'.format(
-        report['root_doaction_tags'], report['top_level_opcode_counts'].get('if', 0), report['tags_with_parse_warnings']))
+    totals = report['top_level_opcode_counts']
+    print('Root DoAction opcode index: {} tags, {} conditional records, {} parse warnings; branch targets aligned/inside/outside: {}/{}/{}; verified events: 0'.format(
+        report['root_doaction_tags'], totals.get('if', 0), report['tags_with_parse_warnings'],
+        totals.get('branch_targets_on_record_boundary', 0),
+        totals.get('branch_targets_inside_record', 0),
+        totals.get('out_of_bounds_branch_targets', 0)))
 
 
 if __name__ == '__main__':
