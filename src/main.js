@@ -1,6 +1,7 @@
 import {initialState,move,interact,battle,questStatus,parseSave,equipWeapon,attackDamage,DEMO_SWORD,discardPotion,usePotion} from './engine.js';
 import {ACTORS,WIDTH,HEIGHT,TILE,BLOCKS} from './demo-data.js';
 import {commandForKey} from './controls.js';
+import {MAX_SAVE_FILE_BYTES, exportSaveText, importSaveText} from './save-transfer.js';
 import {nextObjective,pathToObjective,stepTowardObjective} from './objectives.js';
 let state=initialState();
 const $=id=>document.getElementById(id), canvas=$('game'),ctx=canvas.getContext('2d');
@@ -28,7 +29,31 @@ document.addEventListener('keydown',e=>{
  else if(command.kind==='inventory')toast(`背包：${state.inventory.join('、')||'空空如也'}`);
  else if(command.kind==='quest')toast(questStatus(state).progress);
 });
+function exportSave() {
+ try {
+  const blob = new Blob([exportSaveText(state)], {type:'application/json;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url; link.download = 'zhuying-jianghu-save-v2.json';
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('已导出原创试玩存档 JSON');
+ } catch { toast('存档导出失败'); }
+}
 $('interact').onclick=action;$('save').onclick=save;$('load').onclick=load;
+$('export-save').onclick=exportSave;
+$('import-save').onclick=()=>$('import-save-file').click();
+$('import-save-file').onchange=async e=>{
+ const file=e.target.files?.[0];e.target.value='';
+ if(!file)return;
+ if(file.size>MAX_SAVE_FILE_BYTES){toast('存档文件超过 64 KB');return;}
+ try {
+  const imported=importSaveText(await file.text());
+  if(!imported){toast('存档文件无效或版本不兼容');return;}
+  update(imported);
+  toast('已导入当前游戏，请点击保存进度以持久化');
+ } catch { toast('读取存档文件失败'); }
+};
 $('step-route').onclick=()=>update(stepTowardObjective(state));
 $('equip-weapon').onclick=()=>update(equipWeapon(state));
 $('discard-potion').onclick=()=>update(discardPotion(state));
