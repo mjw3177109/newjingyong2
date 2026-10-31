@@ -1,4 +1,5 @@
 import {ACTORS, BLOCKS, WIDTH, HEIGHT} from './demo-data.js';
+import {move} from './engine.js';
 
 // These hints describe the original HTML5 demonstration, NOT verified SWF events.
 // Do not use this module as a source for the original game's quest sequence.
@@ -60,4 +61,14 @@ export function pathToObjective(state) {
     }
   }
   return null;
+}
+
+// One deliberate input advances exactly one legal tile toward the current demo objective.
+// No automatic interactions, combat turns or timers; recompute the path on every press.
+export function stepTowardObjective(state) {
+  if (!state || state.dialog || state.combat) return state;
+  const route = pathToObjective(state);
+  if (!route?.length) return state;
+  const first = route[0];
+  return move(state, first.x - state.player.x, first.y - state.player.y);
 }
