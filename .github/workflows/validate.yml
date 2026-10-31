@@ -70,7 +70,9 @@ jobs:
       - name: Test source-free script index and review queue
         run: python -m unittest discover -s tests -p 'test_*.py'
       - name: Smoke-test standalone audit CLI imports
-        run: python tools/build_stable_audit_set.py --help > /dev/null
+        run: |
+          python tools/build_stable_audit_set.py --help > /dev/null
+          python tools/triage_ffdec_three_exports.py --help > /dev/null
       - uses: actions/upload-artifact@v4
         with:
           name: swf-structural-inventory
@@ -156,7 +158,7 @@ jobs:
   ffdec-java8-probe:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/')
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -216,6 +218,19 @@ jobs:
             --out reports/ffdec_drift_diagnostics.json
           if [[ "$(python3 -c 'import json; print(json.load(open("reports/ffdec_reproducibility.json"))["comparison_status"])')" == "divergent" ]]; then
             echo "::warning title=FFDec export drift::Two Java 8 exports of the same SWF diverged. Syntax counts must not be treated as stable story evidence."
+            # A third fresh export is diagnostic only; it cannot establish a canonical script.
+            set +e
+            timeout 300s java -Djava.awt.headless=true -Xmx2g -jar FFDec/ffdec.jar -cli -export script "$scratch/scripts_third" jin.swf > "$scratch/ffdec_third.log" 2>&1
+            third_status=$?
+            set -e
+            echo "Third FFDec exit status: $third_status"
+            test "$third_status" -eq 0
+            python3 tools/index_ffdec_scripts.py "$scratch/scripts_third" --source-swf jin.swf --out "$scratch/index_third.json"
+            python3 tools/triage_ffdec_three_exports.py \
+              --index-a reports/ffdec_script_index.json \
+              --index-b "$scratch/index_repeat.json" \
+              --index-c "$scratch/index_third.json" \
+              --out reports/ffdec_three_run_triage.json
           fi
           echo "Only hashed script fingerprints and syntax locations are exported; all candidates remain unverified."
           echo "No decompiled scripts or source graphics are uploaded or committed."
@@ -266,3 +281,10 @@ jobs:
           name: ffdec-source-free-drift-diagnostics
           path: reports/ffdec_drift_diagnostics.json
           if-no-files-found: error
+
+      - name: Upload conditional three-export drift triage (hashes only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffdec-source-free-three-run-triage
+          path: reports/ffdec_three_run_triage.json
+          if-no-files-found: ignore
