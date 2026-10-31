@@ -98,6 +98,53 @@ def main():
             assert imported_page.locator('#attack-num').inner_text() == '16'
             imported_page.reload(wait_until='networkidle')
             assert imported_page.locator('#silver').inner_text() == '10', 'import must not silently overwrite local save'
+            # Independent touch-enabled Chromium context at a narrow mobile viewport.
+            # Only original-demo controls are tested; this is not source-SWF fidelity.
+            mobile = browser.new_context(
+                viewport={'width': 390, 'height': 844},
+                device_scale_factor=1,
+                is_mobile=True,
+                has_touch=True,
+                accept_downloads=True,
+            )
+            mobile_page = mobile.new_page()
+            mobile_page.on('pageerror', lambda error: errors.append(str(error)))
+            mobile_page.goto(url, wait_until='networkidle')
+            mobile_page.wait_for_function("document.querySelector('#quest-desc').textContent.includes('下一步：')")
+            assert mobile_page.locator('.mobile-pad').is_visible(), 'touch direction pad is hidden'
+            assert mobile_page.locator('[data-direction="right"]').is_visible()
+            assert mobile_page.evaluate(
+                "document.querySelector('#game').getBoundingClientRect().width <= window.innerWidth"
+            ), 'mobile game canvas extends beyond the viewport'
+            mobile_page.locator('[data-direction="right"]').tap()
+            mobile_page.locator('#save').tap()
+            saved = mobile_page.evaluate(
+                "JSON.parse(localStorage.getItem('jianghu-q-save-v1'))"
+            )
+            assert (saved['player']['x'], saved['player']['y']) == (6, 8), (
+                'touch direction must move exactly one walkable tile'
+            )
+            mobile_page.reload(wait_until='networkidle')
+            assert mobile_page.locator('#silver').inner_text() == '10'
+            mobile_page.locator('#load').tap()
+            with mobile_page.expect_download() as mobile_download:
+                mobile_page.locator('#export-save').tap()
+            restored = json.loads(Path(mobile_download.value.path()).read_text(encoding='utf-8'))
+            assert (restored['player']['x'], restored['player']['y']) == (6, 8)
+            route_button = mobile_page.locator('#step-route')
+            for _ in range(400):
+                if route_button.is_disabled():
+                    assert '已靠近' in mobile_page.locator('#quest-desc').inner_text()
+                    break
+                route_button.tap()
+            else:
+                raise AssertionError('touch route did not reach the first NPC')
+            mobile_page.locator('#interact').tap()
+            assert '清心草' in mobile_page.locator('#quest-progress').inner_text()
+            mobile_page.locator('#interact').tap()
+            mobile_output = ROOT / 'reports' / 'browser_smoke_mobile.png'
+            mobile_page.screenshot(path=str(mobile_output), full_page=True)
+            mobile.close()
             assert not errors, f'browser JavaScript errors: {errors}'
             output = ROOT / 'reports' / 'browser_smoke.png'
             output.parent.mkdir(parents=True, exist_ok=True)
