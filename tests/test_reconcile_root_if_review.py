@@ -1,10 +1,11 @@
 import copy
+import hashlib
 import unittest
 
 from tools.reconcile_root_if_review import reconcile
 
 SHA = 'a' * 64
-RID = 'b' * 24
+RID = hashlib.sha256(f'{SHA}:2:{"c" * 64}:5'.encode('ascii')).hexdigest()[:24]
 ACTION = 'c' * 64
 
 
@@ -72,6 +73,37 @@ class ReconciliationTests(unittest.TestCase):
         changed['entries'][0]['source_location']['root_frame'] = 99
         with self.assertRaises(ValueError):
             reconcile(base, changed)
+
+    def test_rejects_forged_baseline_identity(self):
+        base = fixture()
+        base['entries'][0]['review_id'] = 'b' * 24
+        with self.assertRaisesRegex(ValueError, 'review ID'):
+            reconcile(base, copy.deepcopy(base))
+        base = fixture()
+        base['entries'][0]['source_location']['if_source_offset'] = 6
+        with self.assertRaisesRegex(ValueError, 'review ID'):
+            reconcile(base, copy.deepcopy(base))
+
+    def test_rejects_malformed_baseline_coordinates(self):
+        for key, value in [
+            ('root_frame', True), ('action_tag_ordinal', 0),
+            ('if_source_offset', -1), ('branch_target_offset', 1.5),
+            ('fallthrough_offset', '9'), ('action_sha256', 'bad'),
+        ]:
+            base = fixture()
+            base['entries'][0]['source_location'][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                reconcile(base, copy.deepcopy(base))
+
+    def test_rejects_unexpected_source_location_fields(self):
+        base = fixture()
+        base['entries'][0]['source_location']['claimed_map'] = 'invented'
+        with self.assertRaisesRegex(ValueError, 'unexpected source location'):
+            reconcile(base, copy.deepcopy(base))
+        base = fixture()
+        del base['entries'][0]['source_location']['fallthrough_offset']
+        with self.assertRaisesRegex(ValueError, 'unexpected source location'):
+            reconcile(base, copy.deepcopy(base))
 
     def test_rejects_partial_and_fake_verified_reviews(self):
         base = fixture()
