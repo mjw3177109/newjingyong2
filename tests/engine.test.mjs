@@ -219,3 +219,18 @@ test('legitimate guarded low-HP battle loads but zero-HP checkpoint does not',()
  s.combat=null;
  assert.equal(parseSave(JSON.stringify(s)),null);
 });
+
+// Original-demo state invariants; these are not claims about the source SWF.
+test('movement rejects diagonal, multi-tile, fractional and non-finite input',()=>{
+ const s=initialState();
+ for(const [dx,dy] of [[1,1],[2,0],[0,-2],[0.5,0],[NaN,0],[Infinity,0],[0,0]])
+  assert.deepEqual(move(s,dx,dy),s);
+ assert.equal(move(s,1,0).player.x,s.player.x+1);
+});
+test('save parser rejects forged player maximum HP while retaining valid low HP',()=>{
+ const s=initialState();
+ for(const maxHp of [1,99,101,0,null,'100'])
+  assert.equal(parseSave(JSON.stringify({...s,player:{...s.player,maxHp,hp:1}})),null);
+ const low={...s,player:{...s.player,hp:1}};
+ assert.deepEqual(parseSave(JSON.stringify(low)),low);
+});
