@@ -162,3 +162,35 @@ test('combat drink at full HP does not consume potion or enemy turn',()=>{
  assert.equal(next.player.hp,100);assert.equal(next.inventory.length,1);
  assert.equal(next.combat.enemyHp,28);assert.match(next.journal[0],/气血已满/);
 });
+
+test('save parser rejects active actor occupancy but accepts cleared encounter tiles',()=>{
+ const s=initialState();
+ for(const [x,y] of [[7,6],[16,9],[12,10],[19,7]])
+  assert.equal(parseSave(JSON.stringify(at(s,x,y))),null);
+ const herb=at(initialState(),12,10);herb.flags.herbTaken=true;herb.inventory=['清心草'];
+ assert.deepEqual(parseSave(JSON.stringify(herb)),herb);
+ const trial=at(initialState(),19,7);trial.flags.banditBeaten=true;
+ assert.deepEqual(parseSave(JSON.stringify(trial)),trial);
+});
+test('save parser rejects duplicated quest herb and completed quest without sword',()=>{
+ const duplicated=initialState();duplicated.flags.herbTaken=true;duplicated.inventory=['清心草','清心草'];
+ assert.equal(parseSave(JSON.stringify(duplicated)),null);
+ const missingReward=initialState();missingReward.quest='completed';
+ missingReward.flags.herbTaken=true;missingReward.flags.banditBeaten=true;missingReward.inventory=['清心草'];
+ assert.equal(parseSave(JSON.stringify(missingReward)),null);
+});
+test('save parser only accepts combat at a reachable adjacent trial position',()=>{
+ const s=initialState();s.combat={enemyHp:28,enemyMaxHp:28,guard:false};
+ assert.equal(parseSave(JSON.stringify(s)),null);
+ const adjacent=at(s,19,8);
+ assert.deepEqual(parseSave(JSON.stringify(adjacent)),adjacent);
+});
+test('combat potion reports actual capped healing rather than nominal amount',()=>{
+ let s=at(initialState(),19,8);
+ s.player.hp=92;s.inventory=['回春散'];s.combat={enemyHp:28,enemyMaxHp:28,guard:false};
+ s=battle(s,'drink');
+ assert.equal(s.player.hp,94);
+ assert.equal(s.inventory.length,0);
+ assert.ok(s.journal.some(line=>line.includes('恢复 8 点气血')));
+ assert.deepEqual(parseSave(JSON.stringify(s)),s);
+});

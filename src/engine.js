@@ -55,7 +55,8 @@ export function battle(state,action){
     if(s.player.hp>=s.player.maxHp){addLog(s,'气血已满，不必服药。');return s;}
     const at=s.inventory.indexOf('回春散');
     if(at<0){addLog(s,'行囊里没有回春散。');return s;}
-    s.inventory.splice(at,1);s.player.hp=Math.min(s.player.maxHp,s.player.hp+30);addLog(s,'使用回春散，恢复 30 点气血（上限 100）。');
+    const healed=Math.min(30,s.player.maxHp-s.player.hp);
+    s.inventory.splice(at,1);s.player.hp+=healed;addLog(s,`使用回春散，恢复 ${healed} 点气血。`);
   }
   if(action==='guard'){s.combat.guard=true;addLog(s,'凝神防御，下次受击伤害减半。');}
   if(action==='attack'){const damage=attackDamage(s);s.combat.enemyHp=Math.max(0,s.combat.enemyHp-damage);addLog(s,`使出一式青竹剑，造成 ${damage} 点伤害。`);}
@@ -115,9 +116,15 @@ export function parseSave(raw){
   if(!Number.isSafeInteger(p.silver)||p.silver<0||p.silver>1_000_000_000)return null;
   if(!['unstarted','active','completed'].includes(s.quest))return null;
   if(!s.flags||typeof s.flags.herbTaken!=='boolean'||typeof s.flags.banditBeaten!=='boolean')return null;
+  // A live actor blocks movement. Loading a save on its tile would create an unreachable state.
+  if(Object.entries(ACTORS).some(([id,a]) =>
+    (id!=='herb'||!s.flags.herbTaken)&&(id!=='bandit'||!s.flags.banditBeaten)&&
+    a.x===p.x&&a.y===p.y))return null;
   if(!Array.isArray(s.inventory)||s.inventory.length>MAX_INVENTORY||s.inventory.some(item=>!['清心草','回春散',DEMO_SWORD].includes(item)))return null;
   if(s.inventory.filter(item=>item===DEMO_SWORD).length>1 ||
-     (s.inventory.includes(DEMO_SWORD) && s.quest!=='completed'))return null;
+     s.inventory.filter(item=>item==='清心草').length>1 ||
+     (s.inventory.includes(DEMO_SWORD) && s.quest!=='completed') ||
+     (s.quest==='completed' && !s.inventory.includes(DEMO_SWORD)))return null;
   if(!s.equipment || typeof s.equipment!=='object' || Array.isArray(s.equipment) ||
      Object.keys(s.equipment).length!==1 ||
      ![null,DEMO_SWORD].includes(s.equipment.weapon) ||
@@ -130,7 +137,7 @@ export function parseSave(raw){
     const c=s.combat;
     if(!c||!Number.isInteger(c.enemyMaxHp)||c.enemyMaxHp<1||c.enemyMaxHp>100||
        !Number.isInteger(c.enemyHp)||c.enemyHp<1||c.enemyHp>c.enemyMaxHp||
-       typeof c.guard!=='boolean'||s.flags.banditBeaten)return null;
+       typeof c.guard!=='boolean'||s.flags.banditBeaten||dist(p,ACTORS.bandit)!==1)return null;
   }
   return s;
 }
