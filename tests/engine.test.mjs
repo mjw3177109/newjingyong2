@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {initialState, move, interact, battle, parseSave, questStatus, equipWeapon, attackDamage, DEMO_SWORD, discardPotion, MAX_INVENTORY, MAX_POTIONS} from '../src/engine.js';
+import {initialState, move, interact, battle, parseSave, questStatus, equipWeapon, attackDamage, DEMO_SWORD, discardPotion, MAX_INVENTORY, MAX_POTIONS, usePotion} from '../src/engine.js';
 const at=(s,x,y)=>({...s,player:{...s.player,x,y}});
 test('world movement obeys boundaries, solid tiles, actor collision',()=>{
  let s=initialState();assert.equal(move(at(s,0,0),-1,0).player.x,0);
@@ -136,4 +136,29 @@ test('discard is explicit and forbidden during dialog or combat',()=>{
  s=discardPotion(s);assert.equal(s.inventory.length,0);
  assert.match(s.journal[0],/丢弃一包回春散/);
  assert.equal(discardPotion(s).inventory.length,0);
+});
+
+test('out-of-combat potion restores at most 30 HP and persists',()=>{
+ let s=initialState();s.player.hp=62;s.inventory=['回春散','回春散'];
+ s=usePotion(s);assert.equal(s.player.hp,92);assert.equal(s.inventory.length,1);
+ s=usePotion(s);assert.equal(s.player.hp,100);assert.equal(s.inventory.length,0);
+ assert.deepEqual(parseSave(JSON.stringify(s)),s);
+});
+test('out-of-combat potion cannot be wasted at full HP or without stock',()=>{
+ let s=initialState();s.inventory=['回春散'];
+ assert.deepEqual(usePotion(s),s);
+ s.player.hp=70;s.inventory=[];
+ assert.deepEqual(usePotion(s),s);
+});
+test('out-of-combat potion is locked during dialogue and battle',()=>{
+ let s=initialState();s.player.hp=50;s.inventory=['回春散'];
+ assert.deepEqual(usePotion({...s,dialog:'正在交谈'}),{...s,dialog:'正在交谈'});
+ const fighting={...s,combat:{enemyHp:28,enemyMaxHp:28,guard:false}};
+ assert.deepEqual(usePotion(fighting),fighting);
+});
+test('combat drink at full HP does not consume potion or enemy turn',()=>{
+ let s=initialState();s.inventory=['回春散'];s.combat={enemyHp:28,enemyMaxHp:28,guard:false};
+ const next=battle(s,'drink');
+ assert.equal(next.player.hp,100);assert.equal(next.inventory.length,1);
+ assert.equal(next.combat.enemyHp,28);assert.match(next.journal[0],/气血已满/);
 });
