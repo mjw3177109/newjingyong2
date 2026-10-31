@@ -1,5 +1,6 @@
 import {initialState,move,interact,battle,questStatus,parseSave,equipWeapon,attackDamage,DEMO_SWORD,discardPotion,usePotion} from './engine.js';
 import {ACTORS,WIDTH,HEIGHT,TILE,BLOCKS} from './demo-data.js';
+import {commandForKey} from './controls.js';
 let state=initialState();
 const $=id=>document.getElementById(id), canvas=$('game'),ctx=canvas.getContext('2d');
 const images={};
@@ -14,14 +15,16 @@ function load(){let raw;try{raw=localStorage.getItem(keyName);}catch{toast('浏�
  const parsed=raw&&parseSave(raw);if(!parsed){toast('没有有效的存档');return;}update(parsed);toast('进度读取成功');}
 function doMove(dx,dy){update(move(state,dx,dy));}
 function action(){update(interact(state));}
-const dirs={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]};
 document.addEventListener('keydown',e=>{
- const key=e.key.length===1?e.key.toLowerCase():e.key;
- if(dirs[key]){e.preventDefault();doMove(...dirs[key]);}
- else if(key==='e'||key==='Enter'||key===' '){e.preventDefault();action();}
- else if(key==='h'){e.preventDefault();update(usePotion(state));}
- else if(key==='b')toast(`背包：${state.inventory.join('、')||'空空如也'}`);
- else if(key==='j')toast(questStatus(state).progress);
+ const command=commandForKey(e,!!state.combat);
+ if(!command)return;
+ e.preventDefault();
+ if(command.kind==='move')doMove(command.dx,command.dy);
+ else if(command.kind==='interact')action();
+ else if(command.kind==='potion')update(usePotion(state));
+ else if(command.kind==='combat')update(battle(state,command.action));
+ else if(command.kind==='inventory')toast(`背包：${state.inventory.join('、')||'空空如也'}`);
+ else if(command.kind==='quest')toast(questStatus(state).progress);
 });
 $('interact').onclick=action;$('save').onclick=save;$('load').onclick=load;
 $('equip-weapon').onclick=()=>update(equipWeapon(state));
