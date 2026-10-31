@@ -19,12 +19,15 @@ TRACKED = {0x81: 'goto_frame', 0x8C: 'goto_label', 0x99: 'jump',
 
 
 def inspect_actions(payload):
-    """Parse top-level action records, never return strings or raw action bytes."""
+    """Parse top-level records and classify branch target alignment, without raw bytes."""
     pos = 0
     counts = Counter()
     errors = []
     ended = False
+    boundaries = set()
+    destinations = []
     while pos < len(payload):
+        boundaries.add(pos)
         opcode = payload[pos]
         pos += 1
         if opcode == 0:
@@ -50,10 +53,15 @@ def inspect_actions(payload):
                 errors.append('invalid_wait_action_length')
             if opcode in (0x99, 0x9D) and length == 2:
                 relative = struct.unpack_from('<h', payload, pos)[0]
-                destination = pos + length + relative
-                if not 0 <= destination < len(payload):
-                    counts['out_of_bounds_branch_targets'] += 1
+                destinations.append(pos + length + relative)
             pos += length
+    for destination in destinations:
+        if not 0 <= destination < len(payload):
+            counts['out_of_bounds_branch_targets'] += 1
+        elif destination in boundaries:
+            counts['branch_targets_on_record_boundary'] += 1
+        else:
+            counts['branch_targets_inside_record'] += 1
     if not ended:
         errors.append('missing_action_end')
     return dict(counts), sorted(set(errors))
