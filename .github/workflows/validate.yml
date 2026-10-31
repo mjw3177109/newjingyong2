@@ -36,7 +36,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: html5-browser-smoke-screenshot
-          path: reports/browser_smoke.png
+          path: |
+            reports/browser_smoke.png
+            reports/browser_smoke_mobile.png
           if-no-files-found: ignore
   swf-inventory:
     runs-on: ubuntu-latest
