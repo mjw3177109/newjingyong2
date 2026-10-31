@@ -16,6 +16,8 @@ const dist = (a,b) => Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 const addLog = (s,msg) => {s.journal.unshift(msg);s.journal=s.journal.slice(0,6);};
 export function move(state,dx,dy) {
   const s=copy(state); if(s.combat || s.dialog) return s;
+  // Only one cardinal tile per input; reject malformed programmatic moves.
+  if(!Number.isInteger(dx)||!Number.isInteger(dy)||Math.abs(dx)+Math.abs(dy)!==1)return s;
   const x=s.player.x+dx,y=s.player.y+dy;
   if(x<0||x>=WIDTH||y<0||y>=HEIGHT||BLOCKS.has(`${x},${y}`))return s;
   if(Object.entries(ACTORS).some(([id,p])=>(id!=='herb'||!s.flags.herbTaken)&&(id!=='bandit'||!s.flags.banditBeaten)&&p.x===x&&p.y===y)) return s;
@@ -113,7 +115,7 @@ export function parseSave(raw){
   if(s.version!==SAVE_VERSION || !s.player || typeof s.player!=='object' || Array.isArray(s.player))return null;
   const p=s.player;
   if(!Number.isInteger(p.x)||!Number.isInteger(p.y)||p.x<0||p.x>=WIDTH||p.y<0||p.y>=HEIGHT||BLOCKS.has(`${p.x},${p.y}`))return null;
-  if(!Number.isInteger(p.maxHp)||p.maxHp<1||p.maxHp>100||!Number.isInteger(p.hp)||p.hp<1||p.hp>p.maxHp)return null;
+  if(p.maxHp!==100||!Number.isInteger(p.hp)||p.hp<1||p.hp>p.maxHp)return null;
   if(!Number.isSafeInteger(p.silver)||p.silver<0||p.silver>1_000_000_000)return null;
   if(!['unstarted','active','completed'].includes(s.quest))return null;
   if(!s.flags||typeof s.flags.herbTaken!=='boolean'||typeof s.flags.banditBeaten!=='boolean')return null;
