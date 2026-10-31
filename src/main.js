@@ -1,6 +1,7 @@
 import {initialState,move,interact,battle,questStatus,parseSave,equipWeapon,attackDamage,DEMO_SWORD,discardPotion,usePotion} from './engine.js';
 import {ACTORS,WIDTH,HEIGHT,TILE,BLOCKS} from './demo-data.js';
 import {commandForKey} from './controls.js';
+import {nextObjective} from './objectives.js';
 let state=initialState();
 const $=id=>document.getElementById(id), canvas=$('game'),ctx=canvas.getContext('2d');
 const images={};
@@ -73,6 +74,13 @@ function paint(){
   if(id==='elder'||id==='merchant'){ctx.font='bold 13px system-ui';ctx.fillStyle='#19392e';ctx.textAlign='center';ctx.fillText(obj.name,obj.x*TILE+18,obj.y*TILE-22);}
   if(id==='herb') {ctx.font='20px serif';ctx.fillStyle='#f3e1a8';ctx.fillText('✧',obj.x*TILE+12,obj.y*TILE-18);}
  }
+ // Original demo-only objective indicator; not a reconstructed SWF quest marker.
+ const objective=nextObjective(state);
+ if(objective){
+  const cx=(objective.x+.5)*TILE,cy=(objective.y+.5)*TILE;
+  ctx.beginPath();ctx.strokeStyle='#ffe2a0';ctx.lineWidth=3;
+  ctx.arc(cx,cy,25,0,Math.PI*2);ctx.stroke();
+ }
  actor('hero',state.player.x,state.player.y,59);
  ctx.textAlign='left';ctx.fillStyle='#17362b';ctx.font='bold 14px system-ui';ctx.fillText('青 竹 村',18,27);
  const d=$('dialog');d.textContent=state.dialog?state.dialog+'　[按 E 继续]':'';d.classList.toggle('hidden',!state.dialog);
@@ -84,7 +92,7 @@ function paint(){
  const equip=$('equip-weapon');equip.disabled=!state.inventory.includes(DEMO_SWORD)||!!state.combat||!!state.dialog;
  equip.textContent=state.equipment.weapon===DEMO_SWORD?'卸下竹纹短剑':'装备竹纹短剑（攻击 +4）';
  $('hp-num').textContent=`${state.player.hp} / 100`;$('hp-bar').style.width=state.player.hp+'%';$('silver').textContent=state.player.silver;
- const q=questStatus(state);$('quest-title').textContent=q.title;$('quest-desc').textContent=q.description;$('quest-progress').textContent=q.progress;
+ const q=questStatus(state);$('quest-title').textContent=q.title;$('quest-desc').textContent=q.description+(objective?`　下一步：${objective.label}`:'');$('quest-progress').textContent=q.progress;
  const inv=$('inventory');inv.replaceChildren();for(const item of state.inventory){const b=document.createElement('span');b.className='item';b.textContent=item;inv.appendChild(b);}if(!state.inventory.length){const n=document.createElement('span');n.className='empty';n.textContent='暂无物品';inv.appendChild(n);}
  const j=$('journal');j.replaceChildren();for(const note of state.journal){const p=document.createElement('p');p.textContent=note;j.appendChild(p);}
 }
