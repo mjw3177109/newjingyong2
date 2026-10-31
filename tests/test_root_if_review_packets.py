@@ -1,3 +1,4 @@
+import copy
 import unittest
 
 from tools.build_root_if_review_packets import build_packets
@@ -63,6 +64,33 @@ class ReviewPacketsTests(unittest.TestCase):
         self.assertEqual(result['syntactically_reachable_if_count'], 0)
         self.assertEqual(result['syntactically_unreachable_if_count'], 1)
         self.assertEqual(result['selected_syntactically_reachable_count'], 0)
+        self.assertEqual(result['verified_story_events'], 0)
+
+    def test_reachable_if_wins_limited_queue_over_unreachable_high_score(self):
+        rows = fixture()
+        # The first IF has every optional hint, but is syntactically unreachable.
+        rows[3]['candidates'][0]['if_successors'][0]['if_record_reachable'] = False
+        for report in rows:
+            second = copy.deepcopy(report['candidates'][0])
+            second['action_tag_ordinal'] = 3
+            second['root_frame'] = 9
+            second['action_sha256'] = 'c' * 64
+            if 'same_frame_sprite_transition' in second:
+                second['same_frame_sprite_transition'] = False
+            if 'if_successors' in second:
+                second['if_successors'][0]['if_record_reachable'] = True
+            report['candidates'].append(second)
+        rows[0]['selected_candidate_count'] = 2
+        for report in rows[1:]:
+            report['selected_action_tags'] = 2
+        rows[1]['if_edges'] = 2
+        rows[1]['total_branch_edges'] = 4
+        result = build_packets(*rows, limit=1)
+        self.assertEqual(result['total_if_review_packets'], 2)
+        self.assertEqual(result['syntactically_unreachable_if_count'], 1)
+        self.assertEqual(result['syntactically_reachable_if_count'], 1)
+        self.assertEqual(result['manual_review_queue'][0]['action_tag_ordinal'], 3)
+        self.assertEqual(result['selected_syntactically_reachable_count'], 1)
         self.assertEqual(result['verified_story_events'], 0)
 
     def test_rejects_source_mismatch(self):
