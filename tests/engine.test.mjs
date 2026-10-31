@@ -194,3 +194,28 @@ test('combat potion reports actual capped healing rather than nominal amount',()
  assert.ok(s.journal.some(line=>line.includes('恢复 8 点气血')));
  assert.deepEqual(parseSave(JSON.stringify(s)),s);
 });
+
+test('save parser rejects tampered trial maximum HP and over-healed enemy',()=>{
+ const s=at(initialState(),19,8);
+ for(const combat of [
+  {enemyHp:29,enemyMaxHp:29,guard:false},
+  {enemyHp:27,enemyMaxHp:27,guard:false},
+  {enemyHp:29,enemyMaxHp:28,guard:false}
+ ])assert.equal(parseSave(JSON.stringify({...s,combat})),null);
+});
+test('save parser rejects simultaneous battle and dialogue',()=>{
+ const s=at(initialState(),19,8);
+ s.combat={enemyHp:28,enemyMaxHp:28,guard:false};
+ s.dialog='不能在战斗中保持对话';
+ assert.equal(parseSave(JSON.stringify(s)),null);
+});
+test('legitimate guarded low-HP battle loads but zero-HP checkpoint does not',()=>{
+ const s=at(initialState(),19,8);
+ s.player.hp=1;
+ s.combat={enemyHp:1,enemyMaxHp:28,guard:true};
+ assert.deepEqual(parseSave(JSON.stringify(s)),s);
+ s.player.hp=0;
+ assert.equal(parseSave(JSON.stringify(s)),null);
+ s.combat=null;
+ assert.equal(parseSave(JSON.stringify(s)),null);
+});
