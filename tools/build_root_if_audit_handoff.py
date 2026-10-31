@@ -5,6 +5,7 @@ This tool cannot verify story semantics. It never reads FFDec source or assets.
 The private reviewer must examine the actual script and runtime separately.
 """
 import argparse
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -55,6 +56,19 @@ def build_handoff(report):
                 or type(row.get('same_frame_sprite_transition')) is not bool
                 or not _offset(row.get('structural_priority'))):
             raise ValueError('invalid source coordinates')
+        # The upstream review ID is deterministic, not an arbitrary label.
+        # Recompute it here so altered source coordinates cannot silently
+        # inherit a different IF's private review or evidence trail.
+        identity = f"{swf}:{row['action_tag_ordinal']}:{action}:{row['if_source_offset']}"
+        expected_id = hashlib.sha256(identity.encode('ascii')).hexdigest()[:24]
+        if rid != expected_id:
+            raise ValueError('review ID does not match SWF source coordinates')
+        expected_priority = (8 if row['if_record_reachable'] else 0)
+        expected_priority += (4 if row['same_frame_sprite_transition'] else 0)
+        expected_priority += (2 if row.get('nearby_access_hints') else 0)
+        expected_priority += (1 if row['branch_target_offset'] != row['fallthrough_offset'] else 0)
+        if row['structural_priority'] != expected_priority:
+            raise ValueError('structural priority does not match source-free hints')
         if (row.get('review_status') != 'unverified'
                 or any(row.get(key) is not None for key in
                        ('trigger', 'effects', 'map_id', 'html5_event_id'))):
