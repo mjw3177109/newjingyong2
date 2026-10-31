@@ -52,6 +52,7 @@ export function battle(state,action){
   if(!['attack','guard','drink','flee'].includes(action))return s;
   if(action==='flee'){s.combat=null;addLog(s,'退出试炼，随时可以再次挑战。');return s;}
   if(action==='drink'){
+    if(s.player.hp>=s.player.maxHp){addLog(s,'气血已满，不必服药。');return s;}
     const at=s.inventory.indexOf('回春散');
     if(at<0){addLog(s,'行囊里没有回春散。');return s;}
     s.inventory.splice(at,1);s.player.hp=Math.min(s.player.maxHp,s.player.hp+30);addLog(s,'使用回春散，恢复 30 点气血（上限 100）。');
@@ -62,6 +63,18 @@ export function battle(state,action){
   const damage=s.combat.guard?3:6;s.player.hp=Math.max(0,s.player.hp-damage);s.combat.guard=false;
   addLog(s,`试炼者反击，气血减少 ${damage}。`);
   if(s.player.hp===0){s.player.hp=50;s.player.x=5;s.player.y=8;s.combat=null;addLog(s,'气血耗尽，被送回村口，恢复至 50 点。');}
+  return s;
+}
+// Original demo consumable only; not a recovered SWF item or mechanic.
+export function usePotion(state){
+  const s=copy(state);
+  if(s.combat||s.dialog||s.player.hp>=s.player.maxHp)return s;
+  const index=s.inventory.indexOf('回春散');
+  if(index<0)return s;
+  s.inventory.splice(index,1);
+  const healed=Math.min(30,s.player.maxHp-s.player.hp);
+  s.player.hp+=healed;
+  addLog(s,`行走时服用回春散，恢复 ${healed} 点气血。`);
   return s;
 }
 export function discardPotion(state){
