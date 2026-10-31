@@ -11,6 +11,33 @@ class ActionOpcodeTests(unittest.TestCase):
         self.assertEqual((counts['if'], counts['goto_frame'], counts['records']), (1, 1, 2))
         self.assertEqual(warnings, [])
 
+    def test_if_target_is_aligned_to_next_action(self):
+        # IF offset zero points to GotoFrame at byte 5.
+        data = bytes([0x9d, 2, 0, 0, 0, 0x81, 2, 0, 9, 0, 0])
+        counts, warnings = inspect_actions(data)
+        self.assertEqual(counts.get('branch_targets_on_record_boundary'), 1)
+        self.assertEqual(counts.get('branch_targets_inside_record', 0), 0)
+        self.assertEqual(warnings, [])
+
+    def test_backward_jump_and_end_marker_are_valid_targets(self):
+        # Jump at byte 3 ends at byte 8; signed -8 targets Push at byte 0.
+        backward = bytes([0x96, 0, 0, 0x99, 2, 0, 0xf8, 0xff, 0])
+        counts, warnings = inspect_actions(backward)
+        self.assertEqual(counts.get('branch_targets_on_record_boundary'), 1)
+        self.assertEqual(warnings, [])
+        # A zero-offset Jump may target the terminating ActionEnd opcode.
+        counts, warnings = inspect_actions(bytes([0x99, 2, 0, 0, 0, 0]))
+        self.assertEqual(counts.get('branch_targets_on_record_boundary'), 1)
+        self.assertEqual(warnings, [])
+
+    def test_branch_into_middle_of_record_is_counted_not_interpreted(self):
+        # Jump ends at byte 5; signed -2 targets an offset byte at index 3.
+        data = bytes([0x99, 2, 0, 0xfe, 0xff, 0])
+        counts, warnings = inspect_actions(data)
+        self.assertEqual(counts.get('branch_targets_inside_record'), 1)
+        self.assertEqual(counts.get('branch_targets_on_record_boundary', 0), 0)
+        self.assertEqual(warnings, [])  # Structural anomaly, not a decode failure.
+
     def test_nested_function_body_is_not_interpreted(self):
         # Payload of function opcode is opaque even if it contains IF bytes.
         data = bytes([0x9b, 4, 0, 0x9d, 0, 0, 0, 0])
