@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import unittest
 
 from tools.build_root_if_audit_handoff import build_handoff
@@ -8,6 +9,7 @@ ACTION = 'b' * 64
 
 
 def fixture():
+    rid = hashlib.sha256(f'{SHA}:2:{ACTION}:5'.encode('ascii')).hexdigest()[:24]
     return {
         'schema': 'swf-root-if-review-packets-v1',
         'source_swf_sha256': SHA,
@@ -16,12 +18,12 @@ def fixture():
         'manual_review_limit': 12,
         'verified_story_events': 0,
         'manual_review_queue': [{
-            'review_id': 'c' * 24,
+            'review_id': rid,
             'root_frame': 8, 'action_tag_ordinal': 2,
             'action_sha256': ACTION, 'if_source_offset': 5,
             'branch_target_offset': 12, 'fallthrough_offset': 9,
             'if_record_reachable': True, 'same_frame_sprite_transition': True,
-            'structural_priority': 7,
+            'structural_priority': 15,
             'nearby_access_hints': [{'offset': 2, 'opcode': 'get_variable',
                                     'records_before_if': 1}],
             'review_status': 'unverified', 'trigger': None, 'effects': None,
@@ -68,6 +70,34 @@ class AuditHandoffTests(unittest.TestCase):
         data = fixture()
         data['manual_review_queue'][0]['if_source_offset'] = True
         with self.assertRaises(ValueError):
+            build_handoff(data)
+
+    def test_rejects_relabelled_if_identity(self):
+        data = fixture()
+        data['manual_review_queue'][0]['review_id'] = 'c' * 24
+        with self.assertRaisesRegex(ValueError, 'review ID'):
+            build_handoff(data)
+
+    def test_rejects_relocated_if_with_old_review_id(self):
+        data = fixture()
+        data['manual_review_queue'][0]['if_source_offset'] = 6
+        with self.assertRaisesRegex(ValueError, 'review ID'):
+            build_handoff(data)
+
+    def test_rejects_modified_swf_fingerprint_with_old_review_id(self):
+        data = fixture()
+        data['source_swf_sha256'] = 'd' * 64
+        with self.assertRaisesRegex(ValueError, 'review ID'):
+            build_handoff(data)
+
+    def test_rejects_forged_structural_priority(self):
+        data = fixture()
+        data['manual_review_queue'][0]['structural_priority'] = 7
+        with self.assertRaisesRegex(ValueError, 'structural priority'):
+            build_handoff(data)
+        data = fixture()
+        data['manual_review_queue'][0]['if_record_reachable'] = False
+        with self.assertRaisesRegex(ValueError, 'structural priority'):
             build_handoff(data)
 
     def test_rejects_invalid_access_hints(self):
