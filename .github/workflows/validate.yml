@@ -17,6 +17,27 @@ jobs:
       - name: Check original illustration files
         run: |
           for file in hero elder merchant herb bandit; do test -s "assets/${file}.svg" || exit 1; done
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install isolated Chromium browser test runtime
+        run: |
+          python -m pip install playwright==1.55.0
+          python -m playwright install --with-deps chromium
+      - name: Exercise actual HTML5 game in headless Chromium
+        run: python tests/browser_smoke.py
+      - name: Upload original-demo browser screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: html5-browser-smoke-screenshot
+          path: reports/browser_smoke.png
+          if-no-files-found: ignore
   swf-inventory:
     runs-on: ubuntu-latest
     steps:
