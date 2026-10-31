@@ -114,7 +114,10 @@ def build_packets(queue, edges, access, cfg, limit=12):
             if packet_id in seen_ids:
                 raise ValueError('duplicate review packet')
             seen_ids.add(packet_id)
-            priority = (4 if candidate['same_frame_sprite_transition'] else 0)
+            # A syntactically unreachable IF should not displace a reachable one
+            # in the limited private-review queue. This is NOT runtime proof.
+            priority = (8 if successor['if_record_reachable'] else 0)
+            priority += (4 if candidate['same_frame_sprite_transition'] else 0)
             priority += (2 if sanitized else 0) + (1 if target != fallthrough else 0)
             packets.append({
                 'review_id': packet_id, 'root_frame': frame,
@@ -136,6 +139,9 @@ def build_packets(queue, edges, access, cfg, limit=12):
         'schema': 'swf-root-if-review-packets-v1', 'source_swf_sha256': sha,
         'selected_action_tags': len(candidates), 'total_if_review_packets': len(packets),
         'manual_review_limit': limit, 'manual_review_queue': ordered[:limit],
+        'syntactically_reachable_if_count': sum(p['if_record_reachable'] for p in packets),
+        'syntactically_unreachable_if_count': sum(not p['if_record_reachable'] for p in packets),
+        'selected_syntactically_reachable_count': sum(p['if_record_reachable'] for p in ordered[:limit]),
         'verified_story_events': 0,
         'interpretation': 'Structural review targets only. Null semantics are intentional; no original story, map, runtime behavior or rights verified.',
     }
