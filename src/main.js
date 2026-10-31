@@ -1,7 +1,7 @@
 import {initialState,move,interact,battle,questStatus,parseSave,equipWeapon,attackDamage,DEMO_SWORD,discardPotion,usePotion} from './engine.js';
 import {ACTORS,WIDTH,HEIGHT,TILE,BLOCKS} from './demo-data.js';
 import {commandForKey} from './controls.js';
-import {nextObjective,pathToObjective} from './objectives.js';
+import {nextObjective,pathToObjective,stepTowardObjective} from './objectives.js';
 let state=initialState();
 const $=id=>document.getElementById(id), canvas=$('game'),ctx=canvas.getContext('2d');
 const images={};
@@ -23,11 +23,13 @@ document.addEventListener('keydown',e=>{
  if(command.kind==='move')doMove(command.dx,command.dy);
  else if(command.kind==='interact')action();
  else if(command.kind==='potion')update(usePotion(state));
+ else if(command.kind==='route-step')update(stepTowardObjective(state));
  else if(command.kind==='combat')update(battle(state,command.action));
  else if(command.kind==='inventory')toast(`背包：${state.inventory.join('、')||'空空如也'}`);
  else if(command.kind==='quest')toast(questStatus(state).progress);
 });
 $('interact').onclick=action;$('save').onclick=save;$('load').onclick=load;
+$('step-route').onclick=()=>update(stepTowardObjective(state));
 $('equip-weapon').onclick=()=>update(equipWeapon(state));
 $('discard-potion').onclick=()=>update(discardPotion(state));
 $('use-potion').onclick=()=>update(usePotion(state));
@@ -102,6 +104,7 @@ function paint(){
  equip.textContent=state.equipment.weapon===DEMO_SWORD?'卸下竹纹短剑':'装备竹纹短剑（攻击 +4）';
  $('hp-num').textContent=`${state.player.hp} / 100`;$('hp-bar').style.width=state.player.hp+'%';$('silver').textContent=state.player.silver;
  const q=questStatus(state);
+ $('step-route').disabled=!!state.dialog||!!state.combat||!route?.length;
  const routeHint=!objective?'':route===null?'（路径暂不可达）':route.length===0?'（已靠近，按 E 交互）':`（沿金色路标 ${route.length} 步）`;
  $('quest-title').textContent=q.title;$('quest-desc').textContent=q.description+(objective?`　下一步：${objective.label}${routeHint}`:'');$('quest-progress').textContent=q.progress;
  const inv=$('inventory');inv.replaceChildren();for(const item of state.inventory){const b=document.createElement('span');b.className='item';b.textContent=item;inv.appendChild(b);}if(!state.inventory.length){const n=document.createElement('span');n.className='empty';n.textContent='暂无物品';inv.appendChild(n);}
