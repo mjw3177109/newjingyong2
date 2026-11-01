@@ -13,6 +13,10 @@ export function initialState() {
     equipment:{weapon:null},combat:null,dialog:'',journal:['抵达青竹村，江湖之路由此开始。']};
 }
 const copy = s => structuredClone(s);
+// Imported JSON must match the demo save schema exactly: extra keys are not game state.
+const exactKeys = (value, keys) => value && typeof value === 'object' &&
+  !Array.isArray(value) && Object.keys(value).length === keys.length &&
+  keys.every(key => Object.hasOwn(value, key));
 const dist = (a,b) => Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 const addLog = (s,msg) => {s.journal.unshift(msg);s.journal=s.journal.slice(0,6);};
 export function move(state,dx,dy) {
@@ -113,7 +117,10 @@ export function parseSave(raw){
     // Completed V1 saves get the same demo reward; no original SWF story is inferred.
     if(s.quest==='completed' && s.inventory.length<65)s.inventory.push(DEMO_SWORD);
   }
-  if(s.version!==SAVE_VERSION || !s.player || typeof s.player!=='object' || Array.isArray(s.player))return null;
+  if(s.version!==SAVE_VERSION ||
+     !exactKeys(s,['version','player','quest','inventory','flags','equipment','combat','dialog','journal']) ||
+     !exactKeys(s.player,['x','y','hp','maxHp','silver']) ||
+     !exactKeys(s.flags,['herbTaken','banditBeaten']))return null;
   const p=s.player;
   if(!Number.isInteger(p.x)||!Number.isInteger(p.y)||p.x<0||p.x>=WIDTH||p.y<0||p.y>=HEIGHT||BLOCKS.has(`${p.x},${p.y}`))return null;
   if(p.maxHp!==100||!Number.isInteger(p.hp)||p.hp<1||p.hp>p.maxHp)return null;
@@ -139,7 +146,8 @@ export function parseSave(raw){
   if(typeof s.dialog!=='string'||s.dialog.length>500)return null;
   if(s.combat!==null){
     const c=s.combat;
-    if(s.dialog || !c || c.enemyMaxHp!==DEMO_ENEMY_MAX_HP ||
+    if(s.dialog || !exactKeys(c,['enemyHp','enemyMaxHp','guard']) ||
+       c.enemyMaxHp!==DEMO_ENEMY_MAX_HP ||
        !Number.isInteger(c.enemyHp)||c.enemyHp<1||c.enemyHp>DEMO_ENEMY_MAX_HP||
        typeof c.guard!=='boolean'||s.flags.banditBeaten||dist(p,ACTORS.bandit)!==1)return null;
   }
