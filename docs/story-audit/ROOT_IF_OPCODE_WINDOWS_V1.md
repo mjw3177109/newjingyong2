@@ -30,3 +30,9 @@ GitHub Actions 的 `swf-inventory` 作业将上传 `swf-root-if-opcode-windows` 
 新增从原始 AVM1 记录边界独立计算的 `if_incoming_syntactic_edges`（仅源字节偏移与 branch/fallthrough 类型）、`if_incoming_syntactic_source_count`、`if_has_multiple_syntactic_predecessors`、`if_has_backward_or_self_incoming_branch`、`if_is_action_entry`、`if_has_opaque_immediate_predecessor`。这些字段用于提醒审查者：即使前驱操作码窗口看起来连续，IF 仍可能是多路汇合点或循环入口，不能将某个线性前驱当作唯一条件来源。
 
 该图只表示**语法边**，包含可能不可达的分支；不透明控制、函数体、运行时跳转可能引入图中未覆盖的行为。**不导出 Push 内容、变量名、源码或媒体，也不证明条件、地图、剧情或运行时可达性**。新增 3 项合成字节码测试（分支汇合、自环、普通直线入口），原作已核实剧情事件仍为 0。
+
+## IF 入边的结构可达性筛选（2026-11-01 增量）
+
+先前的 `if_incoming_syntactic_source_count` 会包含静态不可达的前驱：例如无条件 Jump 跳过的记录仍可能在字节排列上紧邻 IF，导致审查者误认为存在两条有效来源。现在独立从原始 DoAction 首记录遍历本地语法后继，增加 `if_incoming_reachable_syntactic_source_count`、`if_incoming_unreachable_syntactic_source_count`、`if_incoming_unreachable_syntactic_source_offsets` 和 `if_has_multiple_reachable_syntactic_predecessors`。保留旧字段，避免破坏已有审查产物；新增合成回归覆盖不可达的线性前驱、两条可达前驱和自环。
+
+**限制：** 这只是忽略不透明控制语义的静态图遍历，不是运行时执行证据。被标为结构不可达的记录也可能通过 AVM1 不透明指令或外部行为到达。不能据此确认剧情、地图、任务、人物或战斗数值；已核实原作事件仍为 0。
