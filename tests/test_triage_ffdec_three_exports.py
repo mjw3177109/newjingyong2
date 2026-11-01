@@ -63,6 +63,36 @@ class ThreeExportTriageTests(unittest.TestCase):
         self.assertEqual(report['paths_with_any_difference'], 3)
         self.assertEqual(len(report['changed_path_sha256_examples']), 1)
         self.assertTrue(report['examples_truncated'])
+        self.assertEqual(len(report['changed_path_variation_examples']), 1)
+        self.assertEqual(sum(report['path_variation_patterns'].values()), 3)
+
+    def test_whole_exports_all_distinct_can_have_per_path_repeated_pairs(self):
+        a = index({'private/one.as': 'v1', 'private/two.as': 'v1'})
+        b = index({'private/one.as': 'v2', 'private/two.as': 'v1'})
+        c = index({'private/one.as': 'v1', 'private/two.as': 'v2'})
+        report = triage(a, b, c)
+        self.assertEqual(report['whole_export_pattern'], 'all_distinct')
+        self.assertEqual(report['path_variation_patterns']['a_c_equal'], 1)
+        self.assertEqual(report['path_variation_patterns']['a_b_equal'], 1)
+        self.assertEqual(report['content_path_variation_patterns'],
+                         report['path_variation_patterns'])
+        self.assertEqual(sum(report['membership_path_variation_patterns'].values()), 0)
+        self.assertEqual(report['paths_with_any_difference'],
+                         sum(report['path_variation_patterns'].values()))
+        self.assertNotIn('private/', json.dumps(report))
+
+    def test_membership_and_content_patterns_are_separated(self):
+        a = index({'private/stable.as': 'A'})
+        b = index({'private/stable.as': 'B', 'private/only-b.as': 'B'})
+        c = index({'private/stable.as': 'A'})
+        report = triage(a, b, c)
+        self.assertEqual(report['path_variation_patterns']['a_c_equal'], 2)
+        self.assertEqual(report['content_path_variation_patterns']['a_c_equal'], 1)
+        self.assertEqual(report['membership_path_variation_patterns']['a_c_equal'], 1)
+        self.assertEqual({e['difference_kind'] for e in report['changed_path_variation_examples']},
+                         {'content', 'membership'})
+        self.assertTrue(all(len(e['path_sha256']) == 64 for e in
+                            report['changed_path_variation_examples']))
 
     def test_reject_mixed_swf_and_tampered_index(self):
         with self.assertRaisesRegex(ValueError, 'different source SWF'):

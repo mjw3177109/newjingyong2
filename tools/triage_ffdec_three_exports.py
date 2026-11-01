@@ -14,6 +14,19 @@ else:
     from compare_ffdec_exports import _index
 
 
+def _variation_pattern(a, b, c):
+    """Classify equality of three observations without choosing an authority."""
+    if a == b == c:
+        return 'all_equal'
+    if a == b:
+        return 'a_b_equal'
+    if a == c:
+        return 'a_c_equal'
+    if b == c:
+        return 'b_c_equal'
+    return 'all_distinct'
+
+
 def triage(index_a, index_b, index_c, limit=20):
     if type(limit) is not int or not 1 <= limit <= 100:
         raise ValueError('Invalid triage sample limit')
@@ -24,23 +37,29 @@ def triage(index_a, index_b, index_c, limit=20):
     paths = [item[1] for item in parsed]
     manifests = [item[2] for item in parsed]
     a, b, c = paths
-    equal_ab, equal_ac, equal_bc = a == b, a == c, b == c
-    if equal_ab and equal_ac:
-        pattern, outlier = 'all_equal', None
-    elif equal_ab:
-        pattern, outlier = 'a_b_equal', 'c'
-    elif equal_ac:
-        pattern, outlier = 'a_c_equal', 'b'
-    elif equal_bc:
-        pattern, outlier = 'b_c_equal', 'a'
-    else:
-        pattern, outlier = 'all_distinct', None
+    pattern = _variation_pattern(a, b, c)
+    outlier = {'a_b_equal': 'c', 'a_c_equal': 'b',
+               'b_c_equal': 'a'}.get(pattern)
 
     union = set(a) | set(b) | set(c)
     differing = sorted(p for p in union if len({x.get(p) for x in paths}) > 1)
     membership = sum(len({p in x for x in paths}) > 1 for p in union)
     content = sum(all(p in x for x in paths)
                   and len({x[p] for x in paths}) > 1 for p in union)
+    patterns = ('a_b_equal', 'a_c_equal', 'b_c_equal', 'all_distinct')
+    variation = {name: 0 for name in patterns}
+    content_variation = {name: 0 for name in patterns}
+    membership_variation = {name: 0 for name in patterns}
+    examples = []
+    for path in differing:
+        kind = 'content' if all(path in x for x in paths) else 'membership'
+        # Missing paths are represented by None, never by a fabricated hash.
+        local_pattern = _variation_pattern(*(run.get(path) for run in paths))
+        variation[local_pattern] += 1
+        (content_variation if kind == 'content' else membership_variation)[local_pattern] += 1
+        if len(examples) < limit:
+            examples.append({'path_sha256': path, 'variation_pattern': local_pattern,
+                             'difference_kind': kind})
     return {
         'schema_version': 1,
         'source_swf_sha256': parsed[0][0],
@@ -53,9 +72,13 @@ def triage(index_a, index_b, index_c, limit=20):
         'common_paths_with_content_difference': content,
         'paths_with_any_difference': len(differing),
         'changed_path_sha256_examples': differing[:limit],
+        'changed_path_variation_examples': examples,
+        'path_variation_patterns': variation,
+        'content_path_variation_patterns': content_variation,
+        'membership_path_variation_patterns': membership_variation,
         'examples_truncated': len(differing) > limit,
         'verified_story_event_count': 0,
-        'warning': ('An exact repeated pair is an observation, not a canonical '
+        'warning': ('Whole-export and per-path equality patterns are observations, not a canonical '
                     'export or root-cause diagnosis. Three matching exports '
                     'would not prove deterministic FFDec or story semantics. '
                     'No decompiled source, original paths or media included.'),
