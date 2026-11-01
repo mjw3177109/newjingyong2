@@ -1,11 +1,13 @@
 """Synthetic source-free checks: no original SWF content or story claims."""
 import copy
+import hashlib
 import unittest
 from tools.crosscheck_root_if_handoff import crosscheck
 
 
 def fixtures():
-    rid = 'a' * 24
+    swf, action = 'b' * 64, 'c' * 64
+    rid = hashlib.sha256(f'{swf}:2:{action}:15'.encode('ascii')).hexdigest()[:24]
     handoff = {
         'schema': 'swf-root-if-audit-handoff-v1', 'source_swf_sha256': 'b' * 64,
         'candidate_count': 1, 'verified_story_events': 0, 'ready_for_html5_mapping': 0,
@@ -71,6 +73,28 @@ class CrosscheckTests(unittest.TestCase):
         h, w = fixtures()
         h['entries'][0]['checks']['condition_confirmed'] = True
         with self.assertRaisesRegex(ValueError, 'attestations'):
+            crosscheck(h, w)
+
+    def test_rejects_action_fingerprint_or_review_identity_tampering(self):
+        h, w = fixtures()
+        h['entries'][0]['source_location']['action_sha256'] = 'd' * 64
+        with self.assertRaisesRegex(ValueError, 'review identity'):
+            crosscheck(h, w)
+        h, w = fixtures()
+        h['entries'][0]['source_location']['action_sha256'] = 'not-a-sha'
+        with self.assertRaisesRegex(ValueError, 'fingerprint'):
+            crosscheck(h, w)
+        h, w = fixtures()
+        changed_id = 'f' * 24
+        h['entries'][0]['review_id'] = changed_id
+        w['entries'][0]['review_id'] = changed_id
+        with self.assertRaisesRegex(ValueError, 'review identity'):
+            crosscheck(h, w)
+
+    def test_rejects_window_exceeding_declared_width(self):
+        h, w = fixtures()
+        w['window_width'] = 1
+        with self.assertRaisesRegex(ValueError, 'opcode'):
             crosscheck(h, w)
 
     def test_rejects_inconsistent_opcode_and_predecessor_counts(self):
