@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.index_root_if_opcode_windows import window_for_if, build_windows
+from tools.index_root_if_opcode_windows import window_for_if, build_windows, CLASSES
 
 
 def action_payload():
@@ -50,6 +50,14 @@ class IfOpcodeWindowTests(unittest.TestCase):
         self.assertFalse(result['has_branch_or_opaque_control'])
         self.assertNotIn('trigger', result)
         self.assertNotIn('condition', result)
+
+    def test_avm1_operator_family_classification(self):
+        # AVM1 And is 0x10; StringAdd is 0x21. Neither is comparison.
+        self.assertEqual(CLASSES[0x10], 'boolean_logic')
+        self.assertEqual(CLASSES[0x13], 'comparison')
+        self.assertEqual(CLASSES[0x21], 'arithmetic')
+        self.assertEqual(CLASSES[0x48], 'comparison')
+        self.assertEqual(CLASSES[0x49], 'comparison')
 
     def test_rejects_mismatched_target_reachability_and_non_if(self):
         packet = packets_for(tiny_swf(action_payload()), action_payload())['manual_review_queue'][0]
