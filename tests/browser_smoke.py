@@ -149,6 +149,20 @@ def main():
             output = ROOT / 'reports' / 'browser_smoke.png'
             output.parent.mkdir(parents=True, exist_ok=True)
             page.screenshot(path=str(output), full_page=True)
+            # Restart must not erase a completed run or local checkpoint when cancelled.
+            page.once('dialog', lambda dialog: dialog.dismiss())
+            page.locator('#new-game').click()
+            assert page.locator('#silver').inner_text() == '40'
+            assert page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).quest") == 'completed'
+            # Confirmed restart clears both current run and this browser's checkpoint.
+            page.once('dialog', lambda dialog: dialog.accept())
+            page.locator('#new-game').click()
+            assert page.locator('#silver').inner_text() == '10'
+            assert page.locator('#attack-num').inner_text() == '12'
+            assert page.evaluate("localStorage.getItem('jianghu-q-save-v1')") is None
+            page.reload(wait_until='networkidle')
+            page.locator('#load').click()
+            assert '没有有效的存档' in page.locator('#toast').inner_text()
             print('PASS: Chromium canvas, complete original-demo playthrough, equipment, local save, JSON export/import, and import persistence boundary')
             fresh.close()
             context.close()

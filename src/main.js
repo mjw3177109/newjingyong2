@@ -15,6 +15,13 @@ function update(next){state=next;paint();}
 function save(){try{localStorage.setItem(keyName,JSON.stringify(state));toast('进度已存入本机浏览器');}catch{toast('浏览器存储不可用');}}
 function load(){let raw;try{raw=localStorage.getItem(keyName);}catch{toast('浏览器存储不可用');return;}
  const parsed=raw&&parseSave(raw);if(!parsed){toast('没有有效的存档');return;}update(parsed);toast('进度读取成功');}
+// Reset both in-memory progress and this browser's saved checkpoint only after consent.
+// If storage is blocked, keep the current run rather than leaving a stale save.
+function newGame(){
+ if(!window.confirm('确定重新开始原创试玩并清除本机存档？此操作无法撤销。'))return;
+ try{localStorage.removeItem(keyName);}catch{toast('无法清除本机存档，未重新开始');return;}
+ update(initialState());toast('已重新开始原创试玩');
+}
 function doMove(dx,dy){update(move(state,dx,dy));}
 function action(){update(interact(state));}
 document.addEventListener('keydown',e=>{
@@ -41,6 +48,7 @@ function exportSave() {
  } catch { toast('存档导出失败'); }
 }
 $('interact').onclick=action;$('save').onclick=save;$('load').onclick=load;
+$('new-game').onclick=newGame;
 $('export-save').onclick=exportSave;
 $('import-save').onclick=()=>$('import-save-file').click();
 $('import-save-file').onchange=async e=>{
