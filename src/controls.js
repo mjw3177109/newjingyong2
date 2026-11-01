@@ -9,9 +9,16 @@ const INTERACTIVE_SELECTOR = 'button, input, textarea, select, a, [contenteditab
 export function commandForKey(event, inCombat = false) {
   if (!event || event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return null;
   const target = event.target;
-  if (target && (target.isContentEditable ||
-      ['BUTTON', 'INPUT', 'TEXTAREA', 'SELECT', 'A'].includes(String(target.tagName || '').toUpperCase()) ||
-      (typeof target.closest === 'function' && target.closest(INTERACTIVE_SELECTOR)))) return null;
+  const tag = String(target?.tagName || '').toUpperCase();
+  const interactive = typeof target?.closest === 'function' ? target.closest(INTERACTIVE_SELECTOR) : null;
+  // A clicked game button retains keyboard focus. Allow directional keys and
+  // combat digits there, but leave Enter/Space and other button actions native.
+  // Never intercept typing, editable content, links or custom interactive widgets.
+  const gameButtonFocus = tag === 'BUTTON' ||
+    String(interactive?.tagName || '').toUpperCase() === 'BUTTON';
+  if (target?.isContentEditable ||
+      ['INPUT', 'TEXTAREA', 'SELECT', 'A'].includes(tag) ||
+      (interactive && !gameButtonFocus)) return null;
   if (typeof event.key !== 'string') return null;
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
   if (inCombat) {
@@ -23,6 +30,7 @@ export function commandForKey(event, inCombat = false) {
     const [dx, dy] = DIRECTIONS[key];
     return {kind: 'move', dx, dy};
   }
+  if (gameButtonFocus) return null;
   // Holding an action key must not close a dialogue and immediately retrigger it.
   if (event.repeat) return null;
   if (key === 'e' || key === 'Enter' || key === ' ') return {kind: 'interact'};
