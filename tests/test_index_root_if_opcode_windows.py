@@ -6,6 +6,8 @@ import unittest
 from pathlib import Path
 
 from tools.index_root_if_opcode_windows import window_for_if, build_windows, CLASSES
+from tools.index_root_conditional_edges import branch_edges
+from tools.index_root_control_flow import local_graph
 
 
 def action_payload():
@@ -40,6 +42,17 @@ def packets_for(raw, action):
     return report
 
 
+def packet_for_if(action, source):
+    edges = branch_edges(action)
+    edge = next(e for e in edges if e['source_offset'] == source and e['opcode'] == 'if')
+    succ = next(s for s in local_graph(action, edges)['if_successors']
+                if s['if_source_offset'] == source)
+    return {'review_id': 'a' * 24, 'root_frame': 1, 'action_tag_ordinal': 1,
+            'if_source_offset': source, 'branch_target_offset': edge['target_offset'],
+            'fallthrough_offset': succ['fallthrough_offset'],
+            'if_record_reachable': succ['if_record_reachable']}
+
+
 class IfOpcodeWindowTests(unittest.TestCase):
     def test_linear_window_has_no_push_operand_or_semantic_claim(self):
         packet = packets_for(tiny_swf(action_payload()), action_payload())['manual_review_queue'][0]
@@ -47,9 +60,42 @@ class IfOpcodeWindowTests(unittest.TestCase):
         self.assertEqual(result['preceding_opcode_classes'], ['push_opaque', 'comparison'])
         self.assertEqual(result['preceding_record_offsets'], [0, 4])
         self.assertEqual(result['comparison_opcode_count'], 1)
+        self.assertEqual(result['straight_line_preceding_record_offsets'], [0, 4])
+        self.assertFalse(result['straight_line_boundary_limited'])
         self.assertFalse(result['has_branch_or_opaque_control'])
         self.assertNotIn('trigger', result)
         self.assertNotIn('condition', result)
+
+    def test_jump_target_starts_new_straight_line_suffix(self):
+        # Jump at offset 4 lands on comparison at 13; the preceding Push at 9
+        # is not a straight-line predecessor of the IF at 14.
+        action = (b'\\x96\\x01\\x00\\x02' + b'\\x99\\x02\\x00\\x04\\x00'
+                  + b'\\x96\\x01\\x00\\x02' + b'\\x0e'
+                  + b'\\x9d\\x02\\x00\\x00\\x00' + b'\\x00')
+        result = window_for_if(action, packet_for_if(action, 14))
+        self.assertEqual(result['preceding_record_offsets'], [0, 4, 9, 13])
+        self.assertEqual(result['straight_line_preceding_record_offsets'], [13])
+        self.assertEqual(result['straight_line_preceding_opcode_classes'], ['comparison'])
+        self.assertTrue(result['straight_line_boundary_limited'])
+
+    def test_opaque_control_bounds_preceding_suffix(self):
+        # WaitForFrame has opaque control behavior; never stitch the earlier
+        # Push into a putative condition across that opcode.
+        action = (b'\\x96\\x01\\x00\\x02' + b'\\x8a\\x03\\x00\\x00\\x00\\x00'
+                  + b'\\x96\\x01\\x00\\x02' + b'\\x0e'
+                  + b'\\x9d\\x02\\x00\\x00\\x00' + b'\\x00')
+        result = window_for_if(action, packet_for_if(action, 15))
+        self.assertEqual(result['preceding_record_offsets'], [0, 4, 10, 14])
+        self.assertEqual(result['straight_line_preceding_record_offsets'], [10, 14])
+        self.assertTrue(result['straight_line_boundary_limited'])
+
+    def test_if_at_branch_target_has_empty_straight_line_predecessors(self):
+        action = (b'\\x99\\x02\\x00\\x04\\x00' + b'\\x96\\x01\\x00\\x02'
+                  + b'\\x9d\\x02\\x00\\x00\\x00' + b'\\x00')
+        result = window_for_if(action, packet_for_if(action, 9))
+        self.assertEqual(result['preceding_record_offsets'], [0, 5])
+        self.assertEqual(result['straight_line_preceding_record_offsets'], [])
+        self.assertTrue(result['straight_line_boundary_limited'])
 
     def test_avm1_operator_family_classification(self):
         # AVM1 And is 0x10; StringAdd is 0x21. Neither is comparison.
