@@ -81,9 +81,9 @@ class IfOpcodeWindowTests(unittest.TestCase):
     def test_if_incoming_edges_distinguish_branch_join_from_fallthrough(self):
         # Jump at 4 targets IF at 13; linear Push at 9 is unreachable,
         # but remains a syntactic fallthrough predecessor (not execution proof).
-        action = (b'\\x96\\x01\\x00\\x02' + b'\\x99\\x02\\x00\\x04\\x00'
-                  + b'\\x96\\x01\\x00\\x02'
-                  + b'\\x9d\\x02\\x00\\x00\\x00' + b'\\x00')
+        action = (b'\x96\x01\x00\x02' + b'\x99\x02\x00\x04\x00'
+                  + b'\x96\x01\x00\x02'
+                  + b'\x9d\x02\x00\x00\x00' + b'\x00')
         result = window_for_if(action, packet_for_if(action, 13))
         self.assertEqual(result['if_incoming_syntactic_edges'], [
             {'source_offset': 4, 'edge_kind': 'branch'},
@@ -94,7 +94,7 @@ class IfOpcodeWindowTests(unittest.TestCase):
         self.assertFalse(result['if_has_backward_or_self_incoming_branch'])
 
     def test_if_self_loop_reports_backward_edge_and_entry(self):
-        action = b'\\x9d\\x02\\x00\\xfb\\xff\\x00'
+        action = b'\x9d\x02\x00\xfb\xff\x00'
         result = window_for_if(action, packet_for_if(action, 0))
         self.assertEqual(result['if_incoming_syntactic_edges'], [
             {'source_offset': 0, 'edge_kind': 'branch'}])
