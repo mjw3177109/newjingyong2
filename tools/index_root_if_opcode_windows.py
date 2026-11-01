@@ -15,12 +15,12 @@ try:
     from tools.index_swf_sprite_timeline import load_swf, iter_tags
     from tools.index_root_state_access import action_records
     from tools.index_root_conditional_edges import branch_edges
-    from tools.index_root_control_flow import local_graph
+    from tools.index_root_control_flow import local_graph, OPAQUE_CONTROL, TERMINATORS
 except ModuleNotFoundError:
     from index_swf_sprite_timeline import load_swf, iter_tags
     from index_root_state_access import action_records
     from index_root_conditional_edges import branch_edges
-    from index_root_control_flow import local_graph
+    from index_root_control_flow import local_graph, OPAQUE_CONTROL, TERMINATORS
 
 HEX64 = re.compile(r'^[0-9a-f]{64}$')
 HEX24 = re.compile(r'^[0-9a-f]{24}$')
@@ -44,6 +44,27 @@ CLASSES = {
     0x9B: 'opaque_control', 0x8E: 'opaque_control',
     0x3D: 'call', 0x52: 'call', 0x53: 'call',
 }
+
+
+def straight_line_suffix(records, edges, if_index, width):
+    """Conservative preceding suffix bounded by branch and opaque-control leaders.
+
+    This is not data-flow reconstruction: a straight-line bytecode suffix does
+    not prove execution, stack provenance, or the IF's runtime predicate.
+    """
+    if not records:
+        return []
+    positions = {pos for pos, _ in records}
+    leaders = {records[0][0]}
+    for i, (_, opcode) in enumerate(records[:-1]):
+        if opcode in (0x99, 0x9D) or opcode in TERMINATORS or opcode in OPAQUE_CONTROL:
+            leaders.add(records[i + 1][0])
+    for edge in edges:
+        if edge['target_offset'] in positions:
+            leaders.add(edge['target_offset'])
+    start = max(pos for pos in leaders if pos <= records[if_index][0])
+    return [(pos, opcode) for pos, opcode in records[max(0, if_index - width):if_index]
+            if pos >= start]
 
 
 def window_for_if(payload, packet, width=12):
@@ -71,6 +92,7 @@ def window_for_if(payload, packet, width=12):
         raise ValueError('packet branch or reachability differs from raw SWF')
     preceding = records[max(0, idx - width):idx]
     classes = [CLASSES.get(op, 'other') for _, op in preceding]
+    safe = straight_line_suffix(records, edges, idx, width)
     return {
         'review_id': packet['review_id'],
         'root_frame': packet['root_frame'],
@@ -79,6 +101,10 @@ def window_for_if(payload, packet, width=12):
         'preceding_record_count': len(preceding),
         'preceding_opcode_classes': classes,
         'preceding_record_offsets': [pos for pos, _ in preceding],
+        'straight_line_preceding_record_count': len(safe),
+        'straight_line_preceding_record_offsets': [pos for pos, _ in safe],
+        'straight_line_preceding_opcode_classes': [CLASSES.get(op, 'other') for _, op in safe],
+        'straight_line_boundary_limited': len(safe) < len(preceding),
         'comparison_opcode_count': classes.count('comparison'),
         'has_branch_or_opaque_control': any(x in ('branch', 'opaque_control') for x in classes),
         'review_status': 'unverified',
@@ -140,7 +166,7 @@ def build_windows(path, packets, width=12):
         'window_width': width,
         'entries': [observed[p['review_id']] for p in selected],
         'verified_story_events': 0,
-        'interpretation': 'Linear preceding top-level opcode classes only, not a reconstructed IF condition, expression, execution path, story event, or rights evidence. Push operands, identifiers, scripts and media omitted.',
+        'interpretation': 'Linear preceding and conservatively bounded straight-line top-level opcode classes only, not a reconstructed IF condition, expression, execution path, story event, or rights evidence. Push operands, identifiers, scripts and media omitted.',
     }
 
 
