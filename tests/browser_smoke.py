@@ -73,7 +73,8 @@ def main():
             assert page.evaluate("document.activeElement.id") == 'interact'
             page.keyboard.press('e')
             assert '清心草' in page.locator('#quest-progress').inner_text()
-            page.keyboard.press('e')  # dismiss dialogue without activating focused button
+            page.keyboard.press('Escape')  # dismiss dialogue without activating focused button
+            assert not page.locator('#dialog').is_visible()
             walk_to_objective(page)
             page.locator('#interact').click()
             assert '清心草' in page.locator('#inventory').inner_text()
@@ -81,6 +82,8 @@ def main():
             walk_to_objective(page)
             page.locator('#interact').click()
             assert page.locator('#combat').is_visible()
+            page.keyboard.press('Escape')
+            assert page.locator('#combat').is_visible(), 'Escape must not silently abandon a battle'
             for _ in range(3):
                 page.locator('#attack').click()
             assert not page.locator('#combat').is_visible()
