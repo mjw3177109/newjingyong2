@@ -4,6 +4,7 @@
 Structural consistency only. Never imports decompiled scripts, operands, art or audio.
 """
 import argparse
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -56,6 +57,19 @@ def crosscheck(handoff, windows):
         if not isinstance(rid, str) or not HEX24.fullmatch(rid) or rid in seen or rid not in by_id:
             raise ValueError('handoff candidate identity mismatch')
         seen.add(rid)
+        # Bind the anonymous review ID to the actual SWF and action bytes.
+        # Otherwise a changed action hash could inherit another IF's audit.
+        action_sha = location.get('action_sha256') if isinstance(location, dict) else None
+        ordinal = location.get('action_tag_ordinal') if isinstance(location, dict) else None
+        offset = location.get('if_source_offset') if isinstance(location, dict) else None
+        if (not isinstance(action_sha, str) or not HEX64.fullmatch(action_sha)
+                or type(ordinal) is not int or ordinal < 1
+                or type(offset) is not int or offset < 0):
+            raise ValueError('invalid action fingerprint or IF identity coordinates')
+        expected_id = hashlib.sha256(
+            f'{swf}:{ordinal}:{action_sha}:{offset}'.encode('ascii')).hexdigest()[:24]
+        if rid != expected_id:
+            raise ValueError('review identity does not match source action fingerprint')
         if (row.get('review_status') != 'unverified' or row.get('html5_event_id') is not None
                 or not isinstance(location, dict)):
             raise ValueError('handoff contains semantic claims')
@@ -69,7 +83,8 @@ def crosscheck(handoff, windows):
                     or window.get(key) != location[key]):
                 raise ValueError('raw SWF window/source coordinate mismatch')
         classes = window.get('straight_line_preceding_opcode_classes')
-        if (not isinstance(classes, list) or len(classes) != _count(window.get('straight_line_preceding_record_count'))
+        if (not isinstance(classes, list) or len(classes) > windows['window_width']
+                or len(classes) != _count(window.get('straight_line_preceding_record_count'))
                 or any(not isinstance(value, str) for value in classes)):
             raise ValueError('invalid bounded opcode classes')
         incoming = _count(window.get('if_incoming_reachable_syntactic_source_count'))
