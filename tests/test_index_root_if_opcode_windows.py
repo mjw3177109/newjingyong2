@@ -90,8 +90,23 @@ class IfOpcodeWindowTests(unittest.TestCase):
             {'source_offset': 9, 'edge_kind': 'fallthrough'}])
         self.assertEqual(result['if_incoming_syntactic_source_count'], 2)
         self.assertTrue(result['if_has_multiple_syntactic_predecessors'])
+        self.assertEqual(result['if_incoming_reachable_syntactic_source_count'], 1)
+        self.assertEqual(result['if_incoming_unreachable_syntactic_source_count'], 1)
+        self.assertEqual(result['if_incoming_unreachable_syntactic_source_offsets'], [9])
+        self.assertFalse(result['if_has_multiple_reachable_syntactic_predecessors'])
         self.assertEqual(result['straight_line_preceding_record_offsets'], [])
         self.assertFalse(result['if_has_backward_or_self_incoming_branch'])
+
+    def test_if_join_with_two_reachable_syntactic_predecessors(self):
+        # IF at 0 branches to IF at 9 or falls through the Push at 5.
+        # Both incoming source records are syntactically reachable.
+        action = (b'\x9d\x02\x00\x04\x00' + b'\x96\x01\x00\x02'
+                  + b'\x9d\x02\x00\x00\x00' + b'\x00')
+        result = window_for_if(action, packet_for_if(action, 9))
+        self.assertEqual(result['if_incoming_reachable_syntactic_source_count'], 2)
+        self.assertEqual(result['if_incoming_unreachable_syntactic_source_count'], 0)
+        self.assertEqual(result['if_incoming_unreachable_syntactic_source_offsets'], [])
+        self.assertTrue(result['if_has_multiple_reachable_syntactic_predecessors'])
 
     def test_if_self_loop_reports_backward_edge_and_entry(self):
         action = b'\x9d\x02\x00\xfb\xff\x00'
@@ -101,6 +116,8 @@ class IfOpcodeWindowTests(unittest.TestCase):
         self.assertTrue(result['if_has_backward_or_self_incoming_branch'])
         self.assertTrue(result['if_is_action_entry'])
         self.assertFalse(result['if_has_multiple_syntactic_predecessors'])
+        self.assertEqual(result['if_incoming_reachable_syntactic_source_count'], 1)
+        self.assertEqual(result['if_incoming_unreachable_syntactic_source_count'], 0)
 
     def test_if_simple_fallthrough_has_single_predecessor(self):
         result = window_for_if(action_payload(),
