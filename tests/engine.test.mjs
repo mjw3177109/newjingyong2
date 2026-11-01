@@ -256,7 +256,7 @@ test('completed quest status never claims a fixed silver payout at the cap',()=>
   s.inventory=['清心草'];s.player.silver=silver;s=interact(at(s,7,7));
   assert.equal(s.quest,'completed');
   assert.match(questStatus(s).progress,/已完成.*竹纹短剑/);
-  assert.doesNotMatch(questStatus(s).progress,/银两 \\+30/);
+  assert.equal(questStatus(s).progress.includes('银两 +30'),false);
   assert.deepEqual(parseSave(JSON.stringify(s)),s);
  }
 });
