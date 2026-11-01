@@ -248,3 +248,22 @@ test('quest reward cannot overflow the silver cap or corrupt a valid checkpoint'
   assert.deepEqual(parseSave(JSON.stringify(completed)),completed);
  }
 });
+
+// Imported files and local checkpoints may be user-edited. Keep the demo schema closed.
+test('save parser rejects unknown fields at every state nesting level',()=>{
+ const s=initialState();
+ const extraRoot={...s,source_event_id:'not-verified'};
+ const extraPlayer={...s,player:{...s.player,level:999}};
+ const extraFlags={...s,flags:{...s.flags,secretQuest:true}};
+ const fighting={...s,player:{...s.player,x:19,y:8},
+  combat:{enemyHp:28,enemyMaxHp:28,guard:false,instantWin:true}};
+ for(const changed of [extraRoot,extraPlayer,extraFlags,fighting])
+  assert.equal(parseSave(JSON.stringify(changed)),null);
+ assert.deepEqual(parseSave(JSON.stringify(s)),s);
+});
+test('legacy v1 saves still migrate but reject unexpected properties',()=>{
+ const old=initialState();old.version=1;delete old.equipment;
+ assert.ok(parseSave(JSON.stringify(old)));
+ old.unknownField='untrusted';
+ assert.equal(parseSave(JSON.stringify(old)),null);
+});
