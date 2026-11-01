@@ -3,6 +3,7 @@ export const SAVE_VERSION = 2;
 export const DEMO_SWORD = '竹纹短剑';
 export const MAX_INVENTORY = 65;
 export const MAX_POTIONS = 63;
+export const MAX_SILVER = 1_000_000_000;
 const DEMO_ENEMY_MAX_HP = 28;
 const potionCount = s => s.inventory.filter(item => item === '回春散').length;
 export const attackDamage = s => 12 + (s.equipment?.weapon === DEMO_SWORD ? 4 : 0);
@@ -34,7 +35,7 @@ export function interact(state) {
     if(s.quest==='unstarted') {s.quest='active';s.dialog='竹隐老人：山间有清心草，也有试炼者。带回药草，通过试炼，便算你踏出了江湖第一步。';addLog(s,'接受原创演示任务：竹影试炼。');}
     else if(s.quest==='active'&&s.flags.banditBeaten&&s.flags.herbTaken){
       if(s.inventory.length>=MAX_INVENTORY){s.dialog='竹隐老人：行囊已满，先整理一包回春散，再来领取奖励。';}
-      else {s.quest='completed';s.player.silver+=30;s.inventory.push(DEMO_SWORD);s.dialog='竹隐老人：很好！今日起，你便有了闯荡江湖的底气。';addLog(s,'竹影试炼完成，获得银两 30 与原创竹纹短剑。');}
+      else {const silverReward=Math.min(30,MAX_SILVER-s.player.silver);s.quest='completed';s.player.silver+=silverReward;s.inventory.push(DEMO_SWORD);s.dialog='竹隐老人：很好！今日起，你便有了闯荡江湖的底气。';addLog(s,`竹影试炼完成，获得银两 ${silverReward} 与原创竹纹短剑。`);}
     }
     else if(s.quest==='completed'){s.dialog='竹隐老人：江湖路远，且行且珍重。';}
     else s.dialog='竹隐老人：清心草与竹林试炼，缺一不可。';
@@ -116,7 +117,7 @@ export function parseSave(raw){
   const p=s.player;
   if(!Number.isInteger(p.x)||!Number.isInteger(p.y)||p.x<0||p.x>=WIDTH||p.y<0||p.y>=HEIGHT||BLOCKS.has(`${p.x},${p.y}`))return null;
   if(p.maxHp!==100||!Number.isInteger(p.hp)||p.hp<1||p.hp>p.maxHp)return null;
-  if(!Number.isSafeInteger(p.silver)||p.silver<0||p.silver>1_000_000_000)return null;
+  if(!Number.isSafeInteger(p.silver)||p.silver<0||p.silver>MAX_SILVER)return null;
   if(!['unstarted','active','completed'].includes(s.quest))return null;
   if(!s.flags||typeof s.flags.herbTaken!=='boolean'||typeof s.flags.banditBeaten!=='boolean')return null;
   // A live actor blocks movement. Loading a save on its tile would create an unreachable state.
