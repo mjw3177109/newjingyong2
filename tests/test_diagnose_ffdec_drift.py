@@ -64,6 +64,25 @@ class FFDecDriftDiagnosticTests(unittest.TestCase):
         classes = {r['difference_class'] for r in result['changed_examples']}
         self.assertEqual(classes, {'line_endings_only', 'whitespace_normalized_equal'})
 
+    def test_exact_prefix_a_of_b_is_only_a_diagnostic_clue(self):
+        a = fixture(self.a, {'private/script.as': b'header\\n'})
+        b = fixture(self.b, {'private/script.as': b'header\\nbody\\n'})
+        result = diagnose(self.a, self.b, a, b)
+        example = result['changed_examples'][0]
+        self.assertEqual(example['difference_class'], 'a_exact_prefix_of_b')
+        self.assertEqual(example['common_prefix_bytes'], 7)
+        self.assertEqual(result['verified_story_event_count'], 0)
+        self.assertNotIn('header', json.dumps(result))
+        self.assertNotIn('private/', json.dumps(result))
+
+    def test_exact_prefix_b_of_a_and_nonprefix(self):
+        a = fixture(self.a, {'private/script.as': b'header\\nbody\\n'})
+        b = fixture(self.b, {'private/script.as': b'header\\n'})
+        result = diagnose(self.a, self.b, a, b)
+        self.assertEqual(result['changed_examples'][0]['difference_class'],
+                         'b_exact_prefix_of_a')
+        self.assertEqual(result['changed_examples'][0]['common_prefix_bytes'], 7)
+
     def test_reject_tampered_index(self):
         a = fixture(self.a, {'a.as': b'first'})
         b = fixture(self.b, {'a.as': b'first'})

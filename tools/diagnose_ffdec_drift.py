@@ -48,6 +48,11 @@ def first_difference(a, b):
 
 
 def category(a, b):
+    # A strict byte prefix is a useful truncation clue, not proof of truncation.
+    if len(a) < len(b) and b.startswith(a):
+        return 'a_exact_prefix_of_b'
+    if len(b) < len(a) and a.startswith(b):
+        return 'b_exact_prefix_of_a'
     if a.replace(b'\r\n', b'\n') == b.replace(b'\r\n', b'\n'):
         return 'line_endings_only'
     if b''.join(a.split()) == b''.join(b.split()):
@@ -70,11 +75,14 @@ def diagnose(root_a, root_b, index_a, index_b, limit=20):
     for key in changed[:limit]:
         a, b = blobs_a[key], blobs_b[key]
         line_a, line_b = first_difference(a, b)
+        common_prefix = next((i for i, (x, y) in enumerate(zip(a, b)) if x != y),
+                             min(len(a), len(b)))
         examples.append({
             'path_sha256': key,
             'bytes_a': len(a), 'bytes_b': len(b),
             'lines_a': len(a.splitlines()), 'lines_b': len(b.splitlines()),
             'first_different_line_a': line_a, 'first_different_line_b': line_b,
+            'common_prefix_bytes': common_prefix,
             'difference_class': category(a, b),
         })
     return {
