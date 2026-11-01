@@ -75,6 +75,8 @@ jobs:
         run: python tools/index_root_if_opcode_windows.py jin.swf --packets reports/swf_root_if_review_packets.json --out reports/swf_root_if_opcode_windows.json
       - name: Build source-free private-review handoff checklist
         run: python tools/build_root_if_audit_handoff.py --packets reports/swf_root_if_review_packets.json --out reports/swf_root_if_audit_handoff.json
+      - name: Cross-check original SWF IF opcode windows against private handoff identities
+        run: python tools/crosscheck_root_if_handoff.py --handoff reports/swf_root_if_audit_handoff.json --windows reports/swf_root_if_opcode_windows.json --out reports/swf_root_if_handoff_window_crosscheck.json
       - name: Reconcile empty private IF review baseline without semantic claims
         run: python tools/reconcile_root_if_review.py --handoff reports/swf_root_if_audit_handoff.json --reviewed reports/swf_root_if_audit_handoff.json --out reports/swf_root_if_review_reconciliation.json
       - name: Cross-check depth assignments against independent placement index
@@ -154,6 +156,12 @@ jobs:
         with:
           name: swf-root-if-audit-handoff
           path: reports/swf_root_if_audit_handoff.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-root-if-handoff-window-crosscheck
+          path: reports/swf_root_if_handoff_window_crosscheck.json
           if-no-files-found: error
 
       - uses: actions/upload-artifact@v4
