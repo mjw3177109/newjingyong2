@@ -6,7 +6,7 @@ const DIRECTIONS = Object.freeze({
 const COMBAT_ACTIONS = Object.freeze({'1': 'attack', '2': 'guard', '3': 'drink', '4': 'flee'});
 const INTERACTIVE_SELECTOR = 'button, input, textarea, select, a, [contenteditable="true"], [role="button"]';
 
-export function commandForKey(event, inCombat = false) {
+export function commandForKey(event, inCombat = false, inDialog = false) {
   if (!event || event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return null;
   const target = event.target;
   const tag = String(target?.tagName || '').toUpperCase();
@@ -26,6 +26,8 @@ export function commandForKey(event, inCombat = false) {
     const action = COMBAT_ACTIONS[key];
     return action ? {kind: 'combat', action} : null;
   }
+  // Escape dismisses an open demo dialogue, never an active combat encounter.
+  if (inDialog && key === 'Escape') return event.repeat ? null : {kind: 'dismiss-dialog'};
   if (Object.hasOwn(DIRECTIONS, key)) {
     const [dx, dy] = DIRECTIONS[key];
     return {kind: 'move', dx, dy};
