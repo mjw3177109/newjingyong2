@@ -54,6 +54,15 @@ test('game buttons retain movement/combat hotkeys but preserve native activation
   assert.equal(commandForKey(event('ArrowRight', {target: {tagName: 'BUTTON', isContentEditable: true}})), null);
 });
 
+test('Escape dismisses an open dialogue only and cannot silently retreat from combat', () => {
+  assert.deepEqual(commandForKey(event('Escape'), false, true), {kind: 'dismiss-dialog'});
+  assert.deepEqual(commandForKey(event('Escape', {target: {tagName: 'BUTTON'}}), false, true), {kind: 'dismiss-dialog'});
+  assert.equal(commandForKey(event('Escape', {repeat: true}), false, true), null);
+  assert.equal(commandForKey(event('Escape'), false, false), null);
+  assert.equal(commandForKey(event('Escape'), true, false), null);
+  assert.equal(commandForKey(event('Escape', {target: {tagName: 'INPUT'}}), false, true), null);
+});
+
 test('modifier chords, composition, cancelled and unknown keys are not hijacked', () => {
   for (const extras of [{ctrlKey: true}, {altKey: true}, {metaKey: true}, {isComposing: true}, {defaultPrevented: true}])
     assert.equal(commandForKey(event('e', extras)), null);
