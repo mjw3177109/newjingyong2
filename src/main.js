@@ -58,6 +58,9 @@ $('import-save-file').onchange=async e=>{
  try {
   const imported=importSaveText(await file.text());
   if(!imported){toast('存档文件无效或版本不兼容');return;}
+  const questLabel={unstarted:'未开始',active:'进行中',completed:'已完成'}[imported.quest];
+  const preview=`即将导入存档：任务${questLabel}，气血 ${imported.player.hp}，银两 ${imported.player.silver}。\n这会替换当前未保存的游戏进度，但不会自动覆盖本机存档。确定继续？`;
+  if(!window.confirm(preview)){toast('已取消导入，当前进度未变');return;}
   update(imported);
   toast('已导入当前游戏，请点击保存进度以持久化');
  } catch { toast('读取存档文件失败'); }
