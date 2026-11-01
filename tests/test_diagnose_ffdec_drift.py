@@ -59,10 +59,21 @@ class FFDecDriftDiagnosticTests(unittest.TestCase):
 
     def test_classify_crlf_and_whitespace_drift(self):
         a = fixture(self.a, {'a.as': b'foo\r\nbar\r\n', 'b.as': b'x = 1;\n'})
-        b = fixture(self.b, {'a.as': b'foo\nbar\n', 'b.as': b'x=1;\n'})
+        b = fixture(self.b, {'a.as': b'foo\nbar\n', 'b.as': b'x  =  1;\n'})
         result = diagnose(self.a, self.b, a, b)
         classes = {r['difference_class'] for r in result['changed_examples']}
         self.assertEqual(classes, {'line_endings_only', 'whitespace_normalized_equal'})
+
+    def test_token_boundary_changes_are_not_misclassified_as_whitespace_only(self):
+        # The previous b''.join(data.split()) check collapsed distinct tokens.
+        a = fixture(self.a, {'private/script.as': b'foo bar\\n'})
+        b = fixture(self.b, {'private/script.as': b'foobar\\n'})
+        result = diagnose(self.a, self.b, a, b)
+        self.assertEqual(result['changed_content_path_count'], 1)
+        self.assertEqual(result['changed_examples'][0]['difference_class'],
+                         'other_content_difference')
+        self.assertEqual(result['verified_story_event_count'], 0)
+        self.assertNotIn('private/', json.dumps(result))
 
     def test_exact_prefix_a_of_b_is_only_a_diagnostic_clue(self):
         a = fixture(self.a, {'private/script.as': b'header\n'})

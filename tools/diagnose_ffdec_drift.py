@@ -55,7 +55,9 @@ def category(a, b):
         return 'b_exact_prefix_of_a'
     if a.replace(b'\r\n', b'\n') == b.replace(b'\r\n', b'\n'):
         return 'line_endings_only'
-    if b''.join(a.split()) == b''.join(b.split()):
+    # Preserve token boundaries: removing all whitespace could equate
+    # distinct byte sequences such as b'foo bar' and b'foobar'.
+    if a.split() == b.split():
         return 'whitespace_normalized_equal'
     return 'other_content_difference'
 
