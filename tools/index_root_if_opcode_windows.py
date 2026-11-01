@@ -67,6 +67,42 @@ def straight_line_suffix(records, edges, if_index, width):
             if pos >= start]
 
 
+def incoming_edges_for_if(records, edges, source):
+    """Syntactic incoming edges only; no execution or stack provenance claim.
+
+    An incoming edge may be unreachable. Opaque AVM1 control may add other
+    runtime successors, so these are not exhaustive runtime predecessors.
+    """
+    positions = [pos for pos, _ in records]
+    next_at = {pos: positions[i + 1] if i + 1 < len(positions) else None
+               for i, pos in enumerate(positions)}
+    branch_at = {edge['source_offset']: edge for edge in edges}
+    incoming = []
+    for pos, opcode in records:
+        following = next_at[pos]
+        if opcode in (0x99, 0x9D):
+            edge = branch_at[pos]
+            if edge['target_offset'] == source:
+                incoming.append({'source_offset': pos, 'edge_kind': 'branch'})
+            if opcode == 0x9D and following == source:
+                incoming.append({'source_offset': pos, 'edge_kind': 'fallthrough'})
+        elif opcode not in TERMINATORS and following == source:
+            incoming.append({'source_offset': pos, 'edge_kind': 'fallthrough'})
+    incoming.sort(key=lambda item: (item['source_offset'], item['edge_kind']))
+    sources = {item['source_offset'] for item in incoming}
+    return {
+        'if_incoming_syntactic_edges': incoming,
+        'if_incoming_syntactic_source_count': len(sources),
+        'if_has_multiple_syntactic_predecessors': len(sources) > 1,
+        'if_has_backward_or_self_incoming_branch': any(
+            item['edge_kind'] == 'branch' and item['source_offset'] >= source
+            for item in incoming),
+        'if_is_action_entry': bool(records and records[0][0] == source),
+        'if_has_opaque_immediate_predecessor': any(
+            op in OPAQUE_CONTROL and pos in sources for pos, op in records),
+    }
+
+
 def window_for_if(payload, packet, width=12):
     if type(width) is not int or not 1 <= width <= 32:
         raise ValueError('invalid opcode window width')
@@ -93,7 +129,9 @@ def window_for_if(payload, packet, width=12):
     preceding = records[max(0, idx - width):idx]
     classes = [CLASSES.get(op, 'other') for _, op in preceding]
     safe = straight_line_suffix(records, edges, idx, width)
+    incoming = incoming_edges_for_if(records, edges, source)
     return {
+        **incoming,
         'review_id': packet['review_id'],
         'root_frame': packet['root_frame'],
         'action_tag_ordinal': packet['action_tag_ordinal'],
@@ -166,7 +204,7 @@ def build_windows(path, packets, width=12):
         'window_width': width,
         'entries': [observed[p['review_id']] for p in selected],
         'verified_story_events': 0,
-        'interpretation': 'Linear preceding and conservatively bounded straight-line top-level opcode classes only, not a reconstructed IF condition, expression, execution path, story event, or rights evidence. Push operands, identifiers, scripts and media omitted.',
+        'interpretation': 'Linear preceding, bounded straight-line classes and syntactic incoming edges only (not necessarily reachable or exhaustive under opaque control), not a reconstructed IF condition, expression, execution path, story event, or rights evidence. Push operands, identifiers, scripts and media omitted.',
     }
 
 
