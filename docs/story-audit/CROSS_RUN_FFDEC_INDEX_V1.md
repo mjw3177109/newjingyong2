@@ -33,3 +33,7 @@ python -m unittest discover -s tests -p 'test_*.py'
 - [2026-10-30 Actions #41063299964](https://github.com/mjw3177109/newjingyong2/actions/runs/41063299964)（[索引 Artifact #12982610406](https://github.com/mjw3177109/newjingyong2/actions/runs/41063299964/artifacts/12982610406)）对比 #41297356839：两份匿名索引完全一致，内容变化路径 **0**。
 
 **结论边界：** 历史运行间歇差异已经缩小到一个匿名脚本及其字节数/行数变化，可能涉及反编译输出完整性，但尚不能确定 FFDec、执行环境或其他因素为根因；跨运行工具版本也需要核对。 `timeline_goto` 是启发式词法计数，不等于严格字面帧跳转数，更不是原作事件数。**已语义核实原作剧情事件仍为 0。** 下一步在可授权的私有运行环境里，对此匿名路径的导出完整性、原始 AVM1 对应字节码和 FFDec 日志进行交叉检查。
+
+### 同源文件版本复核
+
+通过 GitHub Git tree 在旧运行提交 `6881e527` 与新运行提交 `8e3a542` 逐项对照，`jin.swf` blob SHA-1 均为 `7ac95c272a71c06a86dc7dc772c647a0d1410f60`；`FFDec/ffdec.jar` 均为 `1cdf7c93c0c008e55cd94cc3bce39d7be0a82424`；`tools/index_ffdec_scripts.py` 均为 `c029d0241760074acb6299d4f5bd7a35219854be`；`tools/build_frame_jump_evidence.py` 均为 `468613a4b0e071f7ff4ef2922f8466b7673feaa1`。这些 Git blob 身份一致，进一步排除了上述四个文件在两次运行之间发生版本变更的解释，但仍不能排除 runner、Java/系统环境或 FFDec 运行时不确定性。
