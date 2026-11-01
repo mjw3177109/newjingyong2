@@ -24,3 +24,9 @@ GitHub Actions 的 `swf-inventory` 作业将上传 `swf-root-if-opcode-windows` 
 ## 保守直线前驱边界（2026-11-01 增量）
 
 原有 `preceding_opcode_classes` 是纯线性前 12 条记录，可能跨越无条件跳转、IF 跳转目标、Return/Throw 或不透明控制指令，不能直接当作 IF 条件的执行前驱。本轮保留原始字段以兼容旧审查数据，增加 `straight_line_preceding_record_offsets`、`straight_line_preceding_opcode_classes`、`straight_line_preceding_record_count` 和 `straight_line_boundary_limited`。保守边界包括动作入口、分支目标、跳转/条件/终止指令后的记录及不透明控制指令后的记录。新的短窗口仅用于避免把明显跨控制流的指令错误拼接成条件，**不证明这些指令实际执行、栈值来源或原作剧情语义**。新增 3 个合成 AVM1 回归测试（跳转目标、不透明控制、IF 自身为分支目标）。
+
+## IF 入口分支汇合标记（2026-11-01 增量）
+
+新增从原始 AVM1 记录边界独立计算的 `if_incoming_syntactic_edges`（仅源字节偏移与 branch/fallthrough 类型）、`if_incoming_syntactic_source_count`、`if_has_multiple_syntactic_predecessors`、`if_has_backward_or_self_incoming_branch`、`if_is_action_entry`、`if_has_opaque_immediate_predecessor`。这些字段用于提醒审查者：即使前驱操作码窗口看起来连续，IF 仍可能是多路汇合点或循环入口，不能将某个线性前驱当作唯一条件来源。
+
+该图只表示**语法边**，包含可能不可达的分支；不透明控制、函数体、运行时跳转可能引入图中未覆盖的行为。**不导出 Push 内容、变量名、源码或媒体，也不证明条件、地图、剧情或运行时可达性**。新增 3 项合成字节码测试（分支汇合、自环、普通直线入口），原作已核实剧情事件仍为 0。
