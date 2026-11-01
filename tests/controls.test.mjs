@@ -27,7 +27,8 @@ test('focused buttons, form controls and editable descendants retain native keyb
   for (const tagName of ['BUTTON', 'INPUT', 'TEXTAREA', 'SELECT', 'A'])
     assert.equal(commandForKey(event('Enter', {target: {tagName}})), null);
   assert.equal(commandForKey(event(' ', {target: {isContentEditable: true}})), null);
-  assert.equal(commandForKey(event('e', {target: {closest: () => ({tagName: 'BUTTON'})}})), null);
+  assert.deepEqual(commandForKey(event('e', {target: {closest: () => ({tagName: 'BUTTON'})}})), {kind: 'interact'});
+  assert.equal(commandForKey(event('Enter', {target: {closest: () => ({tagName: 'BUTTON'})}})), null);
 });
 test('game buttons retain movement/combat hotkeys but preserve native activation', () => {
   const button = {tagName: 'BUTTON'};
