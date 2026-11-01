@@ -20,3 +20,7 @@ GitHub Actions 的 `swf-inventory` 作业将上传 `swf-root-if-opcode-windows` 
 ## 后续
 
 在有权利的隔离环境中，对照本次字节码类别与 FFDec 私有脚本，并以运行时证据核实触发条件、状态副作用、地图和事件效果。只有独立复核的真实事件才能加入正式剧情对照表；本次输出不能作为改编发布授权或 1:1 完成证明。
+
+## 保守直线前驱边界（2026-11-01 增量）
+
+原有 `preceding_opcode_classes` 是纯线性前 12 条记录，可能跨越无条件跳转、IF 跳转目标、Return/Throw 或不透明控制指令，不能直接当作 IF 条件的执行前驱。本轮保留原始字段以兼容旧审查数据，增加 `straight_line_preceding_record_offsets`、`straight_line_preceding_opcode_classes`、`straight_line_preceding_record_count` 和 `straight_line_boundary_limited`。保守边界包括动作入口、分支目标、跳转/条件/终止指令后的记录及不透明控制指令后的记录。新的短窗口仅用于避免把明显跨控制流的指令错误拼接成条件，**不证明这些指令实际执行、栈值来源或原作剧情语义**。新增 3 个合成 AVM1 回归测试（跳转目标、不透明控制、IF 自身为分支目标）。
