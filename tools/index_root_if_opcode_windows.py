@@ -90,10 +90,38 @@ def incoming_edges_for_if(records, edges, source):
             incoming.append({'source_offset': pos, 'edge_kind': 'fallthrough'})
     incoming.sort(key=lambda item: (item['source_offset'], item['edge_kind']))
     sources = {item['source_offset'] for item in incoming}
+    # Reachability is only within the syntactic, top-level AVM1 graph. An
+    # opaque opcode may alter control flow, so this is not runtime evidence.
+    opcode_at = dict(records)
+    reachable = set()
+    pending = [records[0][0]] if records else []
+    while pending:
+        pos = pending.pop()
+        if pos in reachable:
+            continue
+        reachable.add(pos)
+        opcode = opcode_at[pos]
+        following = next_at[pos]
+        if opcode == 0x99:
+            successors = [branch_at[pos]['target_offset']]
+        elif opcode == 0x9D:
+            successors = [branch_at[pos]['target_offset'], following]
+        elif opcode in TERMINATORS:
+            successors = []
+        else:
+            successors = [following]
+        pending.extend(next_pos for next_pos in successors
+                       if next_pos in opcode_at and next_pos not in reachable)
+    reachable_sources = sources & reachable
+    unreachable_sources = sources - reachable
     return {
         'if_incoming_syntactic_edges': incoming,
         'if_incoming_syntactic_source_count': len(sources),
         'if_has_multiple_syntactic_predecessors': len(sources) > 1,
+        'if_incoming_reachable_syntactic_source_count': len(reachable_sources),
+        'if_incoming_unreachable_syntactic_source_count': len(unreachable_sources),
+        'if_incoming_unreachable_syntactic_source_offsets': sorted(unreachable_sources),
+        'if_has_multiple_reachable_syntactic_predecessors': len(reachable_sources) > 1,
         'if_has_backward_or_self_incoming_branch': any(
             item['edge_kind'] == 'branch' and item['source_offset'] >= source
             for item in incoming),
