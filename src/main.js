@@ -1,4 +1,4 @@
-import {initialState,move,interact,battle,questStatus,parseSave,equipWeapon,attackDamage,DEMO_SWORD,discardPotion,usePotion} from './engine.js';
+import {initialState,move,interact,battle,questStatus,equipWeapon,attackDamage,DEMO_SWORD,discardPotion,usePotion} from './engine.js';
 import {ACTORS,WIDTH,HEIGHT,TILE,BLOCKS} from './demo-data.js';
 import {commandForKey} from './controls.js';
 import {MAX_SAVE_FILE_BYTES, exportSaveText, importSaveText} from './save-transfer.js';
@@ -12,9 +12,11 @@ for(const id of ['hero','elder','merchant','herb','bandit']){
 const keyName = 'jianghu-q-save-v1';
 function toast(txt){const t=$('toast');t.textContent=txt;t.classList.remove('hidden');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.add('hidden'),1800);}
 function update(next){state=next;paint();}
-function save(){try{localStorage.setItem(keyName,JSON.stringify(state));toast('进度已存入本机浏览器');}catch{toast('浏览器存储不可用');}}
+function save(){try{localStorage.setItem(keyName,exportSaveText(state));toast('进度已存入本机浏览器');}catch{toast('存档无效或浏览器存储不可用');}}
 function load(){let raw;try{raw=localStorage.getItem(keyName);}catch{toast('浏览器存储不可用');return;}
- const parsed=raw&&parseSave(raw);if(!parsed){toast('没有有效的存档');return;}
+ // Apply the same UTF-8 byte cap as portable JSON imports before parsing local data.
+ if(raw && new TextEncoder().encode(raw).byteLength>MAX_SAVE_FILE_BYTES){toast('本机存档超过 64 KB，已拒绝读取');return;}
+ const parsed=raw&&importSaveText(raw);if(!parsed){toast('没有有效的存档');return;}
  // Loading a checkpoint must not silently destroy unsaved progress.
  const questLabel={unstarted:'未开始',active:'进行中',completed:'已完成'}[parsed.quest];
  const preview=`即将读取本机存档：任务${questLabel}，气血 ${parsed.player.hp}，银两 ${parsed.player.silver}。\n这会替换当前未保存的游戏进度，但不会删除或修改本机存档。确定继续？`;

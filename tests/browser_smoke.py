@@ -201,6 +201,14 @@ def main():
             page.reload(wait_until='networkidle')
             page.locator('#load').click()
             assert '没有有效的存档' in page.locator('#toast').inner_text()
+            # Local checkpoints obey the same UTF-8 64 KiB limit as portable imports.
+            # This payload is short in JS code units but oversized in UTF-8 bytes.
+            page.evaluate("localStorage.setItem('jianghu-q-save-v1', '汉'.repeat(22000))")
+            assert page.evaluate("localStorage.getItem('jianghu-q-save-v1').length") == 22000
+            page.locator('#load').click()
+            assert '本机存档超过 64 KB' in page.locator('#toast').inner_text()
+            assert page.locator('#silver').inner_text() == '10'
+            assert page.evaluate("localStorage.getItem('jianghu-q-save-v1').length") == 22000
             print('PASS: Chromium canvas, complete original-demo playthrough, equipment, local save, JSON export/import, and import persistence boundary')
             fresh.close()
             context.close()
