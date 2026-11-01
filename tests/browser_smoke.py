@@ -54,6 +54,15 @@ def main():
             assert page.locator('#silver').inner_text() == '10'
             assert page.locator('#attack-num').inner_text() == '12'
             assert page.evaluate("document.querySelector('#game').getContext('2d').getImageData(10, 10, 1, 1).data[3] > 0")
+            # A mouse click focuses the Save button; movement keys must still work
+            # without requiring an undocumented click on the canvas/background.
+            page.locator('#save').click()
+            assert page.evaluate("document.activeElement.id") == 'save'
+            page.keyboard.press('ArrowRight')
+            page.locator('#save').click()
+            assert page.evaluate(
+                "JSON.parse(localStorage.getItem('jianghu-q-save-v1')).player.x"
+            ) == 6, 'focused game button swallowed the movement shortcut'
 
             walk_to_objective(page)
             page.locator('#interact').click()
