@@ -69,9 +69,9 @@ class IfOpcodeWindowTests(unittest.TestCase):
     def test_jump_target_starts_new_straight_line_suffix(self):
         # Jump at offset 4 lands on comparison at 13; the preceding Push at 9
         # is not a straight-line predecessor of the IF at 14.
-        action = (b'\\x96\\x01\\x00\\x02' + b'\\x99\\x02\\x00\\x04\\x00'
-                  + b'\\x96\\x01\\x00\\x02' + b'\\x0e'
-                  + b'\\x9d\\x02\\x00\\x00\\x00' + b'\\x00')
+        action = (b'\x96\x01\x00\x02' + b'\x99\x02\x00\x04\x00'
+                  + b'\x96\x01\x00\x02' + b'\x0e'
+                  + b'\x9d\x02\x00\x00\x00' + b'\x00')
         result = window_for_if(action, packet_for_if(action, 14))
         self.assertEqual(result['preceding_record_offsets'], [0, 4, 9, 13])
         self.assertEqual(result['straight_line_preceding_record_offsets'], [13])
@@ -81,17 +81,17 @@ class IfOpcodeWindowTests(unittest.TestCase):
     def test_opaque_control_bounds_preceding_suffix(self):
         # WaitForFrame has opaque control behavior; never stitch the earlier
         # Push into a putative condition across that opcode.
-        action = (b'\\x96\\x01\\x00\\x02' + b'\\x8a\\x03\\x00\\x00\\x00\\x00'
-                  + b'\\x96\\x01\\x00\\x02' + b'\\x0e'
-                  + b'\\x9d\\x02\\x00\\x00\\x00' + b'\\x00')
+        action = (b'\x96\x01\x00\x02' + b'\x8a\x03\x00\x00\x00\x00'
+                  + b'\x96\x01\x00\x02' + b'\x0e'
+                  + b'\x9d\x02\x00\x00\x00' + b'\x00')
         result = window_for_if(action, packet_for_if(action, 15))
         self.assertEqual(result['preceding_record_offsets'], [0, 4, 10, 14])
         self.assertEqual(result['straight_line_preceding_record_offsets'], [10, 14])
         self.assertTrue(result['straight_line_boundary_limited'])
 
     def test_if_at_branch_target_has_empty_straight_line_predecessors(self):
-        action = (b'\\x99\\x02\\x00\\x04\\x00' + b'\\x96\\x01\\x00\\x02'
-                  + b'\\x9d\\x02\\x00\\x00\\x00' + b'\\x00')
+        action = (b'\x99\x02\x00\x04\x00' + b'\x96\x01\x00\x02'
+                  + b'\x9d\x02\x00\x00\x00' + b'\x00')
         result = window_for_if(action, packet_for_if(action, 9))
         self.assertEqual(result['preceding_record_offsets'], [0, 5])
         self.assertEqual(result['straight_line_preceding_record_offsets'], [])
