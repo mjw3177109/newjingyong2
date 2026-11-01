@@ -78,6 +78,40 @@ class IfOpcodeWindowTests(unittest.TestCase):
         self.assertEqual(result['straight_line_preceding_opcode_classes'], ['comparison'])
         self.assertTrue(result['straight_line_boundary_limited'])
 
+    def test_if_incoming_edges_distinguish_branch_join_from_fallthrough(self):
+        # Jump at 4 targets IF at 13; linear Push at 9 is unreachable,
+        # but remains a syntactic fallthrough predecessor (not execution proof).
+        action = (b'\\x96\\x01\\x00\\x02' + b'\\x99\\x02\\x00\\x04\\x00'
+                  + b'\\x96\\x01\\x00\\x02'
+                  + b'\\x9d\\x02\\x00\\x00\\x00' + b'\\x00')
+        result = window_for_if(action, packet_for_if(action, 13))
+        self.assertEqual(result['if_incoming_syntactic_edges'], [
+            {'source_offset': 4, 'edge_kind': 'branch'},
+            {'source_offset': 9, 'edge_kind': 'fallthrough'}])
+        self.assertEqual(result['if_incoming_syntactic_source_count'], 2)
+        self.assertTrue(result['if_has_multiple_syntactic_predecessors'])
+        self.assertEqual(result['straight_line_preceding_record_offsets'], [])
+        self.assertFalse(result['if_has_backward_or_self_incoming_branch'])
+
+    def test_if_self_loop_reports_backward_edge_and_entry(self):
+        action = b'\\x9d\\x02\\x00\\xfb\\xff\\x00'
+        result = window_for_if(action, packet_for_if(action, 0))
+        self.assertEqual(result['if_incoming_syntactic_edges'], [
+            {'source_offset': 0, 'edge_kind': 'branch'}])
+        self.assertTrue(result['if_has_backward_or_self_incoming_branch'])
+        self.assertTrue(result['if_is_action_entry'])
+        self.assertFalse(result['if_has_multiple_syntactic_predecessors'])
+
+    def test_if_simple_fallthrough_has_single_predecessor(self):
+        result = window_for_if(action_payload(),
+                               packets_for(tiny_swf(action_payload()),
+                                           action_payload())['manual_review_queue'][0])
+        self.assertEqual(result['if_incoming_syntactic_edges'], [
+            {'source_offset': 4, 'edge_kind': 'fallthrough'}])
+        self.assertEqual(result['if_incoming_syntactic_source_count'], 1)
+        self.assertFalse(result['if_has_multiple_syntactic_predecessors'])
+        self.assertFalse(result['if_has_opaque_immediate_predecessor'])
+
     def test_opaque_control_bounds_preceding_suffix(self):
         # WaitForFrame has opaque control behavior; never stitch the earlier
         # Push into a putative condition across that opcode.
