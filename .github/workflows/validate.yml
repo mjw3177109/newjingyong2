@@ -262,6 +262,11 @@ jobs:
               --index-b "$scratch/index_repeat.json" \
               --index-c "$scratch/index_third.json" \
               --out reports/ffdec_three_run_triage.json
+            # A/B stable candidates may still differ in C: quarantine those hashes.
+            python3 tools/quarantine_ffdec_third_export.py \
+              --stable-set reports/ffdec_stable_audit_set.json \
+              --index-c "$scratch/index_third.json" \
+              --out reports/ffdec_third_export_quarantine.json
             # Diagnose the other two pairs while all private exports still exist.
             # No decompiled source text or original paths enter the artifacts.
             python3 tools/diagnose_ffdec_drift.py \
@@ -334,6 +339,13 @@ jobs:
         with:
           name: ffdec-source-free-three-run-triage
           path: reports/ffdec_three_run_triage.json
+          if-no-files-found: ignore
+
+      - name: Upload conditional third-export candidate quarantine (hashes only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffdec-source-free-third-export-quarantine
+          path: reports/ffdec_third_export_quarantine.json
           if-no-files-found: ignore
 
       - name: Upload conditional A/C and B/C byte drift diagnostics
