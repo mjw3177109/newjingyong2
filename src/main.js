@@ -25,11 +25,12 @@ function newGame(){
 function doMove(dx,dy){update(move(state,dx,dy));}
 function action(){update(interact(state));}
 document.addEventListener('keydown',e=>{
- const command=commandForKey(e,!!state.combat);
+ const command=commandForKey(e,!!state.combat,!!state.dialog);
  if(!command)return;
  e.preventDefault();
  if(command.kind==='move')doMove(command.dx,command.dy);
  else if(command.kind==='interact')action();
+ else if(command.kind==='dismiss-dialog')action();
  else if(command.kind==='potion')update(usePotion(state));
  else if(command.kind==='route-step')update(stepTowardObjective(state));
  else if(command.kind==='combat')update(battle(state,command.action));
@@ -130,7 +131,7 @@ function paint(){
  }
  actor('hero',state.player.x,state.player.y,59);
  ctx.textAlign='left';ctx.fillStyle='#17362b';ctx.font='bold 14px system-ui';ctx.fillText('青 竹 村',18,27);
- const d=$('dialog');d.textContent=state.dialog?state.dialog+'　[按 E 继续]':'';d.classList.toggle('hidden',!state.dialog);
+ const d=$('dialog');d.textContent=state.dialog?state.dialog+'　[按 E 或 Esc 关闭]':'';d.classList.toggle('hidden',!state.dialog);
  const c=$('combat');c.classList.toggle('hidden',!state.combat);
  if(state.combat)$('combat-info').textContent=`试炼者气血 ${state.combat.enemyHp}/${state.combat.enemyMaxHp}　｜　少侠气血 ${state.player.hp}/100`;
  $('attack-num').textContent=attackDamage(state);
