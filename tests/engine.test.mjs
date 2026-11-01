@@ -234,3 +234,17 @@ test('save parser rejects forged player maximum HP while retaining valid low HP'
  const low={...s,player:{...s.player,hp:1}};
  assert.deepEqual(parseSave(JSON.stringify(low)),low);
 });
+
+test('quest reward cannot overflow the silver cap or corrupt a valid checkpoint',()=>{
+ for(const [silver,expectedReward] of [[999_999_995,5],[1_000_000_000,0]]) {
+  let s=initialState();s.quest='active';s.flags.herbTaken=true;s.flags.banditBeaten=true;
+  s.inventory=['清心草'];s.player.silver=silver;s=at(s,7,7);
+  assert.deepEqual(parseSave(JSON.stringify(s)),s);
+  const completed=interact(s);
+  assert.equal(completed.quest,'completed');
+  assert.equal(completed.player.silver,1_000_000_000);
+  assert.equal(completed.inventory.filter(x=>x===DEMO_SWORD).length,1);
+  assert.ok(completed.journal[0].includes(`银两 ${expectedReward}`));
+  assert.deepEqual(parseSave(JSON.stringify(completed)),completed);
+ }
+});
