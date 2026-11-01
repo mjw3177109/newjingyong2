@@ -98,9 +98,18 @@ def main():
             page.locator('#save').click()
             page.reload(wait_until='networkidle')
             assert page.locator('#silver').inner_text() == '10'
+            # Cancel local checkpoint preview: current run and stored checkpoint stay intact.
+            load_previews = []
+            page.once('dialog', lambda dialog: (load_previews.append(dialog.message), dialog.dismiss()))
+            page.locator('#load').click()
+            assert page.locator('#silver').inner_text() == '10'
+            assert page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).quest") == 'completed'
+            page.once('dialog', lambda dialog: (load_previews.append(dialog.message), dialog.accept()))
             page.locator('#load').click()
             assert page.locator('#silver').inner_text() == '40'
             assert page.locator('#attack-num').inner_text() == '16'
+            assert len(load_previews) == 2
+            assert all('银两 40' in message and '不会删除或修改本机存档' in message for message in load_previews)
             with page.expect_download() as download_info:
                 page.locator('#export-save').click()
             download = download_info.value
@@ -154,6 +163,7 @@ def main():
             )
             mobile_page.reload(wait_until='networkidle')
             assert mobile_page.locator('#silver').inner_text() == '10'
+            mobile_page.once('dialog', lambda dialog: dialog.accept())
             mobile_page.locator('#load').tap()
             with mobile_page.expect_download() as mobile_download:
                 mobile_page.locator('#export-save').tap()

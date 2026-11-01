@@ -14,7 +14,12 @@ function toast(txt){const t=$('toast');t.textContent=txt;t.classList.remove('hid
 function update(next){state=next;paint();}
 function save(){try{localStorage.setItem(keyName,JSON.stringify(state));toast('进度已存入本机浏览器');}catch{toast('浏览器存储不可用');}}
 function load(){let raw;try{raw=localStorage.getItem(keyName);}catch{toast('浏览器存储不可用');return;}
- const parsed=raw&&parseSave(raw);if(!parsed){toast('没有有效的存档');return;}update(parsed);toast('进度读取成功');}
+ const parsed=raw&&parseSave(raw);if(!parsed){toast('没有有效的存档');return;}
+ // Loading a checkpoint must not silently destroy unsaved progress.
+ const questLabel={unstarted:'未开始',active:'进行中',completed:'已完成'}[parsed.quest];
+ const preview=`即将读取本机存档：任务${questLabel}，气血 ${parsed.player.hp}，银两 ${parsed.player.silver}。\n这会替换当前未保存的游戏进度，但不会删除或修改本机存档。确定继续？`;
+ if(!window.confirm(preview)){toast('已取消读取，当前进度未变');return;}
+ update(parsed);toast('进度读取成功');}
 // Reset both in-memory progress and this browser's saved checkpoint only after consent.
 // If storage is blocked, keep the current run rather than leaving a stale save.
 function newGame(){
