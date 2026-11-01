@@ -93,8 +93,18 @@ def main():
             imported_page = fresh.new_page()
             imported_page.on('pageerror', lambda error: errors.append(str(error)))
             imported_page.goto(url, wait_until='networkidle')
+            # Import preview must not replace unsaved progress without consent.
+            preview_messages = []
+            imported_page.once('dialog', lambda dialog: (preview_messages.append(dialog.message), dialog.dismiss()))
+            imported_page.locator('#import-save-file').set_input_files(download.path())
+            imported_page.wait_for_function("document.querySelector('#toast').textContent.includes('已取消导入')")
+            assert imported_page.locator('#silver').inner_text() == '10'
+            assert imported_page.evaluate("localStorage.getItem('jianghu-q-save-v1')") is None
+            imported_page.once('dialog', lambda dialog: (preview_messages.append(dialog.message), dialog.accept()))
             imported_page.locator('#import-save-file').set_input_files(download.path())
             imported_page.wait_for_function("document.querySelector('#silver').textContent === '40'")
+            assert len(preview_messages) == 2
+            assert all('银两 40' in message and '不会自动覆盖本机存档' in message for message in preview_messages)
             assert imported_page.locator('#attack-num').inner_text() == '16'
             imported_page.reload(wait_until='networkidle')
             assert imported_page.locator('#silver').inner_text() == '10', 'import must not silently overwrite local save'
