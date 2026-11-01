@@ -250,6 +250,17 @@ test('quest reward cannot overflow the silver cap or corrupt a valid checkpoint'
 });
 
 // Imported files and local checkpoints may be user-edited. Keep the demo schema closed.
+test('completed quest status never claims a fixed silver payout at the cap',()=>{
+ for(const silver of [10,999_999_995,1_000_000_000]){
+  let s=initialState();s.quest='active';s.flags.herbTaken=true;s.flags.banditBeaten=true;
+  s.inventory=['清心草'];s.player.silver=silver;s=interact(at(s,7,7));
+  assert.equal(s.quest,'completed');
+  assert.match(questStatus(s).progress,/已完成.*竹纹短剑/);
+  assert.doesNotMatch(questStatus(s).progress,/银两 \\+30/);
+  assert.deepEqual(parseSave(JSON.stringify(s)),s);
+ }
+});
+
 test('save parser rejects unknown fields at every state nesting level',()=>{
  const s=initialState();
  const extraRoot={...s,source_event_id:'not-verified'};

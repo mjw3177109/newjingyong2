@@ -103,7 +103,7 @@ export function equipWeapon(state){
   return s;
 }
 export function questStatus(s){
- if(s.quest==='completed')return {title:QUEST.name,description:'试炼已经完成。',progress:'已完成 · 银两 +30'};
+ if(s.quest==='completed')return {title:QUEST.name,description:'试炼已经完成。',progress:'已完成 · 竹纹短剑已领取（银两按上限结算）'};
  if(s.quest==='unstarted')return {title:'初入江湖',description:'找到青竹村的竹隐老人，开启原创试玩任务。',progress:'未接受'};
  return {title:QUEST.name,description:QUEST.description,progress:`清心草 ${s.flags.herbTaken?'✓':'○'}　试炼 ${s.flags.banditBeaten?'✓':'○'}`};
 }
