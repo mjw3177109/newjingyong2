@@ -11,9 +11,9 @@ export function commandForKey(event, inCombat = false) {
   const target = event.target;
   const tag = String(target?.tagName || '').toUpperCase();
   const interactive = typeof target?.closest === 'function' ? target.closest(INTERACTIVE_SELECTOR) : null;
-  // A clicked game button retains keyboard focus. Allow directional keys and
-  // combat digits there, but leave Enter/Space and other button actions native.
-  // Never intercept typing, editable content, links or custom interactive widgets.
+  // A focused game button must retain letter shortcuts as well as movement
+  // and combat digits. Enter/Space still activate that button natively.
+  // Never intercept typing, editable content, links or custom widgets.
   const gameButtonFocus = tag === 'BUTTON' ||
     String(interactive?.tagName || '').toUpperCase() === 'BUTTON';
   if (target?.isContentEditable ||
@@ -30,7 +30,7 @@ export function commandForKey(event, inCombat = false) {
     const [dx, dy] = DIRECTIONS[key];
     return {kind: 'move', dx, dy};
   }
-  if (gameButtonFocus) return null;
+  if (gameButtonFocus && (key === 'Enter' || key === ' ')) return null;
   // Holding an action key must not close a dialogue and immediately retrigger it.
   if (event.repeat) return null;
   if (key === 'e' || key === 'Enter' || key === ' ') return {kind: 'interact'};

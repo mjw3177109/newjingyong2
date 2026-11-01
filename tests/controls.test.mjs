@@ -37,8 +37,12 @@ test('game buttons retain movement/combat hotkeys but preserve native activation
     {kind: 'move', dx: 0, dy: -1});
   assert.deepEqual(commandForKey(event('2', {target: button}), true),
     {kind: 'combat', action: 'guard'});
-  for (const key of ['Enter', ' ', 'e', 'h', 'g']) {
+  for (const key of ['Enter', ' ']) {
     assert.equal(commandForKey(event(key, {target: button})), null);
+  }
+  for (const [key, kind] of [['e','interact'], ['h','potion'], ['g','route-step'], ['b','inventory'], ['j','quest']]) {
+    assert.deepEqual(commandForKey(event(key, {target: button})), {kind});
+    assert.equal(commandForKey(event(key, {target: button, repeat: true})), null);
   }
   for (const tagName of ['INPUT', 'TEXTAREA', 'SELECT', 'A']) {
     assert.equal(commandForKey(event('ArrowRight', {target: {tagName}})), null);

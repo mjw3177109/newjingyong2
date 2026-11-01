@@ -63,11 +63,17 @@ def main():
             assert page.evaluate(
                 "JSON.parse(localStorage.getItem('jianghu-q-save-v1')).player.x"
             ) == 6, 'focused game button swallowed the movement shortcut'
+            page.keyboard.press('b')
+            assert '背包：' in page.locator('#toast').inner_text()
+            page.keyboard.press('j')
+            assert '未接受' in page.locator('#toast').inner_text()
 
             walk_to_objective(page)
-            page.locator('#interact').click()
+            page.locator('#interact').focus()
+            assert page.evaluate("document.activeElement.id") == 'interact'
+            page.keyboard.press('e')
             assert '清心草' in page.locator('#quest-progress').inner_text()
-            page.locator('#interact').click()  # dismiss dialogue
+            page.keyboard.press('e')  # dismiss dialogue without activating focused button
             walk_to_objective(page)
             page.locator('#interact').click()
             assert '清心草' in page.locator('#inventory').inner_text()
