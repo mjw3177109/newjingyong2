@@ -29,6 +29,26 @@ test('focused buttons, form controls and editable descendants retain native keyb
   assert.equal(commandForKey(event(' ', {target: {isContentEditable: true}})), null);
   assert.equal(commandForKey(event('e', {target: {closest: () => ({tagName: 'BUTTON'})}})), null);
 });
+test('game buttons retain movement/combat hotkeys but preserve native activation', () => {
+  const button = {tagName: 'BUTTON'};
+  assert.deepEqual(commandForKey(event('ArrowRight', {target: button})),
+    {kind: 'move', dx: 1, dy: 0});
+  assert.deepEqual(commandForKey(event('W', {target: {tagName: 'SPAN', closest: () => button}})),
+    {kind: 'move', dx: 0, dy: -1});
+  assert.deepEqual(commandForKey(event('2', {target: button}), true),
+    {kind: 'combat', action: 'guard'});
+  for (const key of ['Enter', ' ', 'e', 'h', 'g']) {
+    assert.equal(commandForKey(event(key, {target: button})), null);
+  }
+  for (const tagName of ['INPUT', 'TEXTAREA', 'SELECT', 'A']) {
+    assert.equal(commandForKey(event('ArrowRight', {target: {tagName}})), null);
+  }
+  assert.equal(commandForKey(event('ArrowRight', {
+    target: {tagName: 'DIV', closest: () => ({tagName: 'DIV'})}
+  })), null);
+  assert.equal(commandForKey(event('ArrowRight', {target: {tagName: 'BUTTON', isContentEditable: true}})), null);
+});
+
 test('modifier chords, composition, cancelled and unknown keys are not hijacked', () => {
   for (const extras of [{ctrlKey: true}, {altKey: true}, {metaKey: true}, {isComposing: true}, {defaultPrevented: true}])
     assert.equal(commandForKey(event('e', extras)), null);
