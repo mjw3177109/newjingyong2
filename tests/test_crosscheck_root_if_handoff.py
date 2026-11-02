@@ -29,7 +29,8 @@ def fixtures():
         'schema': 'swf-root-if-opcode-windows-v1', 'source_swf_sha256': 'b' * 64,
         'selected_if_count': 1, 'window_width': 12, 'verified_story_events': 0,
         'entries': [{'review_id': rid, 'root_frame': 9, 'action_tag_ordinal': 2,
-                     'if_source_offset': 15, 'review_status': 'unverified',
+                     'if_source_offset': 15, 'branch_target_offset': 20,
+                     'fallthrough_offset': 20, 'review_status': 'unverified',
                      'preceding_record_count': 2,
                      'preceding_record_offsets': [4, 10],
                      'preceding_opcode_classes': ['push_opaque', 'comparison'],
@@ -72,6 +73,24 @@ class CrosscheckTests(unittest.TestCase):
         w['entries'][0]['if_source_offset'] = 16
         with self.assertRaisesRegex(ValueError, 'coordinate'):
             crosscheck(h, w)
+
+    def test_rejects_tampered_successor_coordinates_on_either_side(self):
+        for report, key, value in (
+            ('handoff', 'branch_target_offset', 99),
+            ('handoff', 'fallthrough_offset', 99),
+            ('windows', 'branch_target_offset', 99),
+            ('windows', 'fallthrough_offset', 99),
+            ('windows', 'branch_target_offset', True),
+            ('handoff', 'fallthrough_offset', -1),
+        ):
+            with self.subTest(report=report, key=key, value=value):
+                h, w = fixtures()
+                if report == 'handoff':
+                    h['entries'][0]['source_location'][key] = value
+                else:
+                    w['entries'][0][key] = value
+                with self.assertRaisesRegex(ValueError, 'successor coordinate'):
+                    crosscheck(h, w)
 
     def test_rejects_missing_or_duplicate_review_identity(self):
         h, w = fixtures()
