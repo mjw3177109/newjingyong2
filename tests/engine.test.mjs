@@ -181,13 +181,13 @@ test('save parser rejects duplicated quest herb and completed quest without swor
  assert.equal(parseSave(JSON.stringify(missingReward)),null);
 });
 test('save parser only accepts combat at a reachable adjacent trial position',()=>{
- const s=initialState();s.combat={enemyHp:28,enemyMaxHp:28,guard:false};
+ const s=initialState();s.quest='active';s.combat={enemyHp:28,enemyMaxHp:28,guard:false};
  assert.equal(parseSave(JSON.stringify(s)),null);
  const adjacent=at(s,19,8);
  assert.deepEqual(parseSave(JSON.stringify(adjacent)),adjacent);
 });
 test('combat potion reports actual capped healing rather than nominal amount',()=>{
- let s=at(initialState(),19,8);
+ let s=at(initialState(),19,8);s.quest='active';
  s.player.hp=92;s.inventory=['回春散'];s.combat={enemyHp:28,enemyMaxHp:28,guard:false};
  s=battle(s,'drink');
  assert.equal(s.player.hp,94);
@@ -211,7 +211,7 @@ test('save parser rejects simultaneous battle and dialogue',()=>{
  assert.equal(parseSave(JSON.stringify(s)),null);
 });
 test('legitimate guarded low-HP battle loads but zero-HP checkpoint does not',()=>{
- const s=at(initialState(),19,8);
+ const s=at(initialState(),19,8);s.quest='active';
  s.player.hp=1;
  s.combat={enemyHp:1,enemyMaxHp:28,guard:true};
  assert.deepEqual(parseSave(JSON.stringify(s)),s);

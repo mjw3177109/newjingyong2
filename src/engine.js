@@ -167,11 +167,13 @@ export function parseSave(raw){
   if(!Array.isArray(s.journal)||s.journal.length>6||s.journal.some(line=>typeof line!=='string'||line.length>300))return null;
   if(typeof s.dialog!=='string'||s.dialog.length>500)return null;
   if(s.combat!==null){
+    // An imported first-trial checkpoint must not bypass the quest-acceptance gate.
+    // This does not reject historical non-combat v2 saves with legacy quest flags.
     const c=s.combat;
     if(s.dialog || !exactKeys(c,['enemyHp','enemyMaxHp','guard']) ||
        c.enemyMaxHp!==DEMO_ENEMY_MAX_HP ||
        !Number.isInteger(c.enemyHp)||c.enemyHp<1||c.enemyHp>DEMO_ENEMY_MAX_HP||
-       typeof c.guard!=='boolean'||!( (!s.flags.banditBeaten && dist(p,ACTORS.bandit)===1) || (s.quest==='completed' && s.flags.banditBeaten && dist(p,ACTORS.elder)===1) ))return null;
+       typeof c.guard!=='boolean'||!( (s.quest==='active' && !s.flags.banditBeaten && dist(p,ACTORS.bandit)===1) || (s.quest==='completed' && s.flags.banditBeaten && dist(p,ACTORS.elder)===1) ))return null;
   }
   return s;
 }

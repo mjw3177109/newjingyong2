@@ -45,3 +45,19 @@ test('accepted quest enters battle, can retreat and save normally',()=>{
   assert.equal(retreated.flags.banditBeaten,false);
   assert.deepEqual(parseSave(JSON.stringify(retreated)),retreated);
 });
+
+
+test('imported unaccepted first-trial combat cannot bypass elder acceptance',()=>{
+  const unaccepted=nearTrial(initialState());
+  unaccepted.combat={enemyHp:28,enemyMaxHp:28,guard:false};
+  assert.equal(parseSave(JSON.stringify(unaccepted)),null);
+  const accepted=structuredClone(unaccepted);
+  accepted.quest='active';
+  assert.deepEqual(parseSave(JSON.stringify(accepted)),accepted);
+});
+
+test('legacy non-combat v2 checkpoint with early trial flag remains readable',()=>{
+  const legacy=nearTrial(initialState());
+  legacy.flags.banditBeaten=true;
+  assert.deepEqual(parseSave(JSON.stringify(legacy)),legacy);
+});
