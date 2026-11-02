@@ -1,4 +1,4 @@
-import {initialState,move,interact,battle,questStatus,equipWeapon,attackDamage,attackName,DEMO_SWORD,discardPotion,usePotion} from './engine.js';
+import {initialState,move,interact,battle,questStatus,equipWeapon,attackDamage,attackName,DEMO_SWORD,discardPotion,usePotion,canRematch,startRematch} from './engine.js';
 import {ACTORS,WIDTH,HEIGHT,TILE,BLOCKS} from './demo-data.js';
 import {commandForKey} from './controls.js';
 import {MAX_SAVE_FILE_BYTES, exportSaveText, importSaveText} from './save-transfer.js';
@@ -87,6 +87,7 @@ $('import-save-file').onchange=async e=>{
  } catch { toast('读取存档文件失败'); }
 };
 $('step-route').onclick=()=>update(stepTowardObjective(state));
+$('rematch').onclick=()=>update(startRematch(state));
 $('equip-weapon').onclick=()=>update(equipWeapon(state));
 $('discard-potion').onclick=()=>update(discardPotion(state));
 $('use-potion').onclick=()=>update(usePotion(state));
@@ -164,6 +165,7 @@ function paint(){
  $('hp-num').textContent=`${state.player.hp} / 100`;$('hp-bar').style.width=state.player.hp+'%';$('silver').textContent=state.player.silver;
  const q=questStatus(state);
  $('step-route').disabled=!!state.dialog||!!state.combat||!route?.length;
+ $('rematch').disabled=!canRematch(state);
  const routeHint=!objective?'':route===null?'（路径暂不可达）':route.length===0?'（已靠近，按 E 交互）':`（沿金色路标 ${route.length} 步）`;
  $('quest-title').textContent=q.title;$('quest-desc').textContent=q.description+(objective?`　下一步：${objective.label}${routeHint}`:'');$('quest-progress').textContent=q.progress;
  const inv=$('inventory');inv.replaceChildren();for(const item of state.inventory){const b=document.createElement('span');b.className='item';b.textContent=item;inv.appendChild(b);}if(!state.inventory.length){const n=document.createElement('span');n.className='empty';n.textContent='暂无物品';inv.appendChild(n);}
