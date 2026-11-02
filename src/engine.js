@@ -53,7 +53,15 @@ export function interact(state) {
     if(s.inventory.length>=MAX_INVENTORY){s.dialog='行囊已满，请先整理回春散再采集清心草。';}
     else {s.flags.herbTaken=true;s.inventory.push('清心草');s.dialog='获得清心草。叶片带着清香，像把竹林的晨露也收进了行囊。';addLog(s,'采集：清心草。');}
   } else if(id==='bandit'){
-    s.combat={enemyHp:DEMO_ENEMY_MAX_HP,enemyMaxHp:DEMO_ENEMY_MAX_HP,guard:false};addLog(s,'进入试炼战斗。');
+    // Demo-only quest gate: a first-time trial requires accepting the elder's task.
+    // Preserve legacy completed saves; this does not claim any source-SWF condition.
+    if(s.quest==='unstarted'){
+      s.dialog='竹林试炼者：先去拜访竹隐老人，领下试炼后再来。';
+      addLog(s,'尚未接受竹影试炼，未进入战斗。');
+    } else {
+      s.combat={enemyHp:DEMO_ENEMY_MAX_HP,enemyMaxHp:DEMO_ENEMY_MAX_HP,guard:false};
+      addLog(s,'进入试炼战斗。');
+    }
   }
   return s;
 }

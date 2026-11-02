@@ -19,7 +19,7 @@ test('quest needs both herb and trial, then completion awards silver once',()=>{
 });
 test('merchant sells potion; battle healing caps HP; missing potion is non-consuming',()=>{
  let s=interact(at(initialState(),16,8));assert.ok(s.inventory.includes('回春散'));assert.equal(s.player.silver,5);
- s=interact(s);s=interact(at(s,19,8));s.player.hp=92;
+ s=interact(s);s.quest='active';s=interact(at(s,19,8));s.player.hp=92;
  s=battle(s,'drink');assert.equal(s.player.hp,94);assert.ok(!s.inventory.includes('回春散'));
  const hp=s.player.hp;s=battle(s,'drink');assert.equal(s.player.hp,hp);
 });
@@ -33,7 +33,8 @@ test('quest status phases',()=>{
 });
 
 test('save parser accepts a legitimate combat checkpoint',()=>{
- let s=interact(at(initialState(),19,8));
+ const accepted=initialState();accepted.quest='active';
+ let s=interact(at(accepted,19,8));
  assert.ok(s.combat);
  assert.deepEqual(parseSave(JSON.stringify(s)),s);
 });

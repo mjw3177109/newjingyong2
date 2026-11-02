@@ -58,7 +58,7 @@ test('rematch retreat permits another attempt, never alters reward or save versi
 });
 
 test('first-time trial and previously valid completed v2 saves remain compatible',()=>{
- const s=initialState();s.player.x=19;s.player.y=8;
+ const s=initialState();s.quest='active';s.player.x=19;s.player.y=8;
  const fighting=interact(s);
  assert.ok(fighting.combat);
  assert.deepEqual(parseSave(JSON.stringify(fighting)),fighting);

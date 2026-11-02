@@ -5,6 +5,7 @@ import {initialState, interact, battle, equipWeapon, attackDamage, attackName, D
 // Original HTML5 demo only: these are not source-SWF battle data.
 test('unarmed trial combat uses fists in the log and applies 12 damage', () => {
   const s=initialState();
+  s.quest='active';
   s.player.x=19;s.player.y=8;
   const fighting=interact(s);
   assert.ok(fighting.combat);
