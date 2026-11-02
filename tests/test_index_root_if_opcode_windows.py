@@ -59,6 +59,8 @@ class IfOpcodeWindowTests(unittest.TestCase):
         result = window_for_if(action_payload(), packet)
         self.assertEqual(result['preceding_opcode_classes'], ['push_opaque', 'comparison'])
         self.assertEqual(result['preceding_record_offsets'], [0, 4])
+        self.assertEqual(result['branch_target_offset'], 10)
+        self.assertEqual(result['fallthrough_offset'], 10)
         self.assertEqual(result['comparison_opcode_count'], 1)
         self.assertEqual(result['straight_line_preceding_record_offsets'], [0, 4])
         self.assertFalse(result['straight_line_boundary_limited'])
