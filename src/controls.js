@@ -37,6 +37,7 @@ export function commandForKey(event, inCombat = false, inDialog = false) {
   if (event.repeat) return null;
   if (key === 'e' || key === 'Enter' || key === ' ') return {kind: 'interact'};
   if (key === 'h') return {kind: 'potion'};
+  if (key === 'r') return {kind: 'rest'};
   if (key === 'g') return {kind: 'route-step'};
   if (key === 'b') return {kind: 'inventory'};
   if (key === 'j') return {kind: 'quest'};

@@ -112,6 +112,20 @@ export function usePotion(state){
   addLog(s,`行走时服用回春散，恢复 ${healed} 点气血。`);
   return s;
 }
+// Original-demo recovery action only; no source-SWF healing mechanic is inferred.
+export function canRestAtVillage(s){
+  return !!s && !s.combat && !s.dialog &&
+    Number.isInteger(s.player?.hp) && s.player.hp > 0 &&
+    s.player.hp < s.player.maxHp && dist(s.player,ACTORS.elder)<=1;
+}
+export function restAtVillage(state){
+  if(!canRestAtVillage(state))return state;
+  const s=copy(state);
+  const healed=Math.min(20,s.player.maxHp-s.player.hp);
+  s.player.hp+=healed;
+  addLog(s,`竹下调息，恢复 ${healed} 点气血。`);
+  return s;
+}
 export function discardPotion(state){
   const s=copy(state);
   if(s.combat||s.dialog)return s;

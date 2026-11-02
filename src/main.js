@@ -1,4 +1,4 @@
-import {initialState,move,interact,battle,questStatus,equipWeapon,attackDamage,attackName,DEMO_SWORD,discardPotion,usePotion,canRematch,startRematch,canDrinkPotion} from './engine.js';
+import {initialState,move,interact,battle,questStatus,equipWeapon,attackDamage,attackName,DEMO_SWORD,discardPotion,usePotion,canRematch,startRematch,canDrinkPotion,canRestAtVillage,restAtVillage} from './engine.js';
 import {ACTORS,WIDTH,HEIGHT,TILE,BLOCKS} from './demo-data.js';
 import {commandForKey} from './controls.js';
 import {MAX_SAVE_FILE_BYTES, exportSaveText, importSaveText} from './save-transfer.js';
@@ -52,6 +52,7 @@ document.addEventListener('keydown',e=>{
  else if(command.kind==='interact')action();
  else if(command.kind==='dismiss-dialog')action();
  else if(command.kind==='potion')update(usePotion(state));
+ else if(command.kind==='rest')update(restAtVillage(state));
  else if(command.kind==='route-step')update(stepTowardObjective(state));
  else if(command.kind==='combat' && (command.action!=='drink' || canDrinkPotion(state))) update(battle(state,command.action));
  else if(command.kind==='inventory')toast(`背包：${state.inventory.join('、')||'空空如也'}`);
@@ -88,6 +89,7 @@ $('import-save-file').onchange=async e=>{
 };
 $('step-route').onclick=()=>update(stepTowardObjective(state));
 $('rematch').onclick=()=>update(startRematch(state));
+$('rest-village').onclick=()=>update(restAtVillage(state));
 $('equip-weapon').onclick=()=>update(equipWeapon(state));
 $('discard-potion').onclick=()=>update(discardPotion(state));
 $('use-potion').onclick=()=>update(usePotion(state));
@@ -171,6 +173,7 @@ function paint(){
  const q=questStatus(state);
  $('step-route').disabled=!!state.dialog||!!state.combat||!route?.length;
  $('rematch').disabled=!canRematch(state);
+ $('rest-village').disabled=!canRestAtVillage(state);
  const routeHint=!objective?'':route===null?'（路径暂不可达）':route.length===0
   ?(state.quest==='completed'?(state.dialog?'（先关闭对话，再点击「竹影再试」）':'（已靠近，点击「竹影再试」）'):'（已靠近，按 E 交互）')
   :`（沿金色路标 ${route.length} 步）`;
