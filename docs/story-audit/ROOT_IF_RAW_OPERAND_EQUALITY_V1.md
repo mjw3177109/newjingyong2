@@ -29,3 +29,21 @@ python -m unittest tests.test_compare_root_if_raw_operands
 即使字节完全相同，也不证明 AVM1 栈状态、运行时变量、地图、剧情条件或实际效果相同；`no_encoded_operands` 不能视为等价证据。若 `different`，仅证明相同 opcode 序列中至少一个编码 payload 不同。所有候选仍为 `unverified`，**原作已语义核实剧情事件仍为 0**。
 
 下一阶段以本轮 CI 的真实输出为依据，优先核实偏移 6607/6640 的差异及后续重复 IF 的编码操作数是否相同，再在有权利的隔离环境中结合 FFDec 私有脚本和运行时观察，建立有来源的剧情/事件对照表。PR 保持 Draft，禁止将这些结构证据冒充原作剧情复刻或直接商业发布。
+
+## 本轮原始 SWF 实测结果
+
+[代码提交 `efdcc1e2` 的 Push Actions #41527350787](https://github.com/mjw3177109/newjingyong2/actions/runs/41527350787) 中，`swf-inventory` 成功重新读取原始 `jin.swf`，完成 **9 组相邻 IF** 的私有编码操作数对照，并上传 `swf-root-if-raw-operand-equality` Artifact。
+
+从真实 Artifact 汇总：
+
+| 区域 | different | not_comparable | same |
+|---|---:|---:|---:|
+| 保守直线前驱 | 8 | 1 | 0 |
+| 分支后继 | 9 | 0 | 0 |
+| 顺序后继 | 9 | 0 | 0 |
+
+- **6607 → 6640**：前驱窗口长度/形状不具备可比性；两个后继的编码操作数均不同。
+- **6640 → 6904 的后续 8 组**：虽然之前的有限操作码类别形状相同，但每组的前驱、分支后继及顺序后继均有不同的编码 payload。**这排除了“这些窗口是完全相同的编码字节”这一假设，但不能推出具体变量、常量或剧情含义。**
+- 这是原始 SWF 直接提取的私有字节相等性结果，不是 FFDec 反编译语义核实。所有原作事件仍为 `unverified`，已语义核实原作剧情事件仍为 **0**。
+
+HTML5 与 Python 测试、FFDec 导出最终状态以对应 GitHub Actions 作业结论为准；本节不将结构对照当成 1:1 复刻进度。
