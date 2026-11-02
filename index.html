@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#1a302b" />
+  <title>竹影江湖 · Q版国风 HTML5 游戏原型</title>
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="masthead">
+      <div class="brand"><span class="stamp">侠</span><div><p class="eyebrow">ORIGINAL Q-STYLE GAME PROTOTYPE</p><h1>竹影<span>江湖</span></h1></div></div>
+      <div class="header-tools"><span class="build">HTML5 · 原创素材 · V0.1</span><button id="save">保存进度</button><button id="load">读取进度</button><button id="new-game" aria-label="重新开始原创试玩并清除本机存档">重新开始</button><button id="export-save">导出存档</button><button id="import-save">导入存档</button><input id="import-save-file" type="file" accept=".json,application/json" hidden aria-label="选择原创试玩存档 JSON" /></div>
+    </header>
+    <div class="layout">
+      <section class="game-area" aria-label="游戏场景">
+        <div class="scene-heading"><div><span class="gold-dot">✦</span> 第一章 · 青竹村 <span class="subtitle">原创操作演示场景，非已还原的原作剧情</span></div><span class="map-label">晴 · 巳时</span></div>
+        <div class="canvas-frame"><canvas id="game" width="900" height="540" aria-label="使用方向键或点按地图移动，每次前进一步；靠近人物按 E 交互"></canvas><div id="dialog" class="dialog hidden" role="status"></div><div id="combat" class="combat hidden"><h2>竹林试炼</h2><p id="combat-info"></p><div class="combat-actions"><button id="attack">出招（1）</button><button id="guard">防御（2）</button><button id="drink">服药（3）</button><button id="flee">撤退（4）</button></div></div><div class="toast hidden" id="toast"></div></div>
+        <div class="control-strip"><span>移动 <kbd>W A S D</kbd> / <kbd>↑ ← ↓ →</kbd></span><span>交互 <kbd>E</kbd> · 关闭对话 <kbd>Esc</kbd></span><span>背包 <kbd>B</kbd></span><span>任务 <kbd>J</kbd></span><span>服药 <kbd>H</kbd></span><span>沿路一步 <kbd>G</kbd></span><span>点按地图朝目标走一步</span><button id="interact">交互 / 拾取</button><button id="step-route" aria-label="沿任务路线前进一步">沿路前进一步（G）</button></div>
+        <div class="mobile-pad" aria-label="触屏操作"><div></div><button data-direction="up" aria-label="向上">▲</button><div></div><button data-direction="left" aria-label="向左">◀</button><button data-direction="down" aria-label="向下">▼</button><button data-direction="right" aria-label="向右">▶</button></div>
+      </section>
+      <aside class="sidebar">
+        <div class="hero-card"><div class="portrait"><img src="./assets/hero.svg" alt="原创Q版国风侠客" /></div><div class="hero-data"><span class="tiny-tag">初入江湖</span><h2>无名少侠</h2><p>江湖新秀 · LV 01</p></div></div>
+        <section class="panel"><div class="panel-header"><h3>角色状态</h3><span>STATUS</span></div><div class="stat-row"><span>气血</span><strong id="hp-num">100 / 100</strong></div><div class="bar"><div id="hp-bar"></div></div><div class="stat-row"><span>内力</span><strong>60 / 60</strong></div><div class="bar energy"><div></div></div><div class="stat-inline"><div>攻击<strong id="attack-num">12</strong></div><div>防御<strong>5</strong></div><div>银两<strong id="silver">10</strong></div></div></section>
+        <section class="panel"><div class="panel-header"><h3>江湖任务</h3><span>QUEST</span></div><div class="quest-title" id="quest-title">初入江湖</div><p id="quest-desc">找到青竹村的隐居老人，开启原创试玩任务。</p><div class="quest-progress" id="quest-progress">未接受</div></section>
+        <section class="panel"><div class="panel-header"><h3>随身行囊</h3><span>INVENTORY</span></div><div class="inventory" id="inventory"></div><button id="use-potion" disabled style="margin-top:10px">服用回春散（气血 +30）</button><button id="equip-weapon" disabled style="margin-top:10px">装备竹纹短剑（攻击 +4）</button><button id="discard-potion" disabled style="margin-top:8px">整理行囊：丢弃一包回春散</button></section>
+        <section class="panel log-panel"><div class="panel-header"><h3>江湖纪事</h3><span>JOURNAL</span></div><div id="journal" class="journal" aria-live="polite"></div></section>
+      </aside>
+    </div>
+    <footer>本版本为原创素材与玩法系统验证。剧情对照尚待 SWF 脚本解析验证，不代表已完成原作还原。 · 源码不依赖 Flash 插件。</footer>
+  </div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

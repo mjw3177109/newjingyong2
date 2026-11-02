@@ -1,0 +1,373 @@
+name: HTML5 foundation CI
+on:
+  push:
+    branches: [main, 'feature/**']
+  pull_request:
+  workflow_dispatch:
+jobs:
+  html5-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Static parse and unit tests
+        run: npm run check
+      - name: Check original illustration files
+        run: |
+          for file in hero elder merchant herb bandit; do test -s "assets/${file}.svg" || exit 1; done
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install isolated Chromium browser test runtime
+        run: |
+          python -m pip install playwright==1.55.0
+          python -m playwright install --with-deps chromium
+      - name: Exercise actual HTML5 game in headless Chromium
+        run: python tests/browser_smoke.py
+      - name: Upload original-demo browser screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: html5-browser-smoke-screenshot
+          path: |
+            reports/browser_smoke.png
+            reports/browser_smoke_mobile.png
+          if-no-files-found: ignore
+  swf-inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Inventory SWF header and tags without exporting protected content
+        run: python tools/inspect_swf.py jin.swf --out reports/swf_inventory.json
+      - name: Index main-timeline action tags and frame labels (source-free)
+        run: python tools/index_swf_timeline.py jin.swf --out reports/swf_main_timeline_evidence.json
+      - name: Index root DoAction top-level bytecode opcodes (source-free)
+        run: python tools/index_swf_action_opcodes.py jin.swf --timeline reports/swf_main_timeline_evidence.json --out reports/swf_root_action_opcode_evidence.json
+      - name: Index sprite timelines and init actions (source-free)
+        run: python tools/index_swf_sprite_timeline.py jin.swf --out reports/swf_sprite_timeline_evidence.json
+      - name: Index direct root sprite placement references (source-free)
+        run: python tools/index_swf_sprite_placements.py jin.swf --out reports/swf_root_sprite_placements.json
+      - name: Index root depth assignments and removals (source-free)
+        run: python tools/index_swf_root_depth.py jin.swf --out reports/swf_root_depth_evidence.json
+      - name: Correlate root action frames and depth transitions (source-free)
+        run: python tools/correlate_root_action_depth.py --timeline reports/swf_main_timeline_evidence.json --depth reports/swf_root_depth_evidence.json --out reports/swf_root_action_depth_correlation.json
+      - name: Build source-free root conditional review queue
+        run: python tools/build_root_conditional_review_queue.py --opcodes reports/swf_root_action_opcode_evidence.json --correlation reports/swf_root_action_depth_correlation.json --out reports/swf_root_conditional_review_queue.json --limit 50
+      - name: Locate source-free conditional branch edges in original SWF
+        run: python tools/index_root_conditional_edges.py jin.swf --opcodes reports/swf_root_action_opcode_evidence.json --queue reports/swf_root_conditional_review_queue.json --out reports/swf_root_conditional_edges.json
+      - name: Locate source-free AVM1 state access hints near root IF branches
+        run: python tools/index_root_state_access.py jin.swf --opcodes reports/swf_root_action_opcode_evidence.json --queue reports/swf_root_conditional_review_queue.json --edges reports/swf_root_conditional_edges.json --out reports/swf_root_state_access_hints.json
+      - name: Build source-free local AVM1 control-flow graph for selected actions
+        run: python tools/index_root_control_flow.py jin.swf --opcodes reports/swf_root_action_opcode_evidence.json --queue reports/swf_root_conditional_review_queue.json --edges reports/swf_root_conditional_edges.json --state-access reports/swf_root_state_access_hints.json --out reports/swf_root_local_control_flow.json
+      - name: Build source-free per-IF manual review packets
+        run: python tools/build_root_if_review_packets.py --queue reports/swf_root_conditional_review_queue.json --edges reports/swf_root_conditional_edges.json --access reports/swf_root_state_access_hints.json --cfg reports/swf_root_local_control_flow.json --out reports/swf_root_if_review_packets.json --limit 12
+      - name: Derive operand-free IF opcode windows from original SWF
+        run: python tools/index_root_if_opcode_windows.py jin.swf --packets reports/swf_root_if_review_packets.json --out reports/swf_root_if_opcode_windows.json
+      - name: Build source-free private-review handoff checklist
+        run: python tools/build_root_if_audit_handoff.py --packets reports/swf_root_if_review_packets.json --out reports/swf_root_if_audit_handoff.json
+      - name: Cross-check original SWF IF opcode windows against private handoff identities
+        run: python tools/crosscheck_root_if_handoff.py --handoff reports/swf_root_if_audit_handoff.json --windows reports/swf_root_if_opcode_windows.json --out reports/swf_root_if_handoff_window_crosscheck.json
+      - name: Reconcile empty private IF review baseline without semantic claims
+        run: python tools/reconcile_root_if_review.py --handoff reports/swf_root_if_audit_handoff.json --reviewed reports/swf_root_if_audit_handoff.json --out reports/swf_root_if_review_reconciliation.json
+      - name: Cross-check depth assignments against independent placement index
+        run: |
+          python - <<'PY'
+          import json
+          a = json.load(open("reports/swf_root_depth_evidence.json", encoding="utf-8"))
+          b = json.load(open("reports/swf_root_sprite_placements.json", encoding="utf-8"))
+          assert a["source_swf_sha256"] == b["source_swf_sha256"]
+          assert a["defined_sprite_count"] == b["defined_sprite_count"]
+          assert a["root_showframe_tags"] == b["root_showframe_tags"]
+          assert a["sprite_character_assignment_tags"] == b["direct_sprite_placement_tag_count"]
+          print("Depth/placement cross-check passed:", a["sprite_character_assignment_tags"], "sprite assignments")
+          print("RemoveObject2 tags:", a["removeobject2_tags"],
+                "sprite removals:", a["sprite_removal_tags"],
+                "max sprite depths:", a["max_sprite_depths_at_showframe"])
+          PY
+      - name: Test source-free script index and review queue
+        run: python -m unittest discover -s tests -p 'test_*.py'
+      - name: Smoke-test standalone audit CLI imports
+        run: |
+          python tools/build_stable_audit_set.py --help > /dev/null
+          python tools/triage_ffdec_three_exports.py --help > /dev/null
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-structural-inventory
+          path: reports/swf_inventory.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-main-timeline-evidence
+          path: reports/swf_main_timeline_evidence.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-root-action-opcode-evidence
+          path: reports/swf_root_action_opcode_evidence.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-root-conditional-review-queue
+          path: reports/swf_root_conditional_review_queue.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-root-conditional-edges
+          path: reports/swf_root_conditional_edges.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-root-state-access-hints
+          path: reports/swf_root_state_access_hints.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-root-local-control-flow
+          path: reports/swf_root_local_control_flow.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-root-if-review-packets
+          path: reports/swf_root_if_review_packets.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-root-if-opcode-windows
+          path: reports/swf_root_if_opcode_windows.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-root-if-audit-handoff
+          path: reports/swf_root_if_audit_handoff.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-root-if-handoff-window-crosscheck
+          path: reports/swf_root_if_handoff_window_crosscheck.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-root-if-review-reconciliation
+          path: reports/swf_root_if_review_reconciliation.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-sprite-timeline-evidence
+          path: reports/swf_sprite_timeline_evidence.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-root-sprite-placement-evidence
+          path: reports/swf_root_sprite_placements.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-root-depth-evidence
+          path: reports/swf_root_depth_evidence.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-root-action-depth-correlation
+          path: reports/swf_root_action_depth_correlation.json
+          if-no-files-found: error
+
+  ffdec-java8-probe:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Check legacy FFDec CLI on original SWF (private ephemeral export)
+        shell: bash
+        run: |
+          set -euo pipefail
+          java -version
+          test -s FFDec/ffdec.jar
+          scratch="$(mktemp -d)"
+          trap 'rm -rf "$scratch"' EXIT
+          set +e
+          timeout 300s java -Djava.awt.headless=true -Xmx2g -jar FFDec/ffdec.jar -cli -export script "$scratch/scripts" jin.swf > "$scratch/ffdec.log" 2>&1
+          status=$?
+          set -e
+          echo "FFDec exit status: $status"
+          if [[ "$status" -ne 0 ]]; then
+            echo "FFDec Java 8 CLI export did not complete. Raw log remains ephemeral."
+            exit 1
+          fi
+          count=$(find "$scratch/scripts" -type f | wc -l)
+          echo "Exported script files (count only): $count"
+          test "$count" -gt 0
+          python3 tools/index_ffdec_scripts.py "$scratch/scripts" --source-swf jin.swf --out reports/ffdec_script_index.json
+          indexed=$(python3 -c 'import json; print(json.load(open("reports/ffdec_script_index.json"))["script_file_count"])')
+          test "$indexed" -eq "$count"
+          python3 tools/build_review_queue.py reports/ffdec_script_index.json --out reports/ffdec_review_queue.json --limit 100
+          python3 tools/build_evidence_ledger.py "$scratch/scripts" --source-swf jin.swf --queue reports/ffdec_review_queue.json --out reports/ffdec_syntax_evidence_ledger.json
+          python3 tools/build_frame_jump_evidence.py "$scratch/scripts" --source-swf jin.swf --queue reports/ffdec_review_queue.json --out reports/ffdec_frame_jump_evidence.json
+          # Independently export the same SWF a second time in a fresh directory.
+          # Keep both decompiled source trees and FFDec logs ephemeral.
+          set +e
+          timeout 300s java -Djava.awt.headless=true -Xmx2g -jar FFDec/ffdec.jar -cli -export script "$scratch/scripts_repeat" jin.swf > "$scratch/ffdec_repeat.log" 2>&1
+          repeat_status=$?
+          set -e
+          echo "Second FFDec exit status: $repeat_status"
+          test "$repeat_status" -eq 0
+          python3 tools/index_ffdec_scripts.py "$scratch/scripts_repeat" --source-swf jin.swf --out "$scratch/index_repeat.json"
+          python3 tools/build_review_queue.py "$scratch/index_repeat.json" --out "$scratch/queue_repeat.json" --limit 100
+          python3 tools/build_frame_jump_evidence.py "$scratch/scripts_repeat" --source-swf jin.swf --queue "$scratch/queue_repeat.json" --out "$scratch/jumps_repeat.json"
+          python3 tools/compare_ffdec_exports.py \
+            --index-a reports/ffdec_script_index.json --index-b "$scratch/index_repeat.json" \
+            --queue-a reports/ffdec_review_queue.json --queue-b "$scratch/queue_repeat.json" \
+            --jumps-a reports/ffdec_frame_jump_evidence.json --jumps-b "$scratch/jumps_repeat.json" \
+            --out reports/ffdec_reproducibility.json
+          python3 tools/build_stable_audit_set.py \
+            --index-a reports/ffdec_script_index.json --index-b "$scratch/index_repeat.json" \
+            --queue-a reports/ffdec_review_queue.json --queue-b "$scratch/queue_repeat.json" \
+            --jumps-a reports/ffdec_frame_jump_evidence.json --jumps-b "$scratch/jumps_repeat.json" \
+            --out reports/ffdec_stable_audit_set.json
+          python3 tools/diagnose_ffdec_drift.py \
+            --scripts-a "$scratch/scripts" --scripts-b "$scratch/scripts_repeat" \
+            --index-a reports/ffdec_script_index.json --index-b "$scratch/index_repeat.json" \
+            --out reports/ffdec_drift_diagnostics.json
+          if [[ "$(python3 -c 'import json; print(json.load(open("reports/ffdec_reproducibility.json"))["comparison_status"])')" == "divergent" ]]; then
+            echo "::warning title=FFDec export drift::Two Java 8 exports of the same SWF diverged. Syntax counts must not be treated as stable story evidence."
+            # A third fresh export is diagnostic only; it cannot establish a canonical script.
+            set +e
+            timeout 300s java -Djava.awt.headless=true -Xmx2g -jar FFDec/ffdec.jar -cli -export script "$scratch/scripts_third" jin.swf > "$scratch/ffdec_third.log" 2>&1
+            third_status=$?
+            set -e
+            echo "Third FFDec exit status: $third_status"
+            test "$third_status" -eq 0
+            python3 tools/index_ffdec_scripts.py "$scratch/scripts_third" --source-swf jin.swf --out "$scratch/index_third.json"
+            python3 tools/triage_ffdec_three_exports.py \
+              --index-a reports/ffdec_script_index.json \
+              --index-b "$scratch/index_repeat.json" \
+              --index-c "$scratch/index_third.json" \
+              --out reports/ffdec_three_run_triage.json
+            # A/B stable candidates may still differ in C: quarantine those hashes.
+            python3 tools/quarantine_ffdec_third_export.py \
+              --stable-set reports/ffdec_stable_audit_set.json \
+              --index-c "$scratch/index_third.json" \
+              --out reports/ffdec_third_export_quarantine.json
+            # Diagnose the other two pairs while all private exports still exist.
+            # No decompiled source text or original paths enter the artifacts.
+            python3 tools/diagnose_ffdec_drift.py \
+              --scripts-a "$scratch/scripts" --scripts-b "$scratch/scripts_third" \
+              --index-a reports/ffdec_script_index.json --index-b "$scratch/index_third.json" \
+              --out reports/ffdec_drift_diagnostics_ac.json
+            python3 tools/diagnose_ffdec_drift.py \
+              --scripts-a "$scratch/scripts_repeat" --scripts-b "$scratch/scripts_third" \
+              --index-a "$scratch/index_repeat.json" --index-b "$scratch/index_third.json" \
+              --out reports/ffdec_drift_diagnostics_bc.json
+          fi
+          # Private FFDec logs stay in scratch; publish only anonymous hashes/counts.
+          log_args=(--log-a "$scratch/ffdec.log" --log-b "$scratch/ffdec_repeat.log")
+          if [[ -f "$scratch/ffdec_third.log" ]]; then
+            log_args+=(--log-c "$scratch/ffdec_third.log")
+          fi
+          python3 tools/summarize_ffdec_logs.py "${log_args[@]}" --out reports/ffdec_log_fingerprints.json
+          echo "Only hashed script fingerprints and syntax locations are exported; all candidates remain unverified."
+          echo "No decompiled scripts or source graphics are uploaded or committed."
+      - name: Upload source-free script evidence only
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffdec-source-free-script-index
+          path: reports/ffdec_script_index.json
+          if-no-files-found: error
+      - name: Upload source-free review queue only
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffdec-source-free-review-queue
+          path: reports/ffdec_review_queue.json
+          if-no-files-found: error
+
+      - name: Upload source-free syntax evidence only
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffdec-source-free-syntax-evidence
+          path: reports/ffdec_syntax_evidence_ledger.json
+          if-no-files-found: error
+
+      - name: Upload source-free literal frame jump evidence only
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffdec-source-free-frame-jumps
+          path: reports/ffdec_frame_jump_evidence.json
+          if-no-files-found: error
+
+      - name: Upload aggregate FFDec reproducibility evidence only
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffdec-source-free-reproducibility
+          path: reports/ffdec_reproducibility.json
+          if-no-files-found: error
+
+      - name: Upload reproducible syntax candidate manifest only
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffdec-source-free-stable-audit-set
+          path: reports/ffdec_stable_audit_set.json
+          if-no-files-found: error
+
+      - name: Upload source-free byte-level drift diagnostics only
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffdec-source-free-drift-diagnostics
+          path: reports/ffdec_drift_diagnostics.json
+          if-no-files-found: error
+
+      - name: Upload conditional three-export drift triage (hashes only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffdec-source-free-three-run-triage
+          path: reports/ffdec_three_run_triage.json
+          if-no-files-found: ignore
+
+      - name: Upload conditional third-export candidate quarantine (hashes only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffdec-source-free-third-export-quarantine
+          path: reports/ffdec_third_export_quarantine.json
+          if-no-files-found: ignore
+
+      - name: Upload conditional A/C and B/C byte drift diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffdec-source-free-third-pair-byte-diagnostics
+          path: |
+            reports/ffdec_drift_diagnostics_ac.json
+            reports/ffdec_drift_diagnostics_bc.json
+          if-no-files-found: ignore
+
+      - name: Upload source-free FFDec CLI log fingerprints only
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffdec-source-free-log-fingerprints
+          path: reports/ffdec_log_fingerprints.json
+          if-no-files-found: error
