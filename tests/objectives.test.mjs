@@ -21,9 +21,10 @@ test('active quest selects remaining objectives in deterministic order', () => {
   assert.equal(nextObjective(s).id, 'elder');
   assert.equal(nextObjective(s).label, '返回竹隐老人处复命');
 });
-test('completed or unknown quest never points to a removed actor', () => {
+test('completed quest routes to optional elder sparring, not a removed actor', () => {
   const s = initialState(); s.quest = 'completed';
-  assert.equal(nextObjective(s), null);
+  const target = nextObjective(s);
+  assert.deepEqual(target, {id:'elder', label:'竹影再试（可选）', x:ACTORS.elder.x, y:ACTORS.elder.y});
   s.quest = 'invalid';
   assert.equal(nextObjective(s), null);
   assert.equal(nextObjective(null), null);
@@ -50,13 +51,22 @@ test('objective guidance and Canvas taps share the same route across demo quest 
   }
 });
 
-test('guidance is inert for completed quest and cannot move during dialogue', () => {
-  const s = initialState();
-  s.quest = 'completed';
-  assert.equal(pathToObjective(s), null);
-  assert.deepEqual(stepTowardObjective(s), s);
-  const dialog = initialState(); dialog.dialog = '原创演示对话';
-  assert.equal(stepTowardObjective(dialog), dialog);
+test('optional rematch guidance moves one step without starting combat or changing quest', () => {
+  const s = initialState(); s.quest = 'completed';
+  s.flags.herbTaken = true; s.flags.banditBeaten = true;
+  s.inventory = ['清心草', '竹纹短剑'];
+  const before = structuredClone(s);
+  const route = pathToObjective(s);
+  assert.ok(route.length > 0);
+  const next = stepTowardObjective(s);
+  assert.equal(Math.abs(next.player.x-s.player.x)+Math.abs(next.player.y-s.player.y), 1);
+  assert.equal(next.quest, 'completed');
+  assert.equal(next.combat, null);
+  assert.deepEqual(s, before);
+  const dialog = {...s, dialog:'原创演示对话'};
+  assert.deepEqual(stepTowardObjective(dialog), dialog);
+  const fighting = {...s, combat:{enemyHp:28,enemyMaxHp:28,guard:false}};
+  assert.deepEqual(stepTowardObjective(fighting), fighting);
 });
 
 test('guidance takes exactly one cardinal step and stops adjacent to its target', () => {
