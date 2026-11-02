@@ -150,6 +150,42 @@ class IfOpcodeWindowTests(unittest.TestCase):
         self.assertEqual(result['straight_line_preceding_record_offsets'], [])
         self.assertTrue(result['straight_line_boundary_limited'])
 
+    def test_successor_arm_previews_show_write_hints_without_operands(self):
+        # IF at 4: branch -> 15, fallthrough -> 9; Jump at 10 -> ActionEnd 17.
+        action = (b'\\x96\\x01\\x00\\x02' + b'\\x9d\\x02\\x00\\x06\\x00'
+                  + b'\\x1d' + b'\\x99\\x02\\x00\\x02\\x00'
+                  + b'\\x4f\\x1c\\x00')
+        result = window_for_if(action, packet_for_if(action, 4))
+        self.assertTrue(result['successor_arms_distinct'])
+        self.assertEqual(result['successor_arm_window_limit'], 8)
+        branch = result['successor_arm_windows']['branch']
+        fall = result['successor_arm_windows']['fallthrough']
+        self.assertEqual(branch['record_offsets'], [15, 16])
+        self.assertEqual(branch['opcode_classes'], ['member_write', 'variable_read'])
+        self.assertEqual(branch['write_opcode_hint_count'], 1)
+        self.assertEqual(branch['stop_reason'], 'action_end')
+        self.assertEqual(fall['record_offsets'], [9, 10])
+        self.assertEqual(fall['opcode_classes'], ['variable_write', 'branch'])
+        self.assertEqual(fall['write_opcode_hint_count'], 1)
+        self.assertEqual(fall['stop_reason'], 'branch_or_opaque_boundary')
+        self.assertNotIn('value', str(result['successor_arm_windows']))
+        self.assertNotIn('variable_name', str(result['successor_arm_windows']))
+
+    def test_successor_preview_stops_at_join_and_handles_shared_action_end(self):
+        # Branch target at 6 is a control-flow join; fallthrough starts at 5.
+        action = b'\\x9d\\x02\\x00\\x01\\x00\\x1d\\x1c\\x00'
+        arms = window_for_if(action, packet_for_if(action, 0))['successor_arm_windows']
+        self.assertEqual(arms['fallthrough']['record_offsets'], [5])
+        self.assertEqual(arms['fallthrough']['stop_reason'], 'control_flow_join')
+        self.assertEqual(arms['branch']['record_offsets'], [6])
+        self.assertEqual(arms['branch']['stop_reason'], 'action_end')
+        packet = packets_for(tiny_swf(action_payload()), action_payload())['manual_review_queue'][0]
+        shared = window_for_if(action_payload(), packet)
+        self.assertFalse(shared['successor_arms_distinct'])
+        for arm in shared['successor_arm_windows'].values():
+            self.assertEqual(arm['record_offsets'], [])
+            self.assertEqual(arm['stop_reason'], 'action_end')
+
     def test_avm1_operator_family_classification(self):
         # AVM1 And is 0x10; StringAdd is 0x21. Neither is comparison.
         self.assertEqual(CLASSES[0x10], 'boolean_logic')
