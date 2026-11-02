@@ -57,6 +57,18 @@ export function interact(state) {
   }
   return s;
 }
+// Optional original-demo sparring, not a recovered SWF event. No new save keys.
+export function canRematch(s){
+  return s.quest==='completed' && s.flags.banditBeaten &&
+    !s.combat && !s.dialog && dist(s.player,ACTORS.elder)<=1;
+}
+export function startRematch(state){
+  const s=copy(state);
+  if(!canRematch(s))return s;
+  s.combat={enemyHp:DEMO_ENEMY_MAX_HP,enemyMaxHp:DEMO_ENEMY_MAX_HP,guard:false};
+  addLog(s,'竹隐老人主持再次试炼：本次不重复发放任务奖励。');
+  return s;
+}
 export function battle(state,action){
   const s=copy(state); if(!s.combat) return s;
   if(!['attack','guard','drink','flee'].includes(action))return s;
@@ -70,7 +82,7 @@ export function battle(state,action){
   }
   if(action==='guard'){s.combat.guard=true;addLog(s,'凝神防御，下次受击伤害减半。');}
   if(action==='attack'){const damage=attackDamage(s);s.combat.enemyHp=Math.max(0,s.combat.enemyHp-damage);addLog(s,`使出${attackName(s)}，造成 ${damage} 点伤害。`);}
-  if(s.combat.enemyHp<=0){s.flags.banditBeaten=true;s.combat=null;addLog(s,'试炼胜利！返回竹隐老人处复命。');return s;}
+  if(s.combat.enemyHp<=0){const rematch=s.quest==='completed';s.flags.banditBeaten=true;s.combat=null;addLog(s,rematch?'再试胜利！不重复发放任务奖励。':'试炼胜利！返回竹隐老人处复命。');return s;}
   const damage=s.combat.guard?3:6;s.player.hp=Math.max(0,s.player.hp-damage);s.combat.guard=false;
   addLog(s,`试炼者反击，气血减少 ${damage}。`);
   if(s.player.hp===0){s.player.hp=50;s.player.x=5;s.player.y=8;s.combat=null;addLog(s,'气血耗尽，被送回村口，恢复至 50 点。');}
@@ -151,7 +163,7 @@ export function parseSave(raw){
     if(s.dialog || !exactKeys(c,['enemyHp','enemyMaxHp','guard']) ||
        c.enemyMaxHp!==DEMO_ENEMY_MAX_HP ||
        !Number.isInteger(c.enemyHp)||c.enemyHp<1||c.enemyHp>DEMO_ENEMY_MAX_HP||
-       typeof c.guard!=='boolean'||s.flags.banditBeaten||dist(p,ACTORS.bandit)!==1)return null;
+       typeof c.guard!=='boolean'||!( (!s.flags.banditBeaten && dist(p,ACTORS.bandit)===1) || (s.quest==='completed' && s.flags.banditBeaten && dist(p,ACTORS.elder)===1) ))return null;
   }
   return s;
 }
