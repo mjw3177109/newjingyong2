@@ -39,8 +39,11 @@ test('collected herb tile is traversable when guiding to the trial', () => {
   assert.ok(route?.length>0);
   assert.equal(distance(route.at(-1),ACTORS.bandit),1);
 });
-test('completed and malformed objectives or blocked starting tiles produce no route', () => {
-  const s=fresh();s.quest='completed';assert.equal(pathToObjective(s),null);
+test('completed quest routes to optional rematch; malformed or blocked tiles still fail', () => {
+  const s=fresh();s.quest='completed';
+  const route=pathToObjective(s);
+  assert.ok(route.length>0);
+  assert.equal(distance(route.at(-1),ACTORS.elder),1);
   s.quest='unknown';assert.equal(pathToObjective(s),null);
   s.quest='unstarted';s.player={x:2,y:2};assert.equal(pathToObjective(s),null);
   s.player={x:7,y:6};assert.equal(pathToObjective(s),null);
@@ -67,9 +70,9 @@ test('route-step can be repeated to reach an interaction tile without entering N
   assert.deepEqual(pathToObjective(s),[]);
   assert.deepEqual(stepTowardObjective(s),s);
 });
-test('route-step is inert during dialog, combat, invalid and completed objectives', () => {
+test('route-step is inert during dialog, combat, invalid or blocked objectives', () => {
   const s=fresh();
-  for(const patch of [{dialog:'对话中'}, {combat:{enemyHp:10}}, {quest:'completed'}, {player:{x:2,y:2}}]) {
+  for(const patch of [{dialog:'对话中'}, {combat:{enemyHp:10}}, {quest:'invalid'}, {player:{x:2,y:2}}]) {
     const blocked={...s,...patch};
     assert.deepEqual(stepTowardObjective(blocked),blocked);
   }
@@ -81,4 +84,13 @@ test('route-step recomputes after quest progress and does not skip interactions'
   assert.equal(s.quest,'unstarted');
   assert.equal(s.flags.herbTaken,false);
   assert.equal(s.flags.banditBeaten,false);
+});
+
+test('completed quest navigation remains optional and never starts a rematch', () => {
+  const s=fresh();s.quest='completed';s.flags.herbTaken=true;s.flags.banditBeaten=true;
+  const next=stepTowardObjective(s);
+  assert.equal(distance(s.player,next.player),1);
+  assert.equal(next.quest,'completed');
+  assert.equal(next.combat,undefined);
+  assert.deepEqual(s.player,{x:5,y:8});
 });
