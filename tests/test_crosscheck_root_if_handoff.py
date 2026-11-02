@@ -25,8 +25,15 @@ def fixtures():
         'selected_if_count': 1, 'window_width': 12, 'verified_story_events': 0,
         'entries': [{'review_id': rid, 'root_frame': 9, 'action_tag_ordinal': 2,
                      'if_source_offset': 15, 'review_status': 'unverified',
+                     'preceding_record_count': 2,
+                     'preceding_record_offsets': [4, 10],
+                     'preceding_opcode_classes': ['push_opaque', 'comparison'],
                      'straight_line_preceding_record_count': 2,
+                     'straight_line_preceding_record_offsets': [4, 10],
                      'straight_line_preceding_opcode_classes': ['push_opaque', 'comparison'],
+                     'straight_line_boundary_limited': False,
+                     'comparison_opcode_count': 1,
+                     'has_branch_or_opaque_control': False,
                      'if_incoming_reachable_syntactic_source_count': 1,
                      'if_has_multiple_reachable_syntactic_predecessors': False}],
     }
@@ -103,6 +110,35 @@ class CrosscheckTests(unittest.TestCase):
                 mutate(h['entries'][0]['checks'])
                 with self.assertRaisesRegex(ValueError, 'attestations'):
                     crosscheck(h, w)
+
+    def test_rejects_tampered_opcode_window_summary(self):
+        mutations = (
+            lambda row: row.update({'preceding_record_count': 3}),
+            lambda row: row.update({'preceding_record_offsets': [10, 4]}),
+            lambda row: row.update({'preceding_record_offsets': [4, 15]}),
+            lambda row: row.update({'straight_line_preceding_record_offsets': [4]}),
+            lambda row: row.update({'straight_line_preceding_opcode_classes': ['comparison', 'push_opaque']}),
+            lambda row: row.update({'preceding_opcode_classes': ['push_opaque', 'fake_comparison']}),
+            lambda row: row.update({'comparison_opcode_count': 0}),
+            lambda row: row.update({'straight_line_boundary_limited': True}),
+            lambda row: row.update({'has_branch_or_opaque_control': True}),
+        )
+        for mutate in mutations:
+            with self.subTest(mutate=mutate):
+                h, w = fixtures()
+                mutate(w['entries'][0])
+                with self.assertRaisesRegex(ValueError, 'opcode'):
+                    crosscheck(h, w)
+
+    def test_accepts_valid_truncated_straight_line_suffix(self):
+        h, w = fixtures()
+        row = w['entries'][0]
+        row['straight_line_preceding_record_count'] = 1
+        row['straight_line_preceding_record_offsets'] = [10]
+        row['straight_line_preceding_opcode_classes'] = ['comparison']
+        row['straight_line_boundary_limited'] = True
+        result = crosscheck(h, w)
+        self.assertTrue(result['entries'][0]['bounded_comparison_opcode_present'])
 
     def test_rejects_window_exceeding_declared_width(self):
         h, w = fixtures()
