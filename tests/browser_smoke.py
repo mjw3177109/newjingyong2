@@ -53,6 +53,8 @@ def main():
             page.wait_for_function("document.querySelector('.portrait img').naturalWidth > 0")
             assert page.locator('#silver').inner_text() == '10'
             assert page.locator('#attack-num').inner_text() == '12'
+            assert '拳脚' in page.locator('#attack').inner_text()
+            assert '12 伤害' in page.locator('#attack').inner_text()
             assert page.evaluate("document.querySelector('#game').getContext('2d').getImageData(10, 10, 1, 1).data[3] > 0")
             # A mouse click focuses the Save button; movement keys must still work
             # without requiring an undocumented click on the canvas/background.
@@ -98,7 +100,9 @@ def main():
             assert page.locator('#combat').is_visible()
             page.keyboard.press('Escape')
             assert page.locator('#combat').is_visible(), 'Escape must not silently abandon a battle'
-            for _ in range(3):
+            page.locator('#attack').click()
+            assert '拳脚，造成 12 点伤害' in page.locator('#journal').inner_text()
+            for _ in range(2):
                 page.locator('#attack').click()
             assert not page.locator('#combat').is_visible()
             walk_to_objective(page)
@@ -108,6 +112,8 @@ def main():
             page.locator('#interact').click()
             page.locator('#equip-weapon').click()
             assert page.locator('#attack-num').inner_text() == '16'
+            assert '青竹剑' in page.locator('#attack').inner_text()
+            assert '16 伤害' in page.locator('#attack').inner_text()
 
             page.locator('#save').click()
             page.reload(wait_until='networkidle')
