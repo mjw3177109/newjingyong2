@@ -31,6 +31,7 @@ CLASSES = {
     0x1C: 'variable_read', 0x1D: 'variable_write',
     0x4E: 'member_read', 0x4F: 'member_write',
     0x22: 'property_read', 0x23: 'property_write',
+    0x3C: 'local_write', 0x41: 'local_write', 0x87: 'register_write',
     0x0E: 'comparison', 0x0F: 'comparison', 0x13: 'comparison',
     0x29: 'comparison', 0x49: 'comparison', 0x48: 'comparison',
     0x66: 'comparison', 0x67: 'comparison', 0x68: 'comparison',
@@ -131,6 +132,54 @@ def incoming_edges_for_if(records, edges, source):
     }
 
 
+
+def bounded_successor_arm_windows(records, edges, branch_target, fallthrough, limit=8):
+    """Operand-free linear previews at both IF successors, never execution traces.
+
+    Stop before another control-flow leader, or immediately after a branch,
+    terminator or opaque-control record. A write opcode is only a *hint*:
+    its target, value, execution and game meaning are unknown.
+    """
+    positions = [pos for pos, _ in records]
+    by_offset = dict(records)
+    next_at = {pos: positions[i + 1] if i + 1 < len(positions) else None
+               for i, pos in enumerate(positions)}
+    leaders = {edge['target_offset'] for edge in edges}
+    for i, (pos, opcode) in enumerate(records[:-1]):
+        if opcode in (0x99, 0x9D) or opcode in TERMINATORS or opcode in OPAQUE_CONTROL:
+            leaders.add(records[i + 1][0])
+
+    def scan(start):
+        offsets, classes = [], []
+        current = start
+        reason = 'action_end'
+        while current in by_offset:
+            if current != start and current in leaders:
+                reason = 'control_flow_join'
+                break
+            if len(offsets) == limit:
+                reason = 'window_limit'
+                break
+            opcode = by_offset[current]
+            offsets.append(current)
+            classes.append(CLASSES.get(opcode, 'other'))
+            if opcode in (0x99, 0x9D) or opcode in TERMINATORS or opcode in OPAQUE_CONTROL:
+                reason = 'branch_or_opaque_boundary'
+                break
+            current = next_at[current]
+        return {
+            'start_offset': start,
+            'record_offsets': offsets,
+            'opcode_classes': classes,
+            'write_opcode_hint_count': sum(
+                cls in ('variable_write', 'member_write', 'property_write',
+                        'local_write', 'register_write') for cls in classes),
+            'stop_reason': reason,
+        }
+
+    return {'branch': scan(branch_target), 'fallthrough': scan(fallthrough)}
+
+
 def window_for_if(payload, packet, width=12):
     if type(width) is not int or not 1 <= width <= 32:
         raise ValueError('invalid opcode window width')
@@ -158,6 +207,8 @@ def window_for_if(payload, packet, width=12):
     classes = [CLASSES.get(op, 'other') for _, op in preceding]
     safe = straight_line_suffix(records, edges, idx, width)
     incoming = incoming_edges_for_if(records, edges, source)
+    arms = bounded_successor_arm_windows(records, edges, edge['target_offset'],
+                                         successor['fallthrough_offset'])
     return {
         **incoming,
         'review_id': packet['review_id'],
@@ -167,6 +218,9 @@ def window_for_if(payload, packet, width=12):
         # Raw-SWF-confirmed successors, retained for independent handoff alignment.
         'branch_target_offset': edge['target_offset'],
         'fallthrough_offset': successor['fallthrough_offset'],
+        'successor_arm_window_limit': 8,
+        'successor_arms_distinct': edge['target_offset'] != successor['fallthrough_offset'],
+        'successor_arm_windows': arms,
         'preceding_record_count': len(preceding),
         'preceding_opcode_classes': classes,
         'preceding_record_offsets': [pos for pos, _ in preceding],
@@ -235,7 +289,7 @@ def build_windows(path, packets, width=12):
         'window_width': width,
         'entries': [observed[p['review_id']] for p in selected],
         'verified_story_events': 0,
-        'interpretation': 'Linear preceding, bounded straight-line classes and syntactic incoming edges only (not necessarily reachable or exhaustive under opaque control), not a reconstructed IF condition, expression, execution path, story event, or rights evidence. Push operands, identifiers, scripts and media omitted.',
+        'interpretation': 'Linear preceding, bounded straight-line classes, syntactic incoming edges and bounded successor previews only (not necessarily reachable or exhaustive under opaque control), not a reconstructed IF condition, expression, execution path, story event, or rights evidence. Push operands, identifiers, scripts and media omitted.',
     }
 
 
