@@ -1,4 +1,4 @@
-import {initialState,move,interact,battle,questStatus,equipWeapon,attackDamage,DEMO_SWORD,discardPotion,usePotion} from './engine.js';
+import {initialState,move,interact,battle,questStatus,equipWeapon,attackDamage,attackName,DEMO_SWORD,discardPotion,usePotion} from './engine.js';
 import {ACTORS,WIDTH,HEIGHT,TILE,BLOCKS} from './demo-data.js';
 import {commandForKey} from './controls.js';
 import {MAX_SAVE_FILE_BYTES, exportSaveText, importSaveText} from './save-transfer.js';
@@ -155,6 +155,8 @@ function paint(){
  const c=$('combat');c.classList.toggle('hidden',!state.combat);
  if(state.combat)$('combat-info').textContent=`试炼者气血 ${state.combat.enemyHp}/${state.combat.enemyMaxHp}　｜　少侠气血 ${state.player.hp}/100`;
  $('attack-num').textContent=attackDamage(state);
+ // The attack control must show the actual demo action and damage for current equipment.
+ $('attack').textContent=`${attackName(state)}（1） · ${attackDamage(state)} 伤害`;
  $('discard-potion').disabled=!state.inventory.includes('回春散')||!!state.combat||!!state.dialog;
  $('use-potion').disabled=!state.inventory.includes('回春散')||state.player.hp>=state.player.maxHp||!!state.combat||!!state.dialog;
  const equip=$('equip-weapon');equip.disabled=!state.inventory.includes(DEMO_SWORD)||!!state.combat||!!state.dialog;
