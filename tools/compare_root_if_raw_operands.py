@@ -14,11 +14,13 @@ try:
     from tools.index_root_state_access import action_records
     from tools.index_root_if_opcode_windows import build_windows
     from tools.compare_root_if_opcode_shapes import compare_shapes
+    from tools.inspect_avm1_push_types import compare_push_type_signatures
 except ModuleNotFoundError:
     from index_swf_sprite_timeline import load_swf, iter_tags
     from index_root_state_access import action_records
     from index_root_if_opcode_windows import build_windows
     from compare_root_if_opcode_shapes import compare_shapes
+    from inspect_avm1_push_types import compare_push_type_signatures
 
 
 def encoded_records(payload):
@@ -97,8 +99,11 @@ def compare_raw_operands(swf_path, packets, clusters, windows, shapes):
             'right_if_source_offset': right['if_source_offset'],
         }
         for region in ('predecessor', 'branch', 'fallthrough'):
+            left_offsets, right_offsets = offsets(left, region), offsets(right, region)
             result[region + '_encoded_operand_comparison'] = compare_region(
-                records, offsets(left, region), offsets(right, region))
+                records, left_offsets, right_offsets)
+            result[region + '_push_type_shape_comparison'] = compare_push_type_signatures(
+                records, left_offsets, right_offsets)
         result['review_status'] = 'unverified'
         pairs.append(result)
     return {
@@ -108,7 +113,7 @@ def compare_raw_operands(swf_path, packets, clusters, windows, shapes):
         'adjacent_pairs': pairs,
         'verified_story_events': 0,
         'ready_for_html5_mapping': 0,
-        'warning': 'Only private raw byte equality categories. Equal encoded operands do not prove equal execution, predicates, maps, state effects or story. No operand, identifier, hash, script or asset bytes exported.',
+        'warning': 'Only private raw byte equality and Push type-shape categories. Matching Push types do not prove equal values, execution, predicates, maps, state effects or story. No operand, identifier, hash, script or asset bytes exported.',
     }
 
 
