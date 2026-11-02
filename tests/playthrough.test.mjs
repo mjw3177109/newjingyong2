@@ -47,7 +47,8 @@ test('full original-demo quest is playable through movement, interactions, comba
   assert.equal(s.quest, 'completed');
   assert.equal(s.player.silver, 40);
   assert.equal(s.inventory.filter(item => item === DEMO_SWORD).length, 1);
-  assert.equal(nextObjective(s), null);
+  assert.equal(nextObjective(s).id, 'elder', 'optional rematch guidance remains after quest completion');
+  assert.deepEqual(pathToObjective(s), [], 'player is already adjacent to the elder');
   s = interact(s);
   s = equipWeapon(s);
   assert.equal(s.equipment.weapon, DEMO_SWORD);
