@@ -55,6 +55,48 @@ def _checked_window(row, width, if_offset):
     return safe_classes
 
 
+
+def _checked_predecessors(row, if_offset):
+    """Validate operand-free incoming-edge summaries, not runtime reachability."""
+    edges = row.get('if_incoming_syntactic_edges')
+    unreachable_offsets = row.get('if_incoming_unreachable_syntactic_source_offsets')
+    if not isinstance(edges, list) or not isinstance(unreachable_offsets, list):
+        raise ValueError('missing syntactic predecessor evidence')
+    pairs = []
+    for edge in edges:
+        if (not isinstance(edge, dict)
+                or set(edge) != {'source_offset', 'edge_kind'}
+                or type(edge['source_offset']) is not int or edge['source_offset'] < 0
+                or edge['edge_kind'] not in ('branch', 'fallthrough')):
+            raise ValueError('invalid syntactic predecessor edge')
+        pairs.append((edge['source_offset'], edge['edge_kind']))
+    if pairs != sorted(set(pairs)):
+        raise ValueError('duplicate or unsorted syntactic predecessor edges')
+    sources = {pos for pos, _ in pairs}
+    if (any(type(pos) is not int or pos < 0 for pos in unreachable_offsets)
+            or unreachable_offsets != sorted(set(unreachable_offsets))
+            or not set(unreachable_offsets).issubset(sources)):
+        raise ValueError('invalid unreachable syntactic predecessor offsets')
+    total = _count(row.get('if_incoming_syntactic_source_count'))
+    reachable = _count(row.get('if_incoming_reachable_syntactic_source_count'))
+    unreachable = _count(row.get('if_incoming_unreachable_syntactic_source_count'))
+    flags = ('if_has_multiple_syntactic_predecessors',
+             'if_has_multiple_reachable_syntactic_predecessors',
+             'if_has_backward_or_self_incoming_branch',
+             'if_is_action_entry',
+             'if_has_opaque_immediate_predecessor')
+    if any(type(row.get(name)) is not bool for name in flags):
+        raise ValueError('invalid syntactic predecessor flags')
+    if (total != len(sources) or reachable + unreachable != total
+            or unreachable != len(unreachable_offsets)
+            or row['if_has_multiple_syntactic_predecessors'] != (total > 1)
+            or row['if_has_multiple_reachable_syntactic_predecessors'] != (reachable > 1)
+            or row['if_has_backward_or_self_incoming_branch'] != any(
+                kind == 'branch' and pos >= if_offset for pos, kind in pairs)):
+        raise ValueError('inconsistent syntactic predecessor summary')
+    return reachable
+
+
 def _count(value):
     if type(value) is not int or value < 0:
         raise ValueError('invalid nonnegative count')
@@ -134,10 +176,8 @@ def crosscheck(handoff, windows):
                     or window.get(key) != location[key]):
                 raise ValueError('raw SWF window/source coordinate mismatch')
         classes = _checked_window(window, windows['window_width'], location['if_source_offset'])
-        incoming = _count(window.get('if_incoming_reachable_syntactic_source_count'))
-        multiple = window.get('if_has_multiple_reachable_syntactic_predecessors')
-        if type(multiple) is not bool or multiple != (incoming > 1):
-            raise ValueError('inconsistent syntactic predecessor count')
+        incoming = _checked_predecessors(window, location['if_source_offset'])
+        multiple = window['if_has_multiple_reachable_syntactic_predecessors']
         output.append({
             'review_id': rid,
             'root_frame': location['root_frame'],
