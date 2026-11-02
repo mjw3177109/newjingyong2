@@ -20,6 +20,7 @@
 | --- | --- | --- | --- |
 | DEMO_QUEST_ACCEPT | 靠近竹隐老人，任务未开始 | 接受竹影试炼 | `src/engine.js`、`tests/engine.test.mjs` |
 | DEMO_HERB_PICKUP | 靠近清心草，未采集 | 获得清心草，旗标更新 | 同上 |
+| DEMO_TRIAL_ENTRY | 靠近试炼者，已接受竹影试炼（`quest=active`） | 进入原创试玩战斗；未接任务只提示先拜访老人 | `src/engine.js`、`tests/trial-entry.test.mjs`、[接取门禁修复](../TRIAL_ACCEPTANCE_GATE_20261102.md) |
 | DEMO_TRIAL_VICTORY | 试炼战斗敌人 HP 降至 0 | 标记战斗胜利 | 同上 |
 | DEMO_QUEST_COMPLETE | 已采草且已胜利，再次与老人交互 | 任务完成，银两 +30（仅一次） | 同上 |
 
