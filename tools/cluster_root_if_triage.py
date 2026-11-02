@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Source-free grouping of IFs by action and repeated byte-offset stride.
+"""Source-free grouping of IFs by action, byte-offset stride and bounded hints.
 
 These patterns are navigation hints, never evidence of story semantics.
 """
@@ -19,6 +19,21 @@ def checked_int(value, minimum=0):
     return value
 
 
+def hint_profile(row):
+    """Checked, operand-free hints; equal profiles do not imply equal predicates."""
+    branch = checked_int(row.get('successor_branch_write_hint_count'))
+    fallthrough = checked_int(row.get('successor_fallthrough_write_hint_count'))
+    reach = checked_int(row.get('reachable_syntactic_predecessor_count'))
+    comparison = row.get('bounded_comparison_opcode_present')
+    if (type(comparison) is not bool
+            or type(row.get('successor_arm_write_hints_differ')) is not bool
+            or row['successor_arm_write_hints_differ'] != (branch != fallthrough)
+            or type(row.get('multiple_reachable_syntactic_predecessors')) is not bool
+            or row['multiple_reachable_syntactic_predecessors'] != (reach > 1)):
+        raise ValueError('inconsistent IF structural hints')
+    return (comparison, reach, branch, fallthrough)
+
+
 def cluster_triage(report):
     if not isinstance(report, dict) or report.get('schema') != 'swf-root-if-handoff-window-crosscheck-v1':
         raise ValueError('invalid crosscheck schema')
@@ -35,7 +50,7 @@ def cluster_triage(report):
     order = triage.get('review_order')
     if not isinstance(order, list) or len(order) != len(entries) or checked_int(triage.get('review_target_count')) != len(entries):
         raise ValueError('triage count mismatch')
-    grouped, seen_ids, seen_locations = defaultdict(list), set(), set()
+    grouped, profiles, seen_ids, seen_locations = defaultdict(list), {}, set(), set()
     for row in entries:
         if not isinstance(row, dict) or row.get('review_status') != 'unverified':
             raise ValueError('invalid IF row')
@@ -49,6 +64,7 @@ def cluster_triage(report):
             raise ValueError('duplicate IF source location')
         seen_ids.add(rid)
         seen_locations.add((frame, action, offset))
+        profiles[rid] = hint_profile(row)
         grouped[(frame, action)].append((offset, rid))
     order_ids = []
     for rank, row in enumerate(order, 1):
@@ -79,12 +95,24 @@ def cluster_triage(report):
                 j += 1
             if j - i >= 3:
                 segment = members[i:j]
+                by_profile = defaultdict(list)
+                for _, rid in segment:
+                    by_profile[profiles[rid]].append(rid)
+                hint_groups = [{
+                    'bounded_comparison_opcode_present': profile[0],
+                    'reachable_syntactic_predecessor_count': profile[1],
+                    'successor_branch_write_hint_count': profile[2],
+                    'successor_fallthrough_write_hint_count': profile[3],
+                    'candidate_count': len(ids), 'review_ids': ids,
+                } for profile, ids in sorted(by_profile.items())]
                 runs.append({
                     'root_frame': frame, 'action_tag_ordinal': action,
                     'if_offset_stride': stride, 'candidate_count': len(segment),
                     'first_if_source_offset': segment[0][0],
                     'last_if_source_offset': segment[-1][0],
                     'review_ids': [rid for _, rid in segment],
+                    'structural_hint_profile_count': len(hint_groups),
+                    'structural_hint_profiles': hint_groups,
                     'review_status': 'unverified',
                 })
                 i = j - 1
@@ -96,8 +124,10 @@ def cluster_triage(report):
         'candidate_count': len(entries), 'action_group_count': len(groups),
         'action_groups': groups, 'repeated_stride_run_count': len(runs),
         'repeated_stride_runs': runs,
+        'uniform_hint_profile_stride_run_count': sum(
+            run['structural_hint_profile_count'] == 1 for run in runs),
         'verified_story_events': 0, 'ready_for_html5_mapping': 0,
-        'warning': 'Same action and repeated IF byte-offset stride are navigation hints only; no shared predicate, story event, runtime effect, map or rights are verified.',
+        'warning': 'Same action, byte-offset stride and bounded opcode hint profile are navigation hints only; no shared predicate, story event, runtime effect, map or rights are verified.',
     }
 
 
@@ -110,7 +140,9 @@ def main():
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     print('IFs:', result['candidate_count'], 'action groups:', result['action_group_count'],
-          'stride runs:', result['repeated_stride_run_count'], 'verified story events: 0')
+          'stride runs:', result['repeated_stride_run_count'],
+          'uniform bounded-hint runs:', result['uniform_hint_profile_stride_run_count'],
+          'verified story events: 0')
 
 
 if __name__ == '__main__':
