@@ -163,6 +163,72 @@ def _count(value):
     return value
 
 
+
+def rank_structural_review_targets(rows):
+    """Deterministic review order from checked, operand-free IF hints only.
+
+    Write hints are opcode categories, not proven writes or story events.
+    Ranking never upgrades a candidate's unverified status.
+    """
+    if not isinstance(rows, list):
+        raise ValueError('invalid structural review rows')
+    checked = []
+    seen = set()
+    for row in rows:
+        if not isinstance(row, dict) or row.get('review_status') != 'unverified':
+            raise ValueError('invalid structural review row')
+        rid = row.get('review_id')
+        if not isinstance(rid, str) or not HEX24.fullmatch(rid) or rid in seen:
+            raise ValueError('invalid or duplicate structural review ID')
+        seen.add(rid)
+        branch = row.get('successor_branch_write_hint_count')
+        fallthrough = row.get('successor_fallthrough_write_hint_count')
+        reach = row.get('reachable_syntactic_predecessor_count')
+        for value in (branch, fallthrough, reach):
+            _count(value)
+        if (type(row.get('successor_arm_write_hints_differ')) is not bool
+                or row['successor_arm_write_hints_differ'] != (branch != fallthrough)
+                or type(row.get('bounded_comparison_opcode_present')) is not bool
+                or type(row.get('multiple_reachable_syntactic_predecessors')) is not bool
+                or row['multiple_reachable_syntactic_predecessors'] != (reach > 1)):
+            raise ValueError('inconsistent structural review hints')
+        for key in ('root_frame', 'action_tag_ordinal', 'if_source_offset'):
+            value = row.get(key)
+            if type(value) is not int or value < (0 if key == 'if_source_offset' else 1):
+                raise ValueError('invalid structural review coordinates')
+        checked.append(row)
+
+    ordered = sorted(checked, key=lambda row: (
+        -int(row['successor_arm_write_hints_differ']),
+        -int(max(row['successor_branch_write_hint_count'],
+                 row['successor_fallthrough_write_hint_count']) > 0),
+        -int(row['bounded_comparison_opcode_present']),
+        -int(row['reachable_syntactic_predecessor_count'] > 0),
+        -abs(row['successor_branch_write_hint_count'] -
+             row['successor_fallthrough_write_hint_count']),
+        row['root_frame'], row['action_tag_ordinal'],
+        row['if_source_offset'], row['review_id']))
+    return {
+        'review_target_count': len(ordered),
+        'different_write_hint_count': sum(r['successor_arm_write_hints_differ'] for r in ordered),
+        'any_write_hint_count': sum(max(r['successor_branch_write_hint_count'],
+                                        r['successor_fallthrough_write_hint_count']) > 0
+                                    for r in ordered),
+        'review_order': [
+            {'rank': i + 1, 'review_id': r['review_id'],
+             'root_frame': r['root_frame'],
+             'action_tag_ordinal': r['action_tag_ordinal'],
+             'if_source_offset': r['if_source_offset'],
+             'branch_write_opcode_hints': r['successor_branch_write_hint_count'],
+             'fallthrough_write_opcode_hints': r['successor_fallthrough_write_hint_count'],
+             'write_hint_counts_differ': r['successor_arm_write_hints_differ'],
+             'bounded_comparison_hint': r['bounded_comparison_opcode_present'],
+             'review_status': 'unverified'}
+            for i, r in enumerate(ordered)],
+        'warning': 'Triage priority is structural only. Zero write hints do not exclude effects outside bounded windows. No IF predicate, variable identity, runtime effect, map, story event or rights is verified.',
+    }
+
+
 def crosscheck(handoff, windows):
     if not isinstance(handoff, dict) or handoff.get('schema') != 'swf-root-if-audit-handoff-v1':
         raise ValueError('invalid handoff schema')
@@ -264,6 +330,7 @@ def crosscheck(handoff, windows):
         'source_swf_sha256': swf,
         'matched_candidate_count': len(output),
         'entries': output,
+        'structural_review_triage': rank_structural_review_targets(output),
         'verified_story_events': 0,
         'ready_for_html5_mapping': 0,
         'warning': 'Matched structural coordinates and operand-free hints only. Neither IF predicates, runtime paths, original story events nor publication rights are verified.',
