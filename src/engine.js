@@ -85,9 +85,10 @@ export function battle(state,action){
   if(!['attack','guard','drink','flee'].includes(action))return s;
   if(action==='flee'){s.combat=null;addLog(s,'退出试炼，随时可以再次挑战。');return s;}
   if(action==='drink'){
-    if(s.player.hp>=s.player.maxHp){addLog(s,'气血已满，不必服药。');return s;}
+    // Keep direct engine callers consistent with the disabled button and shortcut.
+    // Invalid medicine attempts must not append a log or consume a combat turn.
+    if(!canDrinkPotion(s))return s;
     const at=s.inventory.indexOf('回春散');
-    if(at<0){addLog(s,'行囊里没有回春散。');return s;}
     const healed=Math.min(30,s.player.maxHp-s.player.hp);
     s.inventory.splice(at,1);s.player.hp+=healed;addLog(s,`使用回春散，恢复 ${healed} 点气血。`);
   }

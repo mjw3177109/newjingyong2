@@ -161,7 +161,7 @@ test('combat drink at full HP does not consume potion or enemy turn',()=>{
  let s=initialState();s.inventory=['回春散'];s.combat={enemyHp:28,enemyMaxHp:28,guard:false};
  const next=battle(s,'drink');
  assert.equal(next.player.hp,100);assert.equal(next.inventory.length,1);
- assert.equal(next.combat.enemyHp,28);assert.match(next.journal[0],/气血已满/);
+ assert.equal(next.combat.enemyHp,28);assert.deepEqual(next,s,'invalid drink must not change the journal or state');
 });
 
 test('save parser rejects active actor occupancy but accepts cleared encounter tiles',()=>{

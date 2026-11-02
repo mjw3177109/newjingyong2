@@ -36,3 +36,19 @@ test('available combat potion consumes one item, heals and advances exactly one 
   assert.equal(s.player.hp,70,'input state must remain unchanged');
   assert.deepEqual(parseSave(JSON.stringify(next)),next);
 });
+
+test('direct invalid combat drink is a complete no-op with full HP or no medicine',()=>{
+  for(const [hp,inventory] of [[100,['回春散']],[70,[]]]) {
+    const s=fighting();
+    s.player.hp=hp;
+    s.inventory=inventory;
+    s.combat.guard=true;
+    s.journal=['原有战斗记录'];
+    assert.equal(canDrinkPotion(s),false);
+    const before=structuredClone(s);
+    const next=battle(s,'drink');
+    assert.deepEqual(next,before,'no new journal, no enemy counterattack, no guard or item change');
+    assert.deepEqual(s,before,'the input state must stay untouched');
+    assert.deepEqual(parseSave(JSON.stringify(next)),next,'unchanged state remains a valid checkpoint');
+  }
+});
