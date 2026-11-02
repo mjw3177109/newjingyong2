@@ -55,6 +55,7 @@ def main():
             assert page.locator('#attack-num').inner_text() == '12'
             assert '拳脚' in page.locator('#attack').inner_text()
             assert '12 伤害' in page.locator('#attack').inner_text()
+            assert page.locator('#rematch').is_disabled()
             assert page.evaluate("document.querySelector('#game').getContext('2d').getImageData(10, 10, 1, 1).data[3] > 0")
             # A mouse click focuses the Save button; movement keys must still work
             # without requiring an undocumented click on the canvas/background.
@@ -114,6 +115,16 @@ def main():
             assert page.locator('#attack-num').inner_text() == '16'
             assert '青竹剑' in page.locator('#attack').inner_text()
             assert '16 伤害' in page.locator('#attack').inner_text()
+            assert page.locator('#rematch').is_enabled()
+            page.locator('#rematch').click()
+            assert page.locator('#combat').is_visible()
+            assert page.locator('#rematch').is_disabled()
+            page.locator('#attack').click()
+            page.locator('#attack').click()
+            assert not page.locator('#combat').is_visible()
+            assert '再试胜利！不重复发放任务奖励' in page.locator('#journal').inner_text()
+            assert page.locator('#silver').inner_text() == '40'
+            assert page.locator('#inventory').inner_text().count('竹纹短剑') == 1
 
             page.locator('#save').click()
             page.reload(wait_until='networkidle')
