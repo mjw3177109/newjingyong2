@@ -63,6 +63,20 @@ def main():
             assert page.evaluate(
                 "JSON.parse(localStorage.getItem('jianghu-q-save-v1')).player.x"
             ) == 6, 'focused game button swallowed the movement shortcut'
+            # Canvas pointer coordinates must respect CSS scaling; each click moves one tile.
+            canvas_box = page.locator('#game').bounding_box()
+            assert canvas_box
+            def click_tile(x, y):
+                page.mouse.click(
+                    canvas_box['x'] + canvas_box['width'] * (x + 0.5) / 25,
+                    canvas_box['y'] + canvas_box['height'] * (y + 0.5) / 15,
+                )
+            click_tile(7, 8)
+            page.locator('#save').click()
+            assert page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).player.x") == 7
+            click_tile(6, 8)
+            page.locator('#save').click()
+            assert page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).player.x") == 6
             page.keyboard.press('b')
             assert '背包：' in page.locator('#toast').inner_text()
             page.keyboard.press('j')
@@ -161,6 +175,19 @@ def main():
             assert (saved['player']['x'], saved['player']['y']) == (6, 8), (
                 'touch direction must move exactly one walkable tile'
             )
+            mobile_box = mobile_page.locator('#game').bounding_box()
+            assert mobile_box
+            def tap_tile(x, y):
+                mobile_page.touchscreen.tap(
+                    mobile_box['x'] + mobile_box['width'] * (x + 0.5) / 25,
+                    mobile_box['y'] + mobile_box['height'] * (y + 0.5) / 15,
+                )
+            tap_tile(7, 8)
+            mobile_page.locator('#save').tap()
+            assert mobile_page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).player.x") == 7
+            tap_tile(6, 8)
+            mobile_page.locator('#save').tap()
+            assert mobile_page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).player.x") == 6
             mobile_page.reload(wait_until='networkidle')
             assert mobile_page.locator('#silver').inner_text() == '10'
             mobile_page.once('dialog', lambda dialog: dialog.accept())

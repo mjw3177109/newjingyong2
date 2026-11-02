@@ -3,6 +3,7 @@ import {ACTORS,WIDTH,HEIGHT,TILE,BLOCKS} from './demo-data.js';
 import {commandForKey} from './controls.js';
 import {MAX_SAVE_FILE_BYTES, exportSaveText, importSaveText} from './save-transfer.js';
 import {nextObjective,pathToObjective,stepTowardObjective} from './objectives.js';
+import {pathToTile} from './tile-path.js';
 let state=initialState();
 const $=id=>document.getElementById(id), canvas=$('game'),ctx=canvas.getContext('2d');
 const images={};
@@ -31,6 +32,18 @@ function newGame(){
 }
 function doMove(dx,dy){update(move(state,dx,dy));}
 function action(){update(interact(state));}
+// Mouse and touch taps move only one legal tile; they never auto-trigger dialogue or combat.
+canvas.addEventListener('click', event => {
+ if(state.dialog || state.combat)return;
+ const rect=canvas.getBoundingClientRect();
+ if(rect.width<=0 || rect.height<=0)return;
+ const tx=Math.floor((event.clientX-rect.left)*WIDTH/rect.width);
+ const ty=Math.floor((event.clientY-rect.top)*HEIGHT/rect.height);
+ const route=pathToTile(state,tx,ty);
+ if(!route?.length)return;
+ const first=route[0];
+ update(move(state,first.x-state.player.x,first.y-state.player.y));
+});
 document.addEventListener('keydown',e=>{
  const command=commandForKey(e,!!state.combat,!!state.dialog);
  if(!command)return;
