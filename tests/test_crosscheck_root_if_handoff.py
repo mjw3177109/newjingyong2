@@ -39,8 +39,17 @@ def fixtures():
                      'straight_line_boundary_limited': False,
                      'comparison_opcode_count': 1,
                      'has_branch_or_opaque_control': False,
+                     'if_incoming_syntactic_edges': [
+                         {'source_offset': 10, 'edge_kind': 'fallthrough'}],
+                     'if_incoming_syntactic_source_count': 1,
+                     'if_has_multiple_syntactic_predecessors': False,
                      'if_incoming_reachable_syntactic_source_count': 1,
-                     'if_has_multiple_reachable_syntactic_predecessors': False}],
+                     'if_incoming_unreachable_syntactic_source_count': 0,
+                     'if_incoming_unreachable_syntactic_source_offsets': [],
+                     'if_has_multiple_reachable_syntactic_predecessors': False,
+                     'if_has_backward_or_self_incoming_branch': False,
+                     'if_is_action_entry': False,
+                     'if_has_opaque_immediate_predecessor': False}],
     }
     return handoff, windows
 
@@ -161,6 +170,66 @@ class CrosscheckTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'predecessor'):
             crosscheck(h, w)
 
+
+    def test_rejects_inconsistent_incoming_predecessor_evidence(self):
+        mutations = (
+            lambda row: row.update({'if_incoming_syntactic_source_count': 2}),
+            lambda row: row.update({'if_incoming_reachable_syntactic_source_count': 2}),
+            lambda row: row.update({'if_incoming_unreachable_syntactic_source_count': 1}),
+            lambda row: row.update({'if_incoming_unreachable_syntactic_source_offsets': [99]}),
+            lambda row: row.update({'if_has_multiple_syntactic_predecessors': True}),
+            lambda row: row.update({'if_has_backward_or_self_incoming_branch': True}),
+            lambda row: row.update({'if_has_opaque_immediate_predecessor': 0}),
+            lambda row: row.update({'if_incoming_syntactic_edges': [
+                {'source_offset': 10, 'edge_kind': 'fallthrough'},
+                {'source_offset': 10, 'edge_kind': 'fallthrough'}]}),
+            lambda row: row.update({'if_incoming_syntactic_edges': [
+                {'source_offset': 10, 'edge_kind': 'fake'}]}),
+            lambda row: row.pop('if_incoming_syntactic_edges'),
+        )
+        for mutate in mutations:
+            with self.subTest(mutate=mutate):
+                h, w = fixtures()
+                mutate(w['entries'][0])
+                with self.assertRaisesRegex(ValueError, 'predecessor'):
+                    crosscheck(h, w)
+
+    def test_accepts_valid_backward_branch_and_empty_action_entry(self):
+        h, w = fixtures()
+        row = w['entries'][0]
+        row['if_incoming_syntactic_edges'].append(
+            {'source_offset': 20, 'edge_kind': 'branch'})
+        row['if_incoming_syntactic_source_count'] = 2
+        row['if_has_multiple_syntactic_predecessors'] = True
+        row['if_incoming_unreachable_syntactic_source_count'] = 1
+        row['if_incoming_unreachable_syntactic_source_offsets'] = [20]
+        row['if_has_backward_or_self_incoming_branch'] = True
+        self.assertEqual(crosscheck(h, w)['matched_candidate_count'], 1)
+        h, w = fixtures()
+        row = w['entries'][0]
+        row['if_incoming_syntactic_edges'] = []
+        row['if_incoming_syntactic_source_count'] = 0
+        row['if_incoming_reachable_syntactic_source_count'] = 0
+        row['if_is_action_entry'] = True
+        self.assertEqual(
+            crosscheck(h, w)['entries'][0]['reachable_syntactic_predecessor_count'], 0)
+
+    def test_cli_rejects_inconsistent_predecessor_evidence(self):
+        h, w = fixtures()
+        w['entries'][0]['if_incoming_syntactic_source_count'] = 2
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            handoff, windows, output = root / 'handoff.json', root / 'windows.json', root / 'out.json'
+            handoff.write_text(json.dumps(h), encoding='utf-8')
+            windows.write_text(json.dumps(w), encoding='utf-8')
+            script = Path(__file__).resolve().parents[1] / 'tools' / 'crosscheck_root_if_handoff.py'
+            result = subprocess.run(
+                [sys.executable, str(script), '--handoff', str(handoff),
+                 '--windows', str(windows), '--out', str(output)],
+                capture_output=True, text=True, timeout=15)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('predecessor', result.stderr)
+            self.assertFalse(output.exists())
 
     def test_cli_rejects_invalid_opcode_summary_like_import(self):
         h, w = fixtures()
