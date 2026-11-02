@@ -77,8 +77,15 @@ jobs:
         run: python tools/build_root_if_audit_handoff.py --packets reports/swf_root_if_review_packets.json --out reports/swf_root_if_audit_handoff.json
       - name: Cross-check original SWF IF opcode windows against private handoff identities
         run: python tools/crosscheck_root_if_handoff.py --swf jin.swf --packets reports/swf_root_if_review_packets.json --handoff reports/swf_root_if_audit_handoff.json --windows reports/swf_root_if_opcode_windows.json --out reports/swf_root_if_handoff_window_crosscheck.json
+      - name: Cluster source-free IF candidates by action and byte-offset stride
+        run: python tools/cluster_root_if_triage.py --crosscheck reports/swf_root_if_handoff_window_crosscheck.json --out reports/swf_root_if_structural_clusters.json
       - name: Reconcile empty private IF review baseline without semantic claims
         run: python tools/reconcile_root_if_review.py --handoff reports/swf_root_if_audit_handoff.json --reviewed reports/swf_root_if_audit_handoff.json --out reports/swf_root_if_review_reconciliation.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-root-if-structural-clusters
+          path: reports/swf_root_if_structural_clusters.json
+          if-no-files-found: error
       - name: Cross-check depth assignments against independent placement index
         run: |
           python - <<'PY'
