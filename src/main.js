@@ -166,7 +166,9 @@ function paint(){
  const q=questStatus(state);
  $('step-route').disabled=!!state.dialog||!!state.combat||!route?.length;
  $('rematch').disabled=!canRematch(state);
- const routeHint=!objective?'':route===null?'（路径暂不可达）':route.length===0?'（已靠近，按 E 交互）':`（沿金色路标 ${route.length} 步）`;
+ const routeHint=!objective?'':route===null?'（路径暂不可达）':route.length===0
+  ?(state.quest==='completed'?(state.dialog?'（先关闭对话，再点击「竹影再试」）':'（已靠近，点击「竹影再试」）'):'（已靠近，按 E 交互）')
+  :`（沿金色路标 ${route.length} 步）`;
  $('quest-title').textContent=q.title;$('quest-desc').textContent=q.description+(objective?`　下一步：${objective.label}${routeHint}`:'');$('quest-progress').textContent=q.progress;
  const inv=$('inventory');inv.replaceChildren();for(const item of state.inventory){const b=document.createElement('span');b.className='item';b.textContent=item;inv.appendChild(b);}if(!state.inventory.length){const n=document.createElement('span');n.className='empty';n.textContent='暂无物品';inv.appendChild(n);}
  const j=$('journal');j.replaceChildren();for(const note of state.journal){const p=document.createElement('p');p.textContent=note;j.appendChild(p);}
