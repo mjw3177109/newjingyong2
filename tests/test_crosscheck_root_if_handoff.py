@@ -50,7 +50,14 @@ def fixtures():
                      'if_has_multiple_reachable_syntactic_predecessors': False,
                      'if_has_backward_or_self_incoming_branch': False,
                      'if_is_action_entry': False,
-                     'if_has_opaque_immediate_predecessor': False}],
+                     'if_has_opaque_immediate_predecessor': False,
+                     'successor_arm_window_limit': 8,
+                     'successor_arms_distinct': False,
+                     'successor_arm_windows': {
+                         name: {'start_offset': 20, 'record_offsets': [],
+                                'opcode_classes': [], 'write_opcode_hint_count': 0,
+                                'stop_reason': 'action_end'}
+                         for name in ('branch', 'fallthrough')} }],
     }
     return handoff, windows
 
@@ -267,6 +274,66 @@ class CrosscheckTests(unittest.TestCase):
                 capture_output=True, text=True, timeout=15)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn('opcode', result.stderr)
+            self.assertFalse(output.exists())
+
+    def test_successor_arm_previews_support_structural_write_triage(self):
+        h, w = fixtures()
+        h['entries'][0]['source_location']['fallthrough_offset'] = 22
+        row = w['entries'][0]
+        row['fallthrough_offset'] = 22
+        row['successor_arms_distinct'] = True
+        row['successor_arm_windows']['branch'] = {
+            'start_offset': 20, 'record_offsets': [20, 21],
+            'opcode_classes': ['local_write', 'branch'],
+            'write_opcode_hint_count': 1, 'stop_reason': 'branch_or_opaque_boundary'}
+        row['successor_arm_windows']['fallthrough'] = {
+            'start_offset': 22, 'record_offsets': [22],
+            'opcode_classes': ['register_write'],
+            'write_opcode_hint_count': 1, 'stop_reason': 'action_end'}
+        result = crosscheck(h, w)['entries'][0]
+        self.assertEqual(result['successor_branch_write_hint_count'], 1)
+        self.assertEqual(result['successor_fallthrough_write_hint_count'], 1)
+        self.assertFalse(result['successor_arm_write_hints_differ'])
+        row['successor_arm_windows']['fallthrough']['opcode_classes'] = ['member_read']
+        row['successor_arm_windows']['fallthrough']['write_opcode_hint_count'] = 0
+        self.assertTrue(crosscheck(h, w)['entries'][0]['successor_arm_write_hints_differ'])
+
+    def test_rejects_tampered_or_private_successor_arm_previews(self):
+        mutations = (
+            lambda row: row.pop('successor_arm_windows'),
+            lambda row: row.update({'successor_arm_window_limit': True}),
+            lambda row: row.update({'successor_arms_distinct': True}),
+            lambda row: row['successor_arm_windows']['branch'].update({'start_offset': 99}),
+            lambda row: row['successor_arm_windows']['branch'].update({'record_offsets': [20, 20], 'opcode_classes': ['other', 'other']}),
+            lambda row: row['successor_arm_windows']['branch'].update({'record_offsets': [20], 'opcode_classes': ['secret_opcode']}),
+            lambda row: row['successor_arm_windows']['branch'].update({'record_offsets': [20], 'opcode_classes': ['variable_write'], 'write_opcode_hint_count': 0}),
+            lambda row: row['successor_arm_windows']['branch'].update({'stop_reason': 'window_limit'}),
+            lambda row: row['successor_arm_windows']['branch'].update({'private_operand': 'secret'}),
+            lambda row: row['successor_arm_windows']['branch'].update({'record_offsets': [20], 'opcode_classes': ['branch'], 'stop_reason': 'action_end'}),
+            lambda row: row['successor_arm_windows']['branch'].update({'stop_reason': 'control_flow_join'}),
+        )
+        for mutate in mutations:
+            with self.subTest(mutate=mutate):
+                h, w = fixtures()
+                mutate(w['entries'][0])
+                with self.assertRaisesRegex(ValueError, 'successor arm'):
+                    crosscheck(h, w)
+
+    def test_cli_rejects_successor_arm_tampering_without_output(self):
+        h, w = fixtures()
+        w['entries'][0]['successor_arm_windows']['branch']['start_offset'] = 99
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            handoff, windows, output = root / 'handoff.json', root / 'windows.json', root / 'out.json'
+            handoff.write_text(json.dumps(h), encoding='utf-8')
+            windows.write_text(json.dumps(w), encoding='utf-8')
+            script = Path(__file__).resolve().parents[1] / 'tools' / 'crosscheck_root_if_handoff.py'
+            result = subprocess.run(
+                [sys.executable, str(script), '--handoff', str(handoff),
+                 '--windows', str(windows), '--out', str(output)],
+                capture_output=True, text=True, timeout=15)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('successor arm', result.stderr)
             self.assertFalse(output.exists())
 
     def test_cli_and_import_agree_on_valid_window(self):
