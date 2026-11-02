@@ -91,6 +91,19 @@ class CrosscheckTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'review identity'):
             crosscheck(h, w)
 
+    def test_rejects_incomplete_or_extended_private_checklist(self):
+        for mutate in (
+            lambda checks: checks.pop('runtime_reproduced'),
+            lambda checks: checks.update({'unreviewed_extra': False}),
+            lambda checks: checks.update({'condition_confirmed': 0}),
+            lambda checks: checks.pop('ffdec_script_sha256'),
+        ):
+            with self.subTest(mutate=mutate):
+                h, w = fixtures()
+                mutate(h['entries'][0]['checks'])
+                with self.assertRaisesRegex(ValueError, 'attestations'):
+                    crosscheck(h, w)
+
     def test_rejects_window_exceeding_declared_width(self):
         h, w = fixtures()
         w['window_width'] = 1
