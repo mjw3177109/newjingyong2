@@ -1,6 +1,11 @@
 """Synthetic source-free checks: no original SWF content or story claims."""
 import copy
 import hashlib
+import json
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
 import unittest
 from tools.crosscheck_root_if_handoff import crosscheck
 
@@ -155,6 +160,42 @@ class CrosscheckTests(unittest.TestCase):
         w['entries'][0]['if_has_multiple_reachable_syntactic_predecessors'] = True
         with self.assertRaisesRegex(ValueError, 'predecessor'):
             crosscheck(h, w)
+
+
+    def test_cli_rejects_invalid_opcode_summary_like_import(self):
+        h, w = fixtures()
+        w['entries'][0]['preceding_record_count'] = 3
+        with self.assertRaisesRegex(ValueError, 'opcode'):
+            crosscheck(h, w)
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            handoff, windows, output = root / 'handoff.json', root / 'windows.json', root / 'out.json'
+            handoff.write_text(json.dumps(h), encoding='utf-8')
+            windows.write_text(json.dumps(w), encoding='utf-8')
+            script = Path(__file__).resolve().parents[1] / 'tools' / 'crosscheck_root_if_handoff.py'
+            result = subprocess.run(
+                [sys.executable, str(script), '--handoff', str(handoff),
+                 '--windows', str(windows), '--out', str(output)],
+                capture_output=True, text=True, timeout=15)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('opcode', result.stderr)
+            self.assertFalse(output.exists())
+
+    def test_cli_and_import_agree_on_valid_window(self):
+        h, w = fixtures()
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            handoff, windows, output = root / 'handoff.json', root / 'windows.json', root / 'out.json'
+            handoff.write_text(json.dumps(h), encoding='utf-8')
+            windows.write_text(json.dumps(w), encoding='utf-8')
+            script = Path(__file__).resolve().parents[1] / 'tools' / 'crosscheck_root_if_handoff.py'
+            result = subprocess.run(
+                [sys.executable, str(script), '--handoff', str(handoff),
+                 '--windows', str(windows), '--out', str(output)],
+                capture_output=True, text=True, timeout=15)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(output.read_text(encoding='utf-8')), crosscheck(h, w))
+
 
 
 if __name__ == '__main__':
