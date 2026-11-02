@@ -17,6 +17,7 @@ HEX24 = re.compile(r'^[0-9a-f]{24}$')
 OPCODE_CLASSES = frozenset({
     'push_opaque', 'constant_pool_opaque', 'variable_read', 'variable_write',
     'member_read', 'member_write', 'property_read', 'property_write',
+    'local_write', 'register_write',
     'comparison', 'boolean_logic', 'arithmetic', 'branch',
     'opaque_control', 'call', 'other',
 })
@@ -95,6 +96,58 @@ def _checked_predecessors(row, if_offset):
                 kind == 'branch' and pos >= if_offset for pos, kind in pairs)):
         raise ValueError('inconsistent syntactic predecessor summary')
     return reachable
+
+
+def _checked_successor_arms(row):
+    """Validate bounded operand-free successor hints before using them for triage.
+
+    This is internal consistency only: raw-SWF provenance is checked by the
+    producer, not reconstructed from the public source-free report.
+    """
+    limit = row.get('successor_arm_window_limit')
+    if type(limit) is not int or limit != 8:
+        raise ValueError('invalid successor arm window limit')
+    distinct = row.get('successor_arms_distinct')
+    expected_distinct = row['branch_target_offset'] != row['fallthrough_offset']
+    if type(distinct) is not bool or distinct != expected_distinct:
+        raise ValueError('inconsistent successor arm distinct flag')
+    arms = row.get('successor_arm_windows')
+    if not isinstance(arms, dict) or set(arms) != {'branch', 'fallthrough'}:
+        raise ValueError('invalid successor arm windows')
+    write_classes = {'variable_write', 'member_write', 'property_write',
+                     'local_write', 'register_write'}
+    for name, coordinate in (('branch', 'branch_target_offset'),
+                             ('fallthrough', 'fallthrough_offset')):
+        arm = arms[name]
+        if not isinstance(arm, dict) or set(arm) != {
+                'start_offset', 'record_offsets', 'opcode_classes',
+                'write_opcode_hint_count', 'stop_reason'}:
+            raise ValueError('invalid successor arm fields')
+        start = arm['start_offset']
+        offsets, classes = arm['record_offsets'], arm['opcode_classes']
+        if (type(start) is not int or start != row[coordinate]
+                or not isinstance(offsets, list) or not isinstance(classes, list)
+                or len(offsets) != len(classes) or len(offsets) > limit
+                or any(type(pos) is not int or pos < start for pos in offsets)
+                or offsets != sorted(set(offsets))
+                or (offsets and offsets[0] != start)
+                or any(type(cls) is not str or cls not in OPCODE_CLASSES for cls in classes)):
+            raise ValueError('invalid successor arm opcode window')
+        reason = arm['stop_reason']
+        if (type(reason) is not str or reason not in {
+                'action_end', 'control_flow_join', 'window_limit',
+                'branch_or_opaque_boundary'}
+                or (not offsets and reason != 'action_end')
+                or (reason == 'window_limit' and len(offsets) != limit)
+                or (reason == 'branch_or_opaque_boundary' and not offsets)
+                or (classes and classes[-1] in ('branch', 'opaque_control')
+                    and reason != 'branch_or_opaque_boundary')
+                or _count(arm['write_opcode_hint_count']) != sum(
+                    cls in write_classes for cls in classes)):
+            raise ValueError('inconsistent successor arm summary')
+    if not distinct and arms['branch'] != arms['fallthrough']:
+        raise ValueError('shared successor arms disagree')
+    return arms
 
 
 def _count(value):
@@ -183,6 +236,7 @@ def crosscheck(handoff, windows):
                 raise ValueError('raw SWF IF successor coordinate mismatch')
         classes = _checked_window(window, windows['window_width'], location['if_source_offset'])
         incoming = _checked_predecessors(window, location['if_source_offset'])
+        arms = _checked_successor_arms(window)
         multiple = window['if_has_multiple_reachable_syntactic_predecessors']
         output.append({
             'review_id': rid,
@@ -192,6 +246,10 @@ def crosscheck(handoff, windows):
             'bounded_comparison_opcode_present': 'comparison' in classes,
             'reachable_syntactic_predecessor_count': incoming,
             'multiple_reachable_syntactic_predecessors': multiple,
+            'successor_branch_write_hint_count': arms['branch']['write_opcode_hint_count'],
+            'successor_fallthrough_write_hint_count': arms['fallthrough']['write_opcode_hint_count'],
+            'successor_arm_write_hints_differ': (arms['branch']['write_opcode_hint_count'] !=
+                                                arms['fallthrough']['write_opcode_hint_count']),
             'review_status': 'unverified',
         })
     return {
