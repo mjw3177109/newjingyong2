@@ -164,6 +164,9 @@ def window_for_if(payload, packet, width=12):
         'root_frame': packet['root_frame'],
         'action_tag_ordinal': packet['action_tag_ordinal'],
         'if_source_offset': source,
+        # Raw-SWF-confirmed successors, retained for independent handoff alignment.
+        'branch_target_offset': edge['target_offset'],
+        'fallthrough_offset': successor['fallthrough_offset'],
         'preceding_record_count': len(preceding),
         'preceding_opcode_classes': classes,
         'preceding_record_offsets': [pos for pos, _ in preceding],
