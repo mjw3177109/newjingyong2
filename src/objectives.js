@@ -5,7 +5,12 @@ import {pathToTile} from './tile-path.js';
 // These hints describe the original HTML5 demonstration, NOT verified SWF events.
 // Do not use this module as a source for the original game's quest sequence.
 export function nextObjective(state) {
-  if (!state || state.quest === 'completed') return null;
+  if (!state) return null;
+  // Completed quests keep their status; route hints can lead to optional sparring.
+  if (state.quest === 'completed') {
+    const actor = ACTORS.elder;
+    return {id:'elder', label:'竹影再试（可选）', x:actor.x, y:actor.y};
+  }
   let id, label;
   if (state.quest === 'unstarted') {
     id = 'elder'; label = '拜访竹隐老人';
