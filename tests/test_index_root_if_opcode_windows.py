@@ -152,9 +152,9 @@ class IfOpcodeWindowTests(unittest.TestCase):
 
     def test_successor_arm_previews_show_write_hints_without_operands(self):
         # IF at 4: branch -> 15, fallthrough -> 9; Jump at 10 -> ActionEnd 17.
-        action = (b'\\x96\\x01\\x00\\x02' + b'\\x9d\\x02\\x00\\x06\\x00'
-                  + b'\\x1d' + b'\\x99\\x02\\x00\\x02\\x00'
-                  + b'\\x4f\\x1c\\x00')
+        action = (b'\x96\x01\x00\x02' + b'\x9d\x02\x00\x06\x00'
+                  + b'\x1d' + b'\x99\x02\x00\x02\x00'
+                  + b'\x4f\x1c\x00')
         result = window_for_if(action, packet_for_if(action, 4))
         self.assertTrue(result['successor_arms_distinct'])
         self.assertEqual(result['successor_arm_window_limit'], 8)
@@ -173,7 +173,7 @@ class IfOpcodeWindowTests(unittest.TestCase):
 
     def test_successor_preview_stops_at_join_and_handles_shared_action_end(self):
         # Branch target at 6 is a control-flow join; fallthrough starts at 5.
-        action = b'\\x9d\\x02\\x00\\x01\\x00\\x1d\\x1c\\x00'
+        action = b'\x9d\x02\x00\x01\x00\x1d\x1c\x00'
         arms = window_for_if(action, packet_for_if(action, 0))['successor_arm_windows']
         self.assertEqual(arms['fallthrough']['record_offsets'], [5])
         self.assertEqual(arms['fallthrough']['stop_reason'], 'control_flow_join')
