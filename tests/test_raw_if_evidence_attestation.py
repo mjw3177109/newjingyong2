@@ -19,7 +19,7 @@ def fixture(root):
     def tag(code, payload=b''):
         return struct.pack('<H', (code << 6) | len(payload)) + payload
     body = bytes.fromhex('0800000c0100') + tag(12, action) + tag(1) + tag(0)
-    raw = b'FWS\\x08' + struct.pack('<I', 8 + len(body)) + body
+    raw = b'FWS\x08' + struct.pack('<I', 8 + len(body)) + body
     swf = root / 'mini.swf'
     swf.write_bytes(raw)
     swf_sha, action_sha = hashlib.sha256(raw).hexdigest(), hashlib.sha256(action).hexdigest()
