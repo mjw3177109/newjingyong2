@@ -74,9 +74,18 @@ def crosscheck(handoff, windows):
                 or not isinstance(location, dict)):
             raise ValueError('handoff contains semantic claims')
         checks = row.get('checks')
-        if (not isinstance(checks, dict) or checks.get('ffdec_script_sha256') is not None
-                or any(value is not False for key, value in checks.items() if key != 'ffdec_script_sha256')):
-            raise ValueError('handoff contains private attestations')
+        # A missing checkbox must not silently mean "not reviewed": the
+        # handoff schema requires an explicit, complete empty checklist.
+        required_false = {
+            'condition_confirmed', 'state_effects_confirmed',
+            'map_context_confirmed', 'runtime_reproduced',
+            'independent_reviewed', 'adaptation_rights_confirmed',
+        }
+        if (not isinstance(checks, dict)
+                or set(checks) != required_false | {'ffdec_script_sha256'}
+                or checks['ffdec_script_sha256'] is not None
+                or any(checks[key] is not False for key in required_false)):
+            raise ValueError('handoff contains incomplete or private attestations')
         window = by_id[rid]
         for key in ('root_frame', 'action_tag_ordinal', 'if_source_offset'):
             if (type(location.get(key)) is not int or location[key] < (1 if key != 'if_source_offset' else 0)
