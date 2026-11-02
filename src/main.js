@@ -1,4 +1,4 @@
-import {initialState,move,interact,battle,questStatus,equipWeapon,attackDamage,attackName,DEMO_SWORD,discardPotion,usePotion,canRematch,startRematch} from './engine.js';
+import {initialState,move,interact,battle,questStatus,equipWeapon,attackDamage,attackName,DEMO_SWORD,discardPotion,usePotion,canRematch,startRematch,canDrinkPotion} from './engine.js';
 import {ACTORS,WIDTH,HEIGHT,TILE,BLOCKS} from './demo-data.js';
 import {commandForKey} from './controls.js';
 import {MAX_SAVE_FILE_BYTES, exportSaveText, importSaveText} from './save-transfer.js';
@@ -53,7 +53,7 @@ document.addEventListener('keydown',e=>{
  else if(command.kind==='dismiss-dialog')action();
  else if(command.kind==='potion')update(usePotion(state));
  else if(command.kind==='route-step')update(stepTowardObjective(state));
- else if(command.kind==='combat')update(battle(state,command.action));
+ else if(command.kind==='combat' && (command.action!=='drink' || canDrinkPotion(state))) update(battle(state,command.action));
  else if(command.kind==='inventory')toast(`背包：${state.inventory.join('、')||'空空如也'}`);
  else if(command.kind==='quest')toast(questStatus(state).progress);
 });
@@ -158,6 +158,11 @@ function paint(){
  $('attack-num').textContent=attackDamage(state);
  // The attack control must show the actual demo action and damage for current equipment.
  $('attack').textContent=`${attackName(state)}（1） · ${attackDamage(state)} 伤害`;
+ // Combat consumable availability and the 3 shortcut share one rule.
+ const combatPotion=$('drink');
+ const combatPotionCount=state.inventory.filter(item=>item==='回春散').length;
+ combatPotion.disabled=!canDrinkPotion(state);
+ combatPotion.textContent=`服药（3） · ${combatPotionCount} 包`;
  $('discard-potion').disabled=!state.inventory.includes('回春散')||!!state.combat||!!state.dialog;
  $('use-potion').disabled=!state.inventory.includes('回春散')||state.player.hp>=state.player.maxHp||!!state.combat||!!state.dialog;
  const equip=$('equip-weapon');equip.disabled=!state.inventory.includes(DEMO_SWORD)||!!state.combat||!!state.dialog;

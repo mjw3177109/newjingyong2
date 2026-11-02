@@ -99,6 +99,11 @@ def main():
             walk_to_objective(page)
             page.locator('#interact').click()
             assert page.locator('#combat').is_visible()
+            assert page.locator('#drink').is_disabled(), 'empty combat potion button must be disabled'
+            assert '0 包' in page.locator('#drink').inner_text()
+            before_invalid_potion = page.locator('#journal').inner_text()
+            page.keyboard.press('3')
+            assert page.locator('#journal').inner_text() == before_invalid_potion, 'disabled potion shortcut must not create a fake turn'
             page.keyboard.press('Escape')
             assert page.locator('#combat').is_visible(), 'Escape must not silently abandon a battle'
             page.locator('#attack').click()

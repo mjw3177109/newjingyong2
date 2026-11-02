@@ -9,6 +9,9 @@ const potionCount = s => s.inventory.filter(item => item === '回春散').length
 export const attackDamage = s => 12 + (s.equipment?.weapon === DEMO_SWORD ? 4 : 0);
 // Original demo-only battle label. Never claim a sword technique before it is equipped.
 export const attackName = s => s.equipment?.weapon === DEMO_SWORD ? '青竹剑' : '拳脚';
+// Shared demo rule for the combat potion button and keyboard shortcut.
+// Invalid potion attempts must not consume a combat turn or an item.
+export const canDrinkPotion = s => !!s?.combat && s.player.hp < s.player.maxHp && s.inventory.includes('回春散');
 export function initialState() {
   return {version:SAVE_VERSION, player:{x:5,y:8,hp:100,maxHp:100,silver:10},
     quest:'unstarted',inventory:[],flags:{herbTaken:false,banditBeaten:false},
