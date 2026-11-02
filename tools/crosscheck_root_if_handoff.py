@@ -175,6 +175,12 @@ def crosscheck(handoff, windows):
             if (type(location.get(key)) is not int or location[key] < (1 if key != 'if_source_offset' else 0)
                     or window.get(key) != location[key]):
                 raise ValueError('raw SWF window/source coordinate mismatch')
+        # The review ID binds the IF source, but not its two successor offsets.
+        # Require both coordinates to agree with the independent raw-SWF window.
+        for key in ('branch_target_offset', 'fallthrough_offset'):
+            if (type(location.get(key)) is not int or location[key] < 0
+                    or type(window.get(key)) is not int or window[key] != location[key]):
+                raise ValueError('raw SWF IF successor coordinate mismatch')
         classes = _checked_window(window, windows['window_width'], location['if_source_offset'])
         incoming = _checked_predecessors(window, location['if_source_offset'])
         multiple = window['if_has_multiple_reachable_syntactic_predecessors']
