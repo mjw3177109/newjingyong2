@@ -79,12 +79,19 @@ jobs:
         run: python tools/crosscheck_root_if_handoff.py --swf jin.swf --packets reports/swf_root_if_review_packets.json --handoff reports/swf_root_if_audit_handoff.json --windows reports/swf_root_if_opcode_windows.json --out reports/swf_root_if_handoff_window_crosscheck.json
       - name: Cluster source-free IF candidates by action and byte-offset stride
         run: python tools/cluster_root_if_triage.py --crosscheck reports/swf_root_if_handoff_window_crosscheck.json --out reports/swf_root_if_structural_clusters.json
+      - name: Compare bounded opcode shapes of adjacent IFs in stride clusters
+        run: python tools/compare_root_if_opcode_shapes.py --clusters reports/swf_root_if_structural_clusters.json --windows reports/swf_root_if_opcode_windows.json --out reports/swf_root_if_adjacent_opcode_shapes.json
       - name: Reconcile empty private IF review baseline without semantic claims
         run: python tools/reconcile_root_if_review.py --handoff reports/swf_root_if_audit_handoff.json --reviewed reports/swf_root_if_audit_handoff.json --out reports/swf_root_if_review_reconciliation.json
       - uses: actions/upload-artifact@v4
         with:
           name: swf-root-if-structural-clusters
           path: reports/swf_root_if_structural_clusters.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swf-root-if-adjacent-opcode-shapes
+          path: reports/swf_root_if_adjacent_opcode_shapes.json
           if-no-files-found: error
       - name: Cross-check depth assignments against independent placement index
         run: |
