@@ -7,6 +7,8 @@ export const MAX_SILVER = 1_000_000_000;
 const DEMO_ENEMY_MAX_HP = 28;
 const potionCount = s => s.inventory.filter(item => item === '回春散').length;
 export const attackDamage = s => 12 + (s.equipment?.weapon === DEMO_SWORD ? 4 : 0);
+// Original demo-only battle label. Never claim a sword technique before it is equipped.
+export const attackName = s => s.equipment?.weapon === DEMO_SWORD ? '青竹剑' : '拳脚';
 export function initialState() {
   return {version:SAVE_VERSION, player:{x:5,y:8,hp:100,maxHp:100,silver:10},
     quest:'unstarted',inventory:[],flags:{herbTaken:false,banditBeaten:false},
@@ -67,7 +69,7 @@ export function battle(state,action){
     s.inventory.splice(at,1);s.player.hp+=healed;addLog(s,`使用回春散，恢复 ${healed} 点气血。`);
   }
   if(action==='guard'){s.combat.guard=true;addLog(s,'凝神防御，下次受击伤害减半。');}
-  if(action==='attack'){const damage=attackDamage(s);s.combat.enemyHp=Math.max(0,s.combat.enemyHp-damage);addLog(s,`使出一式青竹剑，造成 ${damage} 点伤害。`);}
+  if(action==='attack'){const damage=attackDamage(s);s.combat.enemyHp=Math.max(0,s.combat.enemyHp-damage);addLog(s,`使出${attackName(s)}，造成 ${damage} 点伤害。`);}
   if(s.combat.enemyHp<=0){s.flags.banditBeaten=true;s.combat=null;addLog(s,'试炼胜利！返回竹隐老人处复命。');return s;}
   const damage=s.combat.guard?3:6;s.player.hp=Math.max(0,s.player.hp-damage);s.combat.guard=false;
   addLog(s,`试炼者反击，气血减少 ${damage}。`);
