@@ -46,6 +46,17 @@ class AuditGateTests(unittest.TestCase):
         self.assertTrue(validate([record(negative_path_checked=0)]))
         self.assertTrue(validate([record(status="partial", negative_path_checked=1)]))
 
+    def test_authorized_but_unverified_cannot_publish(self):
+        self.assertTrue(validate([record(status="partial", rights_status="authorized", publication_ready=True)]))
+
+    def test_mapping_rejects_unhashable_and_empty_values(self):
+        for value in ([], {}, 1, "", "   "):
+            with self.subTest(value=value):
+                self.assertTrue(validate([record(html5_mapping=value)]))
+
+    def test_verified_authorized_record_can_pass_publication_gate(self):
+        self.assertEqual(validate([record(rights_status="authorized", publication_ready=True)]), [])
+
     def test_invalid_hash_rejected(self):
         self.assertTrue(validate([record(script_sha256="not-a-hash")]))
 
