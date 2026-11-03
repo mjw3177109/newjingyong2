@@ -34,6 +34,13 @@ class AuditGateTests(unittest.TestCase):
     def test_duplicate_anonymous_ids_rejected(self):
         self.assertTrue(validate([record(), record()]))
 
+    def test_non_string_status_rejected_without_exception(self):
+        self.assertTrue(validate([record(status=[])]))
+        self.assertTrue(validate([record(rights_status={})]))
+
+    def test_publication_ready_requires_boolean(self):
+        self.assertTrue(validate([record(rights_status="authorized", publication_ready="false")]))
+
     def test_invalid_hash_rejected(self):
         self.assertTrue(validate([record(script_sha256="not-a-hash")]))
 
