@@ -46,6 +46,8 @@ def validate(records):
                 errors.append(f"{prefix}: invalid {key}")
         if not isinstance(row["negative_path_checked"], bool):
             errors.append(f"{prefix}: negative_path_checked must be boolean")
+        if not (row["html5_mapping"] is None or (isinstance(row["html5_mapping"], str) and row["html5_mapping"].strip())):
+            errors.append(f"{prefix}: html5_mapping must be null or non-empty string")
         if row["status"] == "verified":
             for key in ("export_pair_id", "timeline_and_frame", "evidence_offset",
                         "trigger_summary", "effect_summary", "cross_check"):
@@ -53,12 +55,15 @@ def validate(records):
                     errors.append(f"{prefix}: verified requires {key}")
             if row["negative_path_checked"] is not True:
                 errors.append(f"{prefix}: verified requires negative-path evidence")
-        elif row["html5_mapping"] not in (None, "none"):
+        elif not (row["html5_mapping"] is None or row["html5_mapping"] == "none"):
             errors.append(f"{prefix}: unverified candidate cannot claim HTML5 mapping")
         if "publication_ready" in row and not isinstance(row["publication_ready"], bool):
             errors.append(f"{prefix}: publication_ready must be boolean")
-        if row["rights_status"] != "authorized" and row.get("publication_ready") is True:
-            errors.append(f"{prefix}: publication requires separate authorization")
+        if row.get("publication_ready") is True:
+            if row["rights_status"] != "authorized":
+                errors.append(f"{prefix}: publication requires separate authorization")
+            if row["status"] != "verified":
+                errors.append(f"{prefix}: publication requires verified evidence")
     return errors
 
 
