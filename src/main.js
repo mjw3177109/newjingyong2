@@ -173,7 +173,12 @@ function paint(){
  const q=questStatus(state);
  $('step-route').disabled=!!state.dialog||!!state.combat||!route?.length;
  $('rematch').disabled=!canRematch(state);
- $('rest-village').disabled=!canRestAtVillage(state);
+ const restButton=$('rest-village');
+ const restAllowed=canRestAtVillage(state);
+ restButton.disabled=!restAllowed;
+ restButton.textContent=restAllowed
+  ? `竹下调息（R · 恢复 ${Math.min(20,state.player.maxHp-state.player.hp)} 气血）`
+  : '竹下调息（R · 至多恢复 20 气血）';
  const routeHint=!objective?'':route===null?'（路径暂不可达）':route.length===0
   ?(state.quest==='completed'?(state.dialog?'（先关闭对话，再点击「竹影再试」）':'（已靠近，点击「竹影再试」）'):'（已靠近，按 E 交互）')
   :`（沿金色路标 ${route.length} 步）`;

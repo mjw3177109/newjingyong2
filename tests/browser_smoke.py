@@ -115,7 +115,20 @@ def main():
             page.locator('#interact').click()
             assert page.locator('#silver').inner_text() == '40'
             assert '竹纹短剑' in page.locator('#inventory').inner_text()
+            assert page.locator('#rest-village').is_disabled(), 'reward dialogue must block village rest'
             page.locator('#interact').click()
+            # Two enemy counterattacks cost 12 HP; R restores exactly the missing 12.
+            assert page.locator('#hp-num').inner_text() == '88 / 100'
+            assert page.locator('#rest-village').is_enabled()
+            assert '恢复 12 气血' in page.locator('#rest-village').inner_text()
+            page.locator('#rest-village').focus()
+            page.keyboard.press('r')
+            assert page.locator('#hp-num').inner_text() == '100 / 100'
+            assert page.locator('#rest-village').is_disabled()
+            assert '恢复 12 点气血' in page.locator('#journal').inner_text()
+            rested_journal = page.locator('#journal').inner_text()
+            page.keyboard.press('r')
+            assert page.locator('#journal').inner_text() == rested_journal, 'full-HP R must be a no-op'
             page.locator('#equip-weapon').click()
             assert page.locator('#attack-num').inner_text() == '16'
             assert '青竹剑' in page.locator('#attack').inner_text()
@@ -130,6 +143,13 @@ def main():
             assert '再试胜利！不重复发放任务奖励' in page.locator('#journal').inner_text()
             assert page.locator('#silver').inner_text() == '40'
             assert page.locator('#inventory').inner_text().count('竹纹短剑') == 1
+            # The button path must use the same capped heal rule as the R shortcut.
+            assert page.locator('#hp-num').inner_text() == '94 / 100'
+            assert '恢复 6 气血' in page.locator('#rest-village').inner_text()
+            page.locator('#rest-village').click()
+            assert page.locator('#hp-num').inner_text() == '100 / 100'
+            assert page.locator('#rest-village').is_disabled()
+            assert '恢复 6 点气血' in page.locator('#journal').inner_text()
 
             page.locator('#save').click()
             page.reload(wait_until='networkidle')
@@ -230,6 +250,7 @@ def main():
             assert '清心草' in mobile_page.locator('#quest-progress').inner_text()
             mobile_page.locator('#interact').tap()
             mobile_output = ROOT / 'reports' / 'browser_smoke_mobile.png'
+            mobile_output.parent.mkdir(parents=True, exist_ok=True)
             mobile_page.screenshot(path=str(mobile_output), full_page=True)
             mobile.close()
             assert not errors, f'browser JavaScript errors: {errors}'
