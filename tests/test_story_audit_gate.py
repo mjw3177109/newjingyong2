@@ -73,6 +73,20 @@ class AuditGateTests(unittest.TestCase):
         self.assertEqual(validate([record(status="partial", trigger_summary=None,
                                           effect_summary=None, cross_check=None)]), [])
 
+    def test_verified_rejects_placeholder_evidence(self):
+        for field in ("export_pair_id", "timeline_and_frame", "evidence_offset",
+                      "trigger_summary", "effect_summary", "cross_check"):
+            for placeholder in ("n/a", "TBD", "pending", "not checked"):
+                with self.subTest(field=field, placeholder=placeholder):
+                    self.assertTrue(validate([record(**{field: placeholder})]))
+
+    def test_publication_rejects_placeholder_mapping(self):
+        for mapping in ("tbd", "pending", "n/a", "todo"):
+            with self.subTest(mapping=mapping):
+                self.assertTrue(validate([record(rights_status="authorized",
+                                                 publication_ready=True,
+                                                 html5_mapping=mapping)]))
+
     def test_invalid_hash_rejected(self):
         self.assertTrue(validate([record(script_sha256="not-a-hash")]))
 
