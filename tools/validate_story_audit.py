@@ -37,7 +37,8 @@ def validate(records):
             errors.append(f"{prefix}: duplicate candidate_id")
         else:
             seen.add(cid)
-        if row["status"] not in STATUSES or row["rights_status"] not in RIGHTS:
+        if (not isinstance(row["status"], str) or row["status"] not in STATUSES
+                or not isinstance(row["rights_status"], str) or row["rights_status"] not in RIGHTS):
             errors.append(f"{prefix}: invalid status or rights_status")
             continue
         for key in ("swf_sha256", "script_sha256"):
@@ -54,7 +55,9 @@ def validate(records):
                 errors.append(f"{prefix}: verified requires negative-path evidence")
         elif row["html5_mapping"] not in (None, "none"):
             errors.append(f"{prefix}: unverified candidate cannot claim HTML5 mapping")
-        if row["rights_status"] != "authorized" and row.get("publication_ready", False):
+        if "publication_ready" in row and not isinstance(row["publication_ready"], bool):
+            errors.append(f"{prefix}: publication_ready must be boolean")
+        if row["rights_status"] != "authorized" and row.get("publication_ready") is True:
             errors.append(f"{prefix}: publication requires separate authorization")
     return errors
 
