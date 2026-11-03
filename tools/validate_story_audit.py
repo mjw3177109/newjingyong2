@@ -70,6 +70,8 @@ def validate(records):
                 errors.append(f"{prefix}: publication requires separate authorization")
             if row["status"] != "verified":
                 errors.append(f"{prefix}: publication requires verified evidence")
+            if not isinstance(row["html5_mapping"], str) or row["html5_mapping"].strip().lower() in ("", "none", "unknown"):
+                errors.append(f"{prefix}: publication requires a concrete HTML5 mapping")
     return errors
 
 
