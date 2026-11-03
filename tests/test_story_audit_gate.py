@@ -41,6 +41,11 @@ class AuditGateTests(unittest.TestCase):
     def test_publication_ready_requires_boolean(self):
         self.assertTrue(validate([record(rights_status="authorized", publication_ready="false")]))
 
+    def test_numeric_negative_path_flag_rejected(self):
+        self.assertTrue(validate([record(negative_path_checked=1)]))
+        self.assertTrue(validate([record(negative_path_checked=0)]))
+        self.assertTrue(validate([record(status="partial", negative_path_checked=1)]))
+
     def test_invalid_hash_rejected(self):
         self.assertTrue(validate([record(script_sha256="not-a-hash")]))
 
