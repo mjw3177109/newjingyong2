@@ -55,7 +55,12 @@ class AuditGateTests(unittest.TestCase):
                 self.assertTrue(validate([record(html5_mapping=value)]))
 
     def test_verified_authorized_record_can_pass_publication_gate(self):
-        self.assertEqual(validate([record(rights_status="authorized", publication_ready=True)]), [])
+        self.assertEqual(validate([record(rights_status="authorized", publication_ready=True, html5_mapping="quest_1")]), [])
+
+    def test_publication_requires_concrete_html5_mapping(self):
+        for mapping in (None, "none", "unknown", " NONE "):
+            with self.subTest(mapping=mapping):
+                self.assertTrue(validate([record(rights_status="authorized", publication_ready=True, html5_mapping=mapping)]))
 
     def test_partial_record_rejects_structured_evidence_fields(self):
         for key in ("export_pair_id", "timeline_and_frame", "evidence_offset",
