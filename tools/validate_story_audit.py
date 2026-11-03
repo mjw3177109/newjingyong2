@@ -48,7 +48,13 @@ def validate(records):
             errors.append(f"{prefix}: negative_path_checked must be boolean")
         if not (row["html5_mapping"] is None or (isinstance(row["html5_mapping"], str) and row["html5_mapping"].strip())):
             errors.append(f"{prefix}: html5_mapping must be null or non-empty string")
-        # Even preliminary records must have a predictable, source-free schema.\n        # Otherwise objects/arrays can silently enter the evidence ledger.\n        for key in ("export_pair_id", "timeline_and_frame", "evidence_offset",\n                    "trigger_summary", "effect_summary", "cross_check"):\n            if row[key] is not None and not isinstance(row[key], str):\n                errors.append(f"{prefix}: {key} must be string or null")\n        if row["status"] == "verified":
+        # Even preliminary records must have a predictable, source-free schema.
+        # Otherwise objects/arrays can silently enter the evidence ledger.
+        for key in ("export_pair_id", "timeline_and_frame", "evidence_offset",
+                    "trigger_summary", "effect_summary", "cross_check"):
+            if row[key] is not None and not isinstance(row[key], str):
+                errors.append(f"{prefix}: {key} must be string or null")
+        if row["status"] == "verified":
             for key in ("export_pair_id", "timeline_and_frame", "evidence_offset",
                         "trigger_summary", "effect_summary", "cross_check"):
                 if not isinstance(row[key], str) or not row[key].strip() or row[key].strip().lower() in ("unknown", "none"):
