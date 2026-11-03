@@ -57,6 +57,17 @@ class AuditGateTests(unittest.TestCase):
     def test_verified_authorized_record_can_pass_publication_gate(self):
         self.assertEqual(validate([record(rights_status="authorized", publication_ready=True)]), [])
 
+    def test_partial_record_rejects_structured_evidence_fields(self):
+        for key in ("export_pair_id", "timeline_and_frame", "evidence_offset",
+                    "trigger_summary", "effect_summary", "cross_check"):
+            with self.subTest(field=key):
+                self.assertTrue(validate([record(status="partial", **{key: {"unexpected": "object"}})]))
+                self.assertTrue(validate([record(status="unverified", **{key: [1, 2]})]))
+
+    def test_partial_record_allows_null_evidence_pending_review(self):
+        self.assertEqual(validate([record(status="partial", trigger_summary=None,
+                                          effect_summary=None, cross_check=None)]), [])
+
     def test_invalid_hash_rejected(self):
         self.assertTrue(validate([record(script_sha256="not-a-hash")]))
 
