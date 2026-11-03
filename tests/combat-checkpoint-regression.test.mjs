@@ -6,7 +6,7 @@ import {initialState, battle, parseSave} from '../src/engine.js';
 const fighting = () => {
   const s=initialState();
   s.quest='active';
-  s.player.x=7;s.player.y=7;
+  s.player.x=18;s.player.y=7;
   s.combat={enemyHp:28,enemyMaxHp:28,guard:false};
   return s;
 };
