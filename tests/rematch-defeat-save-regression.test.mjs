@@ -21,7 +21,7 @@ test('rematch defeat returns to village without duplicate rewards or corrupting 
   const started = startRematch(original);
   assert.equal(started.combat.enemyHp, 28);
   assert.deepEqual(parseSave(JSON.stringify(started)), started);
-  const lost = battle(started, 'guard');
+  const lost = battle(started, 'attack');
   assert.equal(lost.combat, null);
   assert.equal(lost.player.hp, 50);
   assert.deepEqual([lost.player.x, lost.player.y], [5, 8]);
