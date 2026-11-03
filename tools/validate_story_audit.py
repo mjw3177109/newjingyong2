@@ -11,6 +11,7 @@ from pathlib import Path
 HEX64 = re.compile(r"^[0-9a-fA-F]{64}$")
 STATUSES = {"unverified", "partial", "verified", "blocked_export_drift"}
 RIGHTS = {"unknown", "authorized", "restricted"}
+PLACEHOLDERS = {"unknown", "none", "n/a", "na", "tbd", "todo", "pending", "not checked", "not verified"}
 REQUIRED = ("candidate_id", "swf_sha256", "export_pair_id", "timeline_and_frame",
             "script_sha256", "evidence_offset", "trigger_summary", "effect_summary",
             "negative_path_checked", "cross_check", "status", "html5_mapping", "rights_status")
@@ -57,7 +58,7 @@ def validate(records):
         if row["status"] == "verified":
             for key in ("export_pair_id", "timeline_and_frame", "evidence_offset",
                         "trigger_summary", "effect_summary", "cross_check"):
-                if not isinstance(row[key], str) or not row[key].strip() or row[key].strip().lower() in ("unknown", "none"):
+                if not isinstance(row[key], str) or not row[key].strip() or row[key].strip().lower() in PLACEHOLDERS:
                     errors.append(f"{prefix}: verified requires {key}")
             if row["negative_path_checked"] is not True:
                 errors.append(f"{prefix}: verified requires negative-path evidence")
@@ -70,7 +71,7 @@ def validate(records):
                 errors.append(f"{prefix}: publication requires separate authorization")
             if row["status"] != "verified":
                 errors.append(f"{prefix}: publication requires verified evidence")
-            if not isinstance(row["html5_mapping"], str) or row["html5_mapping"].strip().lower() in ("", "none", "unknown"):
+            if not isinstance(row["html5_mapping"], str) or row["html5_mapping"].strip().lower() in (PLACEHOLDERS | {""}):
                 errors.append(f"{prefix}: publication requires a concrete HTML5 mapping")
     return errors
 
