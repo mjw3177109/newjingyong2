@@ -44,7 +44,7 @@ def validate(records):
         for key in ("swf_sha256", "script_sha256"):
             if not isinstance(row[key], str) or not HEX64.fullmatch(row[key]):
                 errors.append(f"{prefix}: invalid {key}")
-        if row["negative_path_checked"] not in (True, False):
+        if not isinstance(row["negative_path_checked"], bool):
             errors.append(f"{prefix}: negative_path_checked must be boolean")
         if row["status"] == "verified":
             for key in ("export_pair_id", "timeline_and_frame", "evidence_offset",
