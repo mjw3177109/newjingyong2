@@ -84,6 +84,30 @@ class TargetFrameSelectionTests(unittest.TestCase):
         self.assertEqual(queue["target_frame_coverage"], "all_valid_if_tags_selected")
         self.assertEqual(queue["verified_story_events"], 0)
 
+    def test_target_opcode_counts_distinguish_selected_excluded_and_capped(self):
+        opcodes, correlation = self.fixtures()
+        opcodes["action_tags"][1]["root_frame"] = 55
+        opcodes["action_tags"][1]["opcode_counts"] = {"if": 4}
+        opcodes["action_tags"][2]["opcode_counts"] = {"if": 7}
+        opcodes["action_tags"][2]["parse_warnings"] = ["truncated_action"]
+        opcodes["tags_with_parse_warnings"] = 1
+        opcodes["top_level_opcode_counts"] = {"if": 12}
+        queue = build_queue(opcodes, correlation, limit=1, target_frame=55)
+        self.assertEqual(queue["target_frame_if_opcode_count"], 11)
+        self.assertEqual(queue["target_frame_if_opcodes_excluded_by_parse_warnings"], 7)
+        self.assertEqual(queue["target_frame_selected_if_opcode_count"], 4)
+        self.assertEqual(queue["target_frame_eligible_action_tags"], 1)
+        self.assertEqual(queue["verified_story_events"], 0)
+
+    def test_target_opcode_count_when_no_action(self):
+        queue = build_queue(*self.fixtures(), target_frame=54)
+        self.assertEqual(queue["target_frame_if_opcode_count"], 0)
+        self.assertEqual(queue["target_frame_selected_if_opcode_count"], 0)
+        self.assertEqual(queue["target_frame_if_opcodes_excluded_by_parse_warnings"], 0)
+        untargeted = build_queue(*self.fixtures())
+        self.assertIsNone(untargeted["target_frame_if_opcode_count"])
+        self.assertIsNone(untargeted["target_frame_selected_if_opcode_count"])
+
     def test_no_target_has_no_warning_count(self):
         queue = build_queue(*self.fixtures())
         self.assertIsNone(queue["target_frame_if_tags_excluded_by_parse_warnings"])
