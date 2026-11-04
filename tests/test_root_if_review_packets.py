@@ -1,5 +1,6 @@
 import copy
 import unittest
+from pathlib import Path
 
 from tools.build_root_if_review_packets import build_packets
 
@@ -122,6 +123,57 @@ class ReviewPacketsTests(unittest.TestCase):
         self.assertEqual(empty['target_frame_coverage'], 'absent_from_capped_sample')
         self.assertEqual(empty['manual_review_queue'], [])
         self.assertEqual(empty['total_if_review_packets'], 2)
+
+    def test_frame55_queue_limit_covers_all_thirteen_if_candidates(self):
+        rows = fixture()
+        # Model the real SWF report: thirteen IFs in frame 55 / one action tag.
+        # Each synthetic action has one IF and one Jump so all four evidence
+        # inputs remain aligned while the packet cap is exercised.
+        for index in range(1, 13):
+            delta = index * 20
+            for report in rows:
+                candidate = copy.deepcopy(report['candidates'][0])
+                candidate['root_frame'] = 55
+                candidate['action_tag_ordinal'] = index + 2
+                candidate['action_sha256'] = f'{index + 1:064x}'
+                if 'edges' in candidate:
+                    for edge in candidate['edges']:
+                        edge['source_offset'] += delta
+                        edge['target_offset'] += delta
+                if 'if_preceding_access_hints' in candidate:
+                    for hint in candidate['if_preceding_access_hints']:
+                        hint['if_source_offset'] += delta
+                        for access_hint in hint['prior_eight_records_access_hints']:
+                            access_hint['offset'] += delta
+                if 'if_successors' in candidate:
+                    for successor in candidate['if_successors']:
+                        successor['if_source_offset'] += delta
+                        successor['branch_target_offset'] += delta
+                        successor['fallthrough_offset'] += delta
+                report['candidates'].append(candidate)
+
+        rows[0]['selected_candidate_count'] = 13
+        for report in rows[1:]:
+            report['selected_action_tags'] = 13
+        rows[1]['if_edges'] = 13
+        rows[1]['total_branch_edges'] = 26
+
+        complete = build_packets(*rows, limit=50, target_frame=55)
+        self.assertEqual(complete['target_frame_if_count'], 13)
+        self.assertEqual(complete['target_frame_action_tags_in_sample'], 13)
+        self.assertEqual(len(complete['manual_review_queue']), 13)
+        self.assertEqual(complete['manual_review_limit'], 50)
+        self.assertEqual(complete['verified_story_events'], 0)
+
+        truncated = build_packets(*rows, limit=12, target_frame=55)
+        self.assertEqual(truncated['target_frame_if_count'], 13)
+        self.assertEqual(len(truncated['manual_review_queue']), 12)
+        self.assertEqual(truncated['verified_story_events'], 0)
+
+    def test_ci_workflow_keeps_review_limit_above_frame55_if_count(self):
+        workflow = Path('.github/workflows/validate.yml').read_text(encoding='utf-8')
+        self.assertIn('build_root_if_review_packets.py', workflow)
+        self.assertIn('--limit 50 --target-frame 55', workflow)
 
     def test_rejects_invalid_target_frame(self):
         for invalid in (0, -1, True, '55'):
