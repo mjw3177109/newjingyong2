@@ -85,11 +85,16 @@ def build_queue(opcodes, correlation, limit=50, target_frame=None):
         raise ValueError("correlation aggregate mismatch")
     candidates = []
     target_if_with_warnings = 0
+    target_if_opcode_total = 0
+    target_if_opcode_excluded = 0
     for row in rows:
         counts = row["opcode_counts"]
         conditional = counts.get("if", 0)
-        if target_frame is not None and row["root_frame"] == target_frame and conditional and row["parse_warnings"]:
-            target_if_with_warnings += 1
+        if target_frame is not None and row["root_frame"] == target_frame:
+            target_if_opcode_total += conditional
+            if conditional and row["parse_warnings"]:
+                target_if_with_warnings += 1
+                target_if_opcode_excluded += conditional
         if not conditional or row["parse_warnings"]:
             continue
         frame = row["root_frame"]
@@ -118,6 +123,9 @@ def build_queue(opcodes, correlation, limit=50, target_frame=None):
         "schema": "swf-root-conditional-review-queue-v1",
         "target_frame": target_frame,
         "target_frame_total_action_tags": target_total_action_tags,
+        "target_frame_if_opcode_count": None if target_frame is None else target_if_opcode_total,
+        "target_frame_if_opcodes_excluded_by_parse_warnings": None if target_frame is None else target_if_opcode_excluded,
+        "target_frame_selected_if_opcode_count": None if target_frame is None else sum(c["conditional_opcode_count"] for c in candidates[:limit] if c["root_frame"] == target_frame),
         "target_frame_eligible_action_tags": target_candidates,
         "target_frame_selected_action_tags": target_selected,
         "target_frame_if_tags_excluded_by_parse_warnings": (None if target_frame is None else target_if_with_warnings),
