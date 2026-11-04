@@ -2,7 +2,7 @@
 
 ## 本轮目的
 
-为已有的 12 个优先 IF 审查目标增加**直接取自 `jin.swf` 的操作码上下文**，使私有审查者能按 `review_id`、帧号、DoAction 序号和 IF 字节偏移定位证据，并快速判断是否存在比较运算、变量读取、调用或不透明控制流。此前仅有分支坐标和前八条状态访问提示，不能看出更一般的操作码类别。
+为优先 IF 审查目标增加**直接取自 `jin.swf` 的操作码上下文**，使私有审查者能按 `review_id`、帧号、DoAction 序号和 IF 字节偏移定位证据，并快速判断是否存在比较运算、变量读取、调用或不透明控制流。此前仅有分支坐标和前八条状态访问提示，不能看出更一般的操作码类别。
 
 ## 执行
 
@@ -36,3 +36,8 @@ GitHub Actions 的 `swf-inventory` 作业将上传 `swf-root-if-opcode-windows` 
 先前的 `if_incoming_syntactic_source_count` 会包含静态不可达的前驱：例如无条件 Jump 跳过的记录仍可能在字节排列上紧邻 IF，导致审查者误认为存在两条有效来源。现在独立从原始 DoAction 首记录遍历本地语法后继，增加 `if_incoming_reachable_syntactic_source_count`、`if_incoming_unreachable_syntactic_source_count`、`if_incoming_unreachable_syntactic_source_offsets` 和 `if_has_multiple_reachable_syntactic_predecessors`。保留旧字段，避免破坏已有审查产物；新增合成回归覆盖不可达的线性前驱、两条可达前驱和自环。
 
 **限制：** 这只是忽略不透明控制语义的静态图遍历，不是运行时执行证据。被标为结构不可达的记录也可能通过 AVM1 不透明指令或外部行为到达。不能据此确认剧情、地图、任务、人物或战斗数值；已核实原作事件仍为 0。
+
+
+## 2026-11-04：第 55 帧 opcode-window 覆盖上限修正
+
+Push Actions [#41897522373](https://github.com/mjw3177109/newjingyong2/actions/runs/41897522373) 的脱敏条件边与局部控制流 Artifact 显示，根帧 55 / DoAction 9 实际有 13 个 IF（最后一条：6937 → 6953，fallthrough 6942）。但当次 review-packet 的 `manual_review_limit=12`，所以本 Artifact 的 `selected_if_count=12` 是审查队列截取数量，不是该 Action 的 IF 总数。现已把 CI 的 packet limit 提高到 50，并增加 13 条完整覆盖的回归测试；待下一次 Actions 重新生成并验证 13 条 opcode windows。该修正只补齐结构审查覆盖，不增加任何已核实剧情事件，所有候选仍为 `unverified`。
