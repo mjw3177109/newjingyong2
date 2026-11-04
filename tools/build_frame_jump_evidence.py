@@ -40,6 +40,17 @@ def scan_script(source, limit=32):
         jump = JUMP.search(clean, m.start(), m.end())
         if jump is not None:
             guarded[jump.start()] = digest(m.group('condition').strip().encode('utf-8'))
+    # Also recognize the valid ActionScript single-statement form without braces.
+    # This remains syntax-only evidence, not proof of a runtime story condition.
+    unbraced = re.compile(
+        r'\bif\s*\(\s*(?P<condition>[^()\n]+?)\s*\)\s*'
+        r'(?P<jump>gotoAnd(?:Play|Stop)\s*\(\s*\d+\s*\)\s*;)',
+        re.MULTILINE,
+    )
+    for m in unbraced.finditer(clean):
+        jump = JUMP.search(clean, m.start('jump'), m.end('jump'))
+        if jump is not None:
+            guarded[jump.start()] = digest(m.group('condition').strip().encode('utf-8'))
     results = []
     for m in jumps[:limit]:
         results.append({
