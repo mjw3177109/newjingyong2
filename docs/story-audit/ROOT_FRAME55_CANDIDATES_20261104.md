@@ -53,6 +53,7 @@
 | 10 | `e569b99ba59ce00dab97877c` | 55 / 9 | 6838 | 6854 | 6843 | 2 | 0 / 1 | unverified |
 | 11 | `eabaf0a62e40305a2c98a8c3` | 55 / 9 | 6871 | 6887 | 6876 | 2 | 0 / 1 | unverified |
 | 12 | `9d3e97d6eb97c36ec39d89cc` | 55 / 9 | 6904 | 6920 | 6909 | 2 | 0 / 1 | unverified |
+| 13 | `31ab283f11d1f68661b75158` | 55 / 9 | 6937 | 6953 | 6942 | unknown | unknown | unverified |
 
 来源 Artifact：
 - [IF 操作码窗口](https://github.com/mjw3177109/newjingyong2/actions/runs/41887040731/artifacts/13351048155)
@@ -79,3 +80,19 @@
 4. 权利确认独立于技术核验；在改编与发布权利未确认前，不将受保护剧情纳入可公开发行版本。
 
 本报告记录的是可复查的结构性进展，不是全量 1:1 复刻完成声明。
+
+
+## 2026-11-04 20:20 UTC：发现审查队列第 13 条被上限截断
+
+对 [Push Actions #41897522373](https://github.com/mjw3177109/newjingyong2/actions/runs/41897522373) 的真实脱敏 Artifact 做逐项核对后，发现此前只列出 12 条并不完整：
+
+- `swf-root-conditional-edges` Artifact（[ID 13356537292](https://github.com/mjw3177109/newjingyong2/actions/runs/41897522373/artifacts/13356537292)）在根帧 55 / DoAction 9 中给出 **13 个 IF**；最后一条偏移为 6937，分支目标 6953。
+- `swf-root-local-control-flow` Artifact（[ID 13357196134](https://github.com/mjw3177109/newjingyong2/actions/runs/41897522373/artifacts/13357196134)）独立确认该 IF 的顺序后继为 6942，且静态语法图标记可达（不代表运行时已执行）。
+- `swf-root-state-access-hints` Artifact（[ID 13355872389](https://github.com/mjw3177109/newjingyong2/actions/runs/41897522373/artifacts/13355872389)）也包含偏移 6937 的邻近状态访问提示。
+- 同一运行的 `swf-root-if-review-packets` Artifact（[ID 13356477257](https://github.com/mjw3177109/newjingyong2/actions/runs/41897522373/artifacts/13356477257)）记录 `target_frame_if_count=13`，但 `manual_review_limit=12`，因此实际只输出 12 个 packet；第 13 条没有进入 IF opcode window 和 handoff。
+
+已修正 CI 工作流，把定向审查上限提高到 50（工具自身允许的上限），并新增回归测试：合成 13 条同帧 IF，验证 50 上限能完整保留 13 条，同时证明 12 上限会截断。代码提交：
+- [工作流修复 `12fcdb4`](https://github.com/mjw3177109/newjingyong2/commit/12fcdb48ce28da070956a5a94138cd3889129b66)
+- [回归测试 `232b26b`](https://github.com/mjw3177109/newjingyong2/commit/232b26bcb506c83c86e5b9399e0098284564a843)
+
+第 13 条候选 ID 按现有稳定身份规则由 SWF 指纹、DoAction 序号、动作 SHA-256 和 IF 偏移计算。它目前只有脱敏分支边、静态后继及状态访问定位证据；comparison opcode 细节尚待下一次完整 opcode-window Artifact。**13 条仍全部是 unverified，verified_story_events 仍为 0。** 下一次 CI 必须确认 13/13 均进入 packet、opcode-window、handoff 和 reconciliation，才算修复验收通过。
