@@ -1,4 +1,4 @@
-# 原作剧情事件语义核验门禁 v1（2026-11-03）
+# 原作剧情事件语义核验门禁 v1（2026-11-03，2026-11-04 增补）
 
 > 本文是审计流程和证据模板，不是已核实的原作剧情。已核实原作事件：**0**。不得把原创试玩任务、FFDec 控制流候选数或帧跳转次数计入原作还原率。
 
@@ -7,6 +7,7 @@
 - 只在获授权的隔离环境中读取仓库原始 `jin.swf`，使用 Java 8 + FFDec；记录 SWF SHA-256、FFDec 版本、Java 版本、导出批次及每个脚本 SHA-256。
 - 对同一 SWF 独立导出两次，先执行仓库现有的匿名索引、双导出比较与稳定候选筛选。若目标脚本出现内容漂移，标记 `blocked_export_drift`，不得登记为“已证实”。
 - 原始 ActionScript、脚本中的原文对白、可识别美术/音频、原始路径不得进入公开 PR、CI Artifact 或日志。公开记录仅放匿名脚本 ID、摘要、散列、证据类型和审核状态。
+- **公开记录采用严格字段白名单**：不允许附加 `source_text`、`raw_actionscript`、`dialogue`、`source_path`、媒体 URL 等字段；证据摘要限制为单行短文本，不能把原始脚本/对白当作摘要粘贴。该检查是防误提交门禁，不是完整的版权内容识别器。
 
 ## 单条事件核验步骤
 
@@ -24,13 +25,22 @@
 | `swf_sha256` / `export_pair_id` | 原文件指纹与两次导出批次 |
 | `timeline_and_frame` | 已证实的时间轴归属、帧号；否则 unknown |
 | `script_sha256` / `evidence_offset` | 脚本哈希和行号或字节码偏移 |
-| `trigger_summary` | 仅在条件链核实后填写的非原文摘要 |
-| `effect_summary` | 仅在效果链核实后填写的非原文摘要 |
+| `trigger_summary` | 仅在条件链核实后填写的非原文摘要，最多 240 字符、单行 |
+| `effect_summary` | 仅在效果链核实后填写的非原文摘要，最多 240 字符、单行 |
 | `negative_path_checked` | 是否核实条件不成立路径 |
-| `cross_check` | 独立导出/字节码/授权运行验证方式 |
+| `cross_check` | 独立导出/字节码/授权运行验证方式，最多 240 字符、单行 |
 | `status` | unverified / partial / verified / blocked_export_drift |
 | `html5_mapping` | 未验证时必须为 none；实现后填写测试路径 |
 | `rights_status` | unknown / authorized / restricted |
+| `rights_scope` | none / analysis_only / adaptation_only / distribution_only / adaptation_and_distribution |
+| `rights_evidence_ref` | 授权或限制文件的短引用；无证据时为 null |
+
+## 发布门禁
+
+- `rights_status=authorized` 必须有非占位的 `rights_evidence_ref`，并明确声明授权范围；不能仅凭一个布尔值或口头描述通过。
+- `publication_ready=true` 必须同时满足：`status=verified`、`rights_status=authorized`、`rights_scope=adaptation_and_distribution`、存在具体权利证据引用、存在具体 HTML5 映射。
+- `analysis_only`、`adaptation_only` 或 `distribution_only` 均不能通过商业发行门禁。权利未知时 scope 必须为 `none`；权利受限时不得声明改编/发行授权。
+- 这只是仓库内的最低机器门禁，引用文件仍需由项目负责人核验签署方、权利主体、地域、期限、平台、商业使用及再许可范围；机器校验不能替代法律审查。
 
 ## 登记规则与下一阶段
 

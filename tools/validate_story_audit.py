@@ -11,10 +11,33 @@ from pathlib import Path
 HEX64 = re.compile(r"^[0-9a-fA-F]{64}$")
 STATUSES = {"unverified", "partial", "verified", "blocked_export_drift"}
 RIGHTS = {"unknown", "authorized", "restricted"}
-PLACEHOLDERS = {"unknown", "none", "n/a", "na", "tbd", "todo", "pending", "not checked", "not verified"}
+RIGHTS_SCOPES = {"none", "analysis_only", "adaptation_only", "distribution_only",
+                 "adaptation_and_distribution"}
+PLACEHOLDERS = {"unknown", "none", "n/a", "na", "tbd", "todo", "pending",
+                "not checked", "not verified"}
 REQUIRED = ("candidate_id", "swf_sha256", "export_pair_id", "timeline_and_frame",
             "script_sha256", "evidence_offset", "trigger_summary", "effect_summary",
-            "negative_path_checked", "cross_check", "status", "html5_mapping", "rights_status")
+            "negative_path_checked", "cross_check", "status", "html5_mapping",
+            "rights_status", "rights_scope", "rights_evidence_ref")
+ALLOWED = set(REQUIRED) | {"publication_ready"}
+TEXT_LIMITS = {
+    "export_pair_id": 100,
+    "timeline_and_frame": 160,
+    "evidence_offset": 160,
+    "trigger_summary": 240,
+    "effect_summary": 240,
+    "cross_check": 240,
+    "rights_evidence_ref": 240,
+}
+
+
+def _usable_text(value):
+    return (isinstance(value, str) and bool(value.strip())
+            and len(value) <= 240 and not any(ch in value for ch in "\r\n\0"))
+
+
+def _is_placeholder(value):
+    return isinstance(value, str) and value.strip().lower() in PLACEHOLDERS
 
 
 def validate(records):
@@ -27,6 +50,9 @@ def validate(records):
         if not isinstance(row, dict):
             errors.append(f"{prefix}: expected object")
             continue
+        extra = sorted(str(key) for key in set(row) - ALLOWED)
+        if extra:
+            errors.append(f"{prefix}: unexpected fields {', '.join(extra)}")
         missing = [k for k in REQUIRED if k not in row]
         if missing:
             errors.append(f"{prefix}: missing fields {', '.join(missing)}")
@@ -39,7 +65,8 @@ def validate(records):
         else:
             seen.add(cid)
         if (not isinstance(row["status"], str) or row["status"] not in STATUSES
-                or not isinstance(row["rights_status"], str) or row["rights_status"] not in RIGHTS):
+                or not isinstance(row["rights_status"], str)
+                or row["rights_status"] not in RIGHTS):
             errors.append(f"{prefix}: invalid status or rights_status")
             continue
         for key in ("swf_sha256", "script_sha256"):
@@ -47,10 +74,31 @@ def validate(records):
                 errors.append(f"{prefix}: invalid {key}")
         if not isinstance(row["negative_path_checked"], bool):
             errors.append(f"{prefix}: negative_path_checked must be boolean")
-        if not (row["html5_mapping"] is None or (isinstance(row["html5_mapping"], str) and row["html5_mapping"].strip())):
+        if not (row["html5_mapping"] is None or
+                (isinstance(row["html5_mapping"], str) and row["html5_mapping"].strip())):
             errors.append(f"{prefix}: html5_mapping must be null or non-empty string")
-        # Even preliminary records must have a predictable, source-free schema.
-        # Otherwise objects/arrays can silently enter the evidence ledger.
+        for key, limit in TEXT_LIMITS.items():
+            value = row[key]
+            if value is not None and (
+                not isinstance(value, str) or not value.strip()
+                or len(value) > limit or any(ch in value for ch in "\r\n\0")
+            ):
+                errors.append(f"{prefix}: {key} must be a short single-line string or null")
+        if (not isinstance(row["rights_scope"], str)
+                or row["rights_scope"] not in RIGHTS_SCOPES):
+            errors.append(f"{prefix}: invalid rights_scope")
+        if row["rights_status"] == "unknown":
+            if row["rights_scope"] != "none" or row["rights_evidence_ref"] is not None:
+                errors.append(f"{prefix}: unknown rights require scope none and no evidence reference")
+        elif row["rights_status"] == "restricted":
+            if (isinstance(row["rights_scope"], str)
+                    and row["rights_scope"] not in {"none", "analysis_only"}):
+                errors.append(f"{prefix}: restricted rights cannot claim adaptation or distribution scope")
+        elif row["rights_status"] == "authorized":
+            if not _usable_text(row["rights_evidence_ref"]) or _is_placeholder(row["rights_evidence_ref"]):
+                errors.append(f"{prefix}: authorized rights require a concrete rights_evidence_ref")
+            if row["rights_scope"] == "none":
+                errors.append(f"{prefix}: authorized rights require an explicit rights_scope")
         for key in ("export_pair_id", "timeline_and_frame", "evidence_offset",
                     "trigger_summary", "effect_summary", "cross_check"):
             if row[key] is not None and not isinstance(row[key], str):
@@ -58,17 +106,24 @@ def validate(records):
         if row["status"] == "verified":
             for key in ("export_pair_id", "timeline_and_frame", "evidence_offset",
                         "trigger_summary", "effect_summary", "cross_check"):
-                if not isinstance(row[key], str) or not row[key].strip() or row[key].strip().lower() in PLACEHOLDERS:
+                if not isinstance(row[key], str) or not row[key].strip() or _is_placeholder(row[key]):
                     errors.append(f"{prefix}: verified requires {key}")
             if row["negative_path_checked"] is not True:
                 errors.append(f"{prefix}: verified requires negative-path evidence")
-        elif not (row["html5_mapping"] is None or row["html5_mapping"] == "none"):
-            errors.append(f"{prefix}: unverified candidate cannot claim HTML5 mapping")
+        else:
+            mapping = row["html5_mapping"]
+            if not (mapping is None or
+                    (isinstance(mapping, str) and mapping.strip().lower() == "none")):
+                errors.append(f"{prefix}: unverified candidate cannot claim HTML5 mapping")
         if "publication_ready" in row and not isinstance(row["publication_ready"], bool):
             errors.append(f"{prefix}: publication_ready must be boolean")
         if row.get("publication_ready") is True:
             if row["rights_status"] != "authorized":
                 errors.append(f"{prefix}: publication requires separate authorization")
+            if row["rights_scope"] != "adaptation_and_distribution":
+                errors.append(f"{prefix}: publication requires adaptation_and_distribution scope")
+            if not _usable_text(row["rights_evidence_ref"]) or _is_placeholder(row["rights_evidence_ref"]):
+                errors.append(f"{prefix}: publication requires a concrete rights evidence reference")
             if row["status"] != "verified":
                 errors.append(f"{prefix}: publication requires verified evidence")
             if not isinstance(row["html5_mapping"], str) or row["html5_mapping"].strip().lower() in (PLACEHOLDERS | {""}):

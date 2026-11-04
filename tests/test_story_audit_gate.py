@@ -10,7 +10,8 @@ def record(**changes):
                timeline_and_frame="main:55", script_sha256=H, evidence_offset="offset:9",
                trigger_summary="conditional branch", effect_summary="state transition",
                negative_path_checked=True, cross_check="independent bytecode review",
-               status="verified", html5_mapping="none", rights_status="unknown")
+               status="verified", html5_mapping="none", rights_status="unknown",
+               rights_scope="none", rights_evidence_ref=None)
     row.update(changes)
     return row
 
@@ -47,7 +48,10 @@ class AuditGateTests(unittest.TestCase):
         self.assertTrue(validate([record(status="partial", negative_path_checked=1)]))
 
     def test_authorized_but_unverified_cannot_publish(self):
-        self.assertTrue(validate([record(status="partial", rights_status="authorized", publication_ready=True)]))
+        self.assertTrue(validate([record(status="partial", rights_status="authorized",
+                                         rights_scope="adaptation_and_distribution",
+                                         rights_evidence_ref="rights-doc:license-2026",
+                                         publication_ready=True)]))
 
     def test_mapping_rejects_unhashable_and_empty_values(self):
         for value in ([], {}, 1, "", "   "):
@@ -55,12 +59,24 @@ class AuditGateTests(unittest.TestCase):
                 self.assertTrue(validate([record(html5_mapping=value)]))
 
     def test_verified_authorized_record_can_pass_publication_gate(self):
-        self.assertEqual(validate([record(rights_status="authorized", publication_ready=True, html5_mapping="quest_1")]), [])
+        self.assertEqual(validate([record(
+            rights_status="authorized",
+            rights_scope="adaptation_and_distribution",
+            rights_evidence_ref="rights-doc:license-2026",
+            publication_ready=True,
+            html5_mapping="quest_1"
+        )]), [])
 
     def test_publication_requires_concrete_html5_mapping(self):
         for mapping in (None, "none", "unknown", " NONE "):
             with self.subTest(mapping=mapping):
-                self.assertTrue(validate([record(rights_status="authorized", publication_ready=True, html5_mapping=mapping)]))
+                self.assertTrue(validate([record(
+                    rights_status="authorized",
+                    rights_scope="adaptation_and_distribution",
+                    rights_evidence_ref="rights-doc:license-2026",
+                    publication_ready=True,
+                    html5_mapping=mapping
+                )]))
 
     def test_partial_record_rejects_structured_evidence_fields(self):
         for key in ("export_pair_id", "timeline_and_frame", "evidence_offset",
@@ -83,12 +99,58 @@ class AuditGateTests(unittest.TestCase):
     def test_publication_rejects_placeholder_mapping(self):
         for mapping in ("tbd", "pending", "n/a", "todo"):
             with self.subTest(mapping=mapping):
-                self.assertTrue(validate([record(rights_status="authorized",
-                                                 publication_ready=True,
-                                                 html5_mapping=mapping)]))
+                self.assertTrue(validate([record(
+                    rights_status="authorized",
+                    rights_scope="adaptation_and_distribution",
+                    rights_evidence_ref="rights-doc:license-2026",
+                    publication_ready=True,
+                    html5_mapping=mapping
+                )]))
 
     def test_invalid_hash_rejected(self):
         self.assertTrue(validate([record(script_sha256="not-a-hash")]))
+
+    def test_authorized_rights_require_evidence_reference(self):
+        self.assertTrue(validate([record(
+            rights_status="authorized",
+            rights_scope="adaptation_and_distribution",
+            rights_evidence_ref=None
+        )]))
+
+    def test_analysis_only_rights_cannot_publish(self):
+        self.assertTrue(validate([record(
+            rights_status="authorized",
+            rights_scope="analysis_only",
+            rights_evidence_ref="rights-doc:analysis-only",
+            publication_ready=True,
+            html5_mapping="quest_1"
+        )]))
+
+    def test_restricted_rights_cannot_claim_adaptation_scope(self):
+        self.assertTrue(validate([record(
+            rights_status="restricted",
+            rights_scope="adaptation_and_distribution",
+            rights_evidence_ref="rights-doc:restricted"
+        )]))
+
+    def test_unknown_rights_cannot_claim_scope_or_evidence(self):
+        self.assertTrue(validate([record(
+            rights_status="unknown",
+            rights_scope="adaptation_only",
+            rights_evidence_ref="rights-doc:unknown"
+        )]))
+
+    def test_unknown_fields_reject_possible_source_material(self):
+        for key in ("source_text", "raw_actionscript", "dialogue", "source_path", "media_url"):
+            with self.subTest(field=key):
+                self.assertTrue(validate([record(**{key: "must not enter public ledger"})]))
+
+    def test_evidence_summaries_are_bounded_and_single_line(self):
+        self.assertTrue(validate([record(trigger_summary="x" * 241)]))
+        self.assertTrue(validate([record(effect_summary="line one\nline two")]))
+
+    def test_case_insensitive_none_mapping_is_allowed_before_verification(self):
+        self.assertEqual(validate([record(status="partial", html5_mapping=" NONE ")]), [])
 
 
 if __name__ == "__main__":
