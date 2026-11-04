@@ -86,5 +86,13 @@
 ## 2026-11-04 第 55 帧候选与三次 FFDec 导出复核
 
 - [第 55 帧结构候选与 FFDec 三次导出证据](ROOT_FRAME55_CANDIDATES_20261104.md)：记录本轮 Java 8 / FFDec 三次导出均成功、各 4,560 个脚本；A/B 内容映射 divergent、B/C equal；99 个匿名候选通过第三次内容哈希核对。
-- 记录 12 个根时间轴第 55 帧 / DoAction 9 的 IF 候选坐标、分支后继与有限操作码提示。所有候选仍为 `unverified`，不含原始脚本、台词、素材或媒体。
+- 记录 13 个根时间轴第 55 帧 / DoAction 9 的 IF 候选坐标、分支后继与有限操作码提示。所有候选仍为 `unverified`，不含原始脚本、台词、素材或媒体。
 - **已语义核实原作剧情事件仍为 0；ready_for_html5_mapping=0。** 三次导出一致性、字节码结构与操作码计数均不能代替条件栈、变量副作用、地图归属及运行时双路径核验。
+
+
+## 2026-11-04 20:25 UTC 最新 CI 复核
+
+- [Push Actions #41906141313](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313) 四个作业全部 **success**：HTML5 Node 测试、Chromium 浏览器冒烟、SWF 结构审计、Java 8 + FFDec 探针。
+- 第 55 帧 13 个 IF 已全部进入结构 packet、opcode windows、handoff、cross-check 与 reconciliation；详细坐标和 Artifact 链接见 [ROOT_FRAME55_CANDIDATES_20261104.md](ROOT_FRAME55_CANDIDATES_20261104.md)。
+- FFDec 三次导出各 4,560 个脚本；A/C 相同、B 为本轮 outlier，1 个同路径脚本内容不同；99 个稳定候选均通过第三次内容哈希复核。仍不代表脚本语义已核实。
+- **原作剧情事件仍为 0 条，ready_for_html5_mapping=0**。原创试玩事件、角色数值和地图不能计入原作复刻率。
