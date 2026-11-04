@@ -126,6 +126,8 @@ class ReviewPacketsTests(unittest.TestCase):
 
     def test_frame55_queue_limit_covers_all_thirteen_if_candidates(self):
         rows = fixture()
+        for report in rows:
+            report['candidates'][0]['root_frame'] = 55
         # Model the real SWF report: thirteen IFs in frame 55 / one action tag.
         # Each synthetic action has one IF and one Jump so all four evidence
         # inputs remain aligned while the packet cap is exercised.
