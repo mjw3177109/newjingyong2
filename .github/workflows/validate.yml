@@ -62,7 +62,7 @@ jobs:
       - name: Correlate root action frames and depth transitions (source-free)
         run: python tools/correlate_root_action_depth.py --timeline reports/swf_main_timeline_evidence.json --depth reports/swf_root_depth_evidence.json --out reports/swf_root_action_depth_correlation.json
       - name: Build source-free root conditional review queue
-        run: python tools/build_root_conditional_review_queue.py --opcodes reports/swf_root_action_opcode_evidence.json --correlation reports/swf_root_action_depth_correlation.json --out reports/swf_root_conditional_review_queue.json --limit 50
+        run: python tools/build_root_conditional_review_queue.py --opcodes reports/swf_root_action_opcode_evidence.json --correlation reports/swf_root_action_depth_correlation.json --out reports/swf_root_conditional_review_queue.json --limit 50 --target-frame 55
       - name: Locate source-free conditional branch edges in original SWF
         run: python tools/index_root_conditional_edges.py jin.swf --opcodes reports/swf_root_action_opcode_evidence.json --queue reports/swf_root_conditional_review_queue.json --out reports/swf_root_conditional_edges.json
       - name: Locate source-free AVM1 state access hints near root IF branches
@@ -70,7 +70,7 @@ jobs:
       - name: Build source-free local AVM1 control-flow graph for selected actions
         run: python tools/index_root_control_flow.py jin.swf --opcodes reports/swf_root_action_opcode_evidence.json --queue reports/swf_root_conditional_review_queue.json --edges reports/swf_root_conditional_edges.json --state-access reports/swf_root_state_access_hints.json --out reports/swf_root_local_control_flow.json
       - name: Build source-free per-IF manual review packets
-        run: python tools/build_root_if_review_packets.py --queue reports/swf_root_conditional_review_queue.json --edges reports/swf_root_conditional_edges.json --access reports/swf_root_state_access_hints.json --cfg reports/swf_root_local_control_flow.json --out reports/swf_root_if_review_packets.json --limit 12
+        run: python tools/build_root_if_review_packets.py --queue reports/swf_root_conditional_review_queue.json --edges reports/swf_root_conditional_edges.json --access reports/swf_root_state_access_hints.json --cfg reports/swf_root_local_control_flow.json --out reports/swf_root_if_review_packets.json --limit 12 --target-frame 55
       - name: Derive operand-free IF opcode windows from original SWF
         run: python tools/index_root_if_opcode_windows.py jin.swf --packets reports/swf_root_if_review_packets.json --out reports/swf_root_if_opcode_windows.json
       - name: Build source-free private-review handoff checklist
