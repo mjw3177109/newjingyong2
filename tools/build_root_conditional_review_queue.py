@@ -119,6 +119,9 @@ def build_queue(opcodes, correlation, limit=50, target_frame=None):
         "target_frame_eligible_action_tags": target_candidates,
         "target_frame_selected_action_tags": target_selected,
         "target_frame_if_tags_excluded_by_parse_warnings": (None if target_frame is None else target_if_with_warnings),
+        "target_frame_parse_integrity": ("not_requested" if target_frame is None else
+                                         "contains_parse_warnings" if target_if_with_warnings else
+                                         "no_parse_warnings_in_target_if_tags"),
         "target_frame_coverage": ("not_requested" if target_frame is None else
                                   "only_parse_warning_if_tags" if target_candidates == 0 and target_if_with_warnings else
                                   "no_valid_if_in_opcode_index" if target_candidates == 0 else
