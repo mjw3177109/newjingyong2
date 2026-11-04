@@ -47,8 +47,19 @@ class TargetFrameSelectionTests(unittest.TestCase):
 
     def test_no_valid_if_in_target(self):
         queue = build_queue(*self.fixtures(), limit=1, target_frame=54)
-        self.assertEqual(queue["target_frame_coverage"], "no_valid_if_in_opcode_index")
+        self.assertEqual(queue["target_frame_coverage"], "no_action_tags_in_opcode_index")
+        self.assertEqual(queue["target_frame_total_action_tags"], 0)
         self.assertEqual(queue["target_frame_selected_action_tags"], 0)
+
+    def test_target_has_action_but_no_if(self):
+        opcodes, correlation = self.fixtures()
+        opcodes["action_tags"][2]["opcode_counts"] = {"play": 1}
+        opcodes["top_level_opcode_counts"] = {"if": 2, "play": 1}
+        queue = build_queue(opcodes, correlation, limit=1, target_frame=55)
+        self.assertEqual(queue["target_frame_total_action_tags"], 1)
+        self.assertEqual(queue["target_frame_coverage"], "no_valid_if_in_opcode_index")
+        self.assertEqual(queue["target_frame_eligible_action_tags"], 0)
+        self.assertEqual(queue["verified_story_events"], 0)
 
     def test_target_if_excluded_by_parse_warnings(self):
         opcodes, correlation = self.fixtures()
