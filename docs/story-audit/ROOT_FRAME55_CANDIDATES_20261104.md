@@ -95,7 +95,7 @@
 - [工作流修复 `12fcdb4`](https://github.com/mjw3177109/newjingyong2/commit/12fcdb48ce28da070956a5a94138cd3889129b66)
 - [回归测试 `232b26b`](https://github.com/mjw3177109/newjingyong2/commit/232b26bcb506c83c86e5b9399e0098284564a843)
 
-第 13 条候选 ID 按现有稳定身份规则由 SWF 指纹、DoAction 序号、动作 SHA-256 和 IF 偏移计算。它目前只有脱敏分支边、静态后继及状态访问定位证据；comparison opcode 细节尚待下一次完整 opcode-window Artifact。**13 条仍全部是 unverified，verified_story_events 仍为 0。** Push Actions [#41906141313](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313) 的 `swf-inventory` 已成功，且以下真实 Artifact 均覆盖 13/13：packet、opcode-window、handoff、window cross-check、reconciliation。FFDec Java 8 与浏览器作业在本报告生成时仍在运行，不能提前宣称整轮 CI 全绿。
+第 13 条候选 ID 按现有稳定身份规则由 SWF 指纹、DoAction 序号、动作 SHA-256 和 IF 偏移计算。它目前只有脱敏分支边、静态后继及状态访问定位证据；comparison opcode 细节尚待下一次完整 opcode-window Artifact。**13 条仍全部是 unverified，verified_story_events 仍为 0。** Push Actions [#41906141313](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313) 的 `swf-inventory` 已成功，且以下真实 Artifact 均覆盖 13/13：packet、opcode-window、handoff、window cross-check、reconciliation。FFDec Java 8 与浏览器作业随后均完成 success；整轮 Push Actions #41906141313 四个作业全部 success。FFDec 三次导出各 4,560 个脚本，A/C 相同、B 为观察到的 outlier，1 个同路径内容差异；99 个稳定候选全部与 C 一致，0 个被隔离。详细复现数据见下方新增小节。
 
 
 ## 2026-11-04 20:24 UTC：13 条目标 IF 全量结构交接验收
@@ -115,3 +115,8 @@ Push Actions [#41906141313](https://github.com/mjw3177109/newjingyong2/actions/r
 第 13 条稳定候选 ID 为 `31ab283f11d1f68661b75158`，偏移 6937，分支目标 6953，顺序后继 6942。它已进入 packet、opcode windows、handoff 和 reconciliation。所有 13 条仍为 `unverified`；没有恢复变量名/比较值，没有确认运行时分支，也没有任何地图、人物、任务或剧情语义。
 
 首轮回归测试曾因合成夹具把原始帧 8 样本与新增 12 条帧 55 样本混合，导致预期 13 实得 12。随后将测试改为**单个 DoAction 内含 13 个 IF**的真实结构形状，提交 [`4c21358`](https://github.com/mjw3177109/newjingyong2/commit/4c21358b8586c10986f38da70a22ceecd532e5fe)。本轮 Push 的 `swf-inventory` 单元测试步骤通过，证明修复后的合成回归和真实 SWF 结构产物均成功。
+
+
+## 2026-11-04 20:25 UTC：FFDec Java 8 探针完成
+
+同一 Push Actions [#41906141313](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313) 的 `ffdec-java8-probe` 已 success。A/B/C 三次独立导出均成功，各 4,560 个脚本。A/B divergent、A/C equal、B 是本轮 outlier；1 个匿名路径内容变化、路径成员变化 0。A/B 双导出稳定候选 99 个全部通过 C 的内容哈希核对，第三次隔离 0。**间歇性导出差异尚未定位根因**，不能把本轮 A/C 一致视为永久稳定。已语义核实原作剧情事件仍为 0。
