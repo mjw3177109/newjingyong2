@@ -109,6 +109,7 @@ def build_queue(opcodes, correlation, limit=50, target_frame=None):
                                    -int(x["same_frame_sprite_transition"]),
                                    -x["conditional_opcode_count"], -x["jump_opcode_count"],
                                    x["root_frame"], x["action_tag_ordinal"]))
+    target_total_action_tags = (None if target_frame is None else by_frame.get(target_frame, 0))
     target_candidates = (None if target_frame is None else
                          sum(c["root_frame"] == target_frame for c in candidates))
     target_selected = (None if target_frame is None else
@@ -116,6 +117,7 @@ def build_queue(opcodes, correlation, limit=50, target_frame=None):
     return {
         "schema": "swf-root-conditional-review-queue-v1",
         "target_frame": target_frame,
+        "target_frame_total_action_tags": target_total_action_tags,
         "target_frame_eligible_action_tags": target_candidates,
         "target_frame_selected_action_tags": target_selected,
         "target_frame_if_tags_excluded_by_parse_warnings": (None if target_frame is None else target_if_with_warnings),
@@ -123,6 +125,7 @@ def build_queue(opcodes, correlation, limit=50, target_frame=None):
                                          "contains_parse_warnings" if target_if_with_warnings else
                                          "no_parse_warnings_in_target_if_tags"),
         "target_frame_coverage": ("not_requested" if target_frame is None else
+                                  "no_action_tags_in_opcode_index" if target_total_action_tags == 0 else
                                   "only_parse_warning_if_tags" if target_candidates == 0 and target_if_with_warnings else
                                   "no_valid_if_in_opcode_index" if target_candidates == 0 else
                                   "all_valid_if_tags_selected" if target_selected == target_candidates else
