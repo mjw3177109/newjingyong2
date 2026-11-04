@@ -19,7 +19,7 @@ def _nonnegative(value):
     return type(value) is int and value >= 0
 
 
-def build_queue(opcodes, correlation, limit=50):
+def build_queue(opcodes, correlation, limit=50, target_frame=None):
     if opcodes.get("schema") != OPCODE_SCHEMA or correlation.get("schema") != CORRELATION_SCHEMA:
         raise ValueError("unsupported evidence schema")
     sha = opcodes.get("source_swf_sha256")
@@ -34,6 +34,8 @@ def build_queue(opcodes, correlation, limit=50):
             or frames != correlation.get("root_showframe_tags")
             or type(limit) is not int or not 1 <= limit <= 100):
         raise ValueError("invalid root counts or review limit")
+    if target_frame is not None and (type(target_frame) is not int or not 1 <= target_frame <= frames + 1):
+        raise ValueError("invalid target frame")
     rows = opcodes.get("action_tags")
     totals = opcodes.get("top_level_opcode_counts")
     if not isinstance(rows, list) or len(rows) != count or not isinstance(totals, dict):
@@ -100,11 +102,23 @@ def build_queue(opcodes, correlation, limit=50):
             "same_frame_sprite_removals": shared["sprite_removals"] if shared else 0,
             "review_status": "unverified",
         })
-    candidates.sort(key=lambda x: (-int(x["same_frame_sprite_transition"]),
+    candidates.sort(key=lambda x: (-(int(target_frame is not None and x["root_frame"] == target_frame)),
+                                   -int(x["same_frame_sprite_transition"]),
                                    -x["conditional_opcode_count"], -x["jump_opcode_count"],
                                    x["root_frame"], x["action_tag_ordinal"]))
+    target_candidates = (None if target_frame is None else
+                         sum(c["root_frame"] == target_frame for c in candidates))
+    target_selected = (None if target_frame is None else
+                       sum(c["root_frame"] == target_frame for c in candidates[:limit]))
     return {
         "schema": "swf-root-conditional-review-queue-v1",
+        "target_frame": target_frame,
+        "target_frame_eligible_action_tags": target_candidates,
+        "target_frame_selected_action_tags": target_selected,
+        "target_frame_coverage": ("not_requested" if target_frame is None else
+                                  "no_valid_if_in_opcode_index" if target_candidates == 0 else
+                                  "all_valid_if_tags_selected" if target_selected == target_candidates else
+                                  "partially_selected_due_to_limit"),
         "source_swf_sha256": sha,
         "root_showframe_tags": frames,
         "root_doaction_tags": count,
@@ -123,10 +137,12 @@ def main():
     parser.add_argument("--correlation", required=True)
     parser.add_argument("--out", required=True)
     parser.add_argument("--limit", type=int, default=50)
+    parser.add_argument("--target-frame", type=int, default=None,
+                        help="Prioritize this root frame before the global 100-tag cap; structural evidence only")
     args = parser.parse_args()
     opcodes = json.loads(Path(args.opcodes).read_text(encoding="utf-8"))
     correlation = json.loads(Path(args.correlation).read_text(encoding="utf-8"))
-    result = build_queue(opcodes, correlation, args.limit)
+    result = build_queue(opcodes, correlation, args.limit, target_frame=args.target_frame)
     path = Path(args.out)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
