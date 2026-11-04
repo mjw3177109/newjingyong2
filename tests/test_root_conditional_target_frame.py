@@ -59,6 +59,18 @@ class TargetFrameSelectionTests(unittest.TestCase):
         self.assertEqual(queue["target_frame_eligible_action_tags"], 0)
         self.assertEqual(queue["verified_story_events"], 0)
 
+    def test_mixed_valid_and_warning_if_at_target(self):
+        opcodes, correlation = self.fixtures()
+        opcodes["action_tags"][1]["root_frame"] = 55
+        opcodes["action_tags"][2]["parse_warnings"] = ["truncated_action"]
+        opcodes["tags_with_parse_warnings"] = 1
+        queue = build_queue(opcodes, correlation, limit=1, target_frame=55)
+        self.assertEqual(queue["target_frame_eligible_action_tags"], 1)
+        self.assertEqual(queue["target_frame_selected_action_tags"], 1)
+        self.assertEqual(queue["target_frame_if_tags_excluded_by_parse_warnings"], 1)
+        self.assertEqual(queue["target_frame_coverage"], "all_valid_if_tags_selected")
+        self.assertEqual(queue["verified_story_events"], 0)
+
     def test_no_target_has_no_warning_count(self):
         queue = build_queue(*self.fixtures())
         self.assertIsNone(queue["target_frame_if_tags_excluded_by_parse_warnings"])
