@@ -31,3 +31,8 @@ GitHub Actions `swf-inventory` 将运行并上传 `swf-root-if-review-packets`�
 ## 2026-11-04：修复目标帧审查队列截断
 
 真实 CI 的根帧 55 / DoAction 9 条件边报告包含 13 个 IF，但旧工作流使用 `--limit 12`，使第 13 个 IF 未进入 opcode windows、私有 handoff 和 reconciliation。现已将定向审查 limit 调整为 50（构建器上限），并添加测试覆盖 13 条目标候选完整进入队列的情况。由于 `target_frame` 过滤先于 limit 截取，本次调整会完整保留目标帧 13 条候选，而不会把其他帧的 255 条 IF 全部塞入人工队列。下一轮 CI 需验证 packets、windows、handoff、reconciliation 的数量均为 13。所有条目仍是结构候选，`verified_story_events=0`。
+
+
+## 2026-11-04：13 条目标候选完整进入审查包
+
+Push Actions [#41906141313](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313) 的真实脱敏 Artifact 已确认 `target_frame_if_count=13`、`manual_review_limit=50`、目标帧 packet 数 13；handoff 与 reconciliation 均为 13 条。此前的 12 条上限漏项已修复并通过 `swf-inventory` 测试。注意：这只表示审查覆盖完整，不表示 13 条剧情已理解；`verified_story_events=0`，`ready_for_html5_mapping=0`。Artifact：[review packets](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313/artifacts/13360950538)。
