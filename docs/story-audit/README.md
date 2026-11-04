@@ -96,3 +96,11 @@
 - 第 55 帧 13 个 IF 已全部进入结构 packet、opcode windows、handoff、cross-check 与 reconciliation；详细坐标和 Artifact 链接见 [ROOT_FRAME55_CANDIDATES_20261104.md](ROOT_FRAME55_CANDIDATES_20261104.md)。
 - FFDec 三次导出各 4,560 个脚本；A/C 相同、B 为本轮 outlier，1 个同路径脚本内容不同；99 个稳定候选均通过第三次内容哈希复核。仍不代表脚本语义已核实。
 - **原作剧情事件仍为 0 条，ready_for_html5_mapping=0**。原创试玩事件、角色数值和地图不能计入原作复刻率。
+
+
+## 2026-11-04 最新完整 CI（Push #41906667212）
+
+- 当前开发分支 head `583de49` 的 [Push Actions #41906667212](https://github.com/mjw3177109/newjingyong2/actions/runs/41906667212) 四项作业全部 success：Node **117/117**、Python **252/252**、Chromium 浏览器冒烟 success、Java 8 + FFDec success。
+- 本轮重新确认根帧 55 / DoAction 9 的 13 个 IF 全部进入 packet、opcode windows、handoff 和 reconciliation；所有候选仍未核实剧情语义。
+- 本轮 FFDec 双导出 stable：各 4,560 脚本、100 稳定候选、0 排除、83 字面跳转/3 简单守卫。与同日较早 divergent 的 #41906141313 对照，说明漂移是间歇观察，根因仍未知。
+- **已语义核实原作剧情事件仍为 0，ready_for_html5_mapping=0。**
