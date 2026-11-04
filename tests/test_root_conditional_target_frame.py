@@ -36,6 +36,7 @@ class TargetFrameSelectionTests(unittest.TestCase):
         self.assertEqual(queue["target_frame_eligible_action_tags"], 1)
         self.assertEqual(queue["target_frame_selected_action_tags"], 1)
         self.assertEqual(queue["target_frame_coverage"], "all_valid_if_tags_selected")
+        self.assertEqual(queue["target_frame_parse_integrity"], "no_parse_warnings_in_target_if_tags")
         self.assertEqual(queue["conditional_action_tags_without_parse_warnings"], 3)
         self.assertEqual(queue["verified_story_events"], 0)
 
@@ -56,6 +57,7 @@ class TargetFrameSelectionTests(unittest.TestCase):
         queue = build_queue(opcodes, correlation, limit=1, target_frame=55)
         self.assertEqual(queue["target_frame_coverage"], "only_parse_warning_if_tags")
         self.assertEqual(queue["target_frame_if_tags_excluded_by_parse_warnings"], 1)
+        self.assertEqual(queue["target_frame_parse_integrity"], "contains_parse_warnings")
         self.assertEqual(queue["target_frame_eligible_action_tags"], 0)
         self.assertEqual(queue["verified_story_events"], 0)
 
@@ -74,6 +76,7 @@ class TargetFrameSelectionTests(unittest.TestCase):
     def test_no_target_has_no_warning_count(self):
         queue = build_queue(*self.fixtures())
         self.assertIsNone(queue["target_frame_if_tags_excluded_by_parse_warnings"])
+        self.assertEqual(queue["target_frame_parse_integrity"], "not_requested")
 
     def test_reject_invalid_target(self):
         for frame in (0, -1, True, 57, "55"):
