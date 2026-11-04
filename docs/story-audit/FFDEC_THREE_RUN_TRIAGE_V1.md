@@ -29,3 +29,8 @@
 针对历史真实 all_distinct 模式，原有三次导出报告仅比较索引相等关系，原有字节级诊断仅比较 A/B。现在仅在 A/B 发生漂移并触发 C 导出时，复用已经测试的 diagnose_ffdec_drift.py，对 A/C 与 B/C 也分别验证匿名索引、字节数、行数、共同前缀及首个差异行，输出两个额外 JSON 到 ffdec-source-free-third-pair-byte-diagnostics Artifact。A/B 的原有诊断保留不变。
 
 这使得三组配对差异均可复查，尤其能区分同一匿名路径三次不同内容的首次偏离位置。没有新增长期保存的反编译文件；全部私有脚本目录仍在作业结束时删除。三次导出不一致时不能指定任何一份为权威，已语义核实的原作剧情事件仍为 0。新增路径仅在真实漂移时执行，稳定时没有该 Artifact 属于正常情况。
+
+
+## 2026-11-04 Push Actions #41906141313：A/C 一致、B 为观察到的 outlier
+
+本轮 Java 8 / FFDec 三次独立导出各 4,560 个脚本。匿名完整映射模式为 `a_c_equal`，观察到的 outlier 为 B；路径成员差异 0、同路径内容变化 1。A/B 的字面跳转/简单守卫为 83/3 与 69/2。该模式只描述本轮样本，不判定 B 错误，也不说明 FFDec 的确定性根因。A/B 稳定候选 99 个全部与 C 一致，0 个被第三次隔离；语义核实原作事件仍为 0。Artifact：[triage](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313/artifacts/13360271955)、[A/C 与 B/C 字节诊断](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313/artifacts/13359349830)。
