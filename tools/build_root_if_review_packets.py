@@ -27,13 +27,15 @@ def _integer(value, minimum=0):
     return type(value) is int and value >= minimum
 
 
-def build_packets(queue, edges, access, cfg, limit=12):
+def build_packets(queue, edges, access, cfg, limit=12, target_frame=None):
     sources = {'queue': queue, 'edges': edges, 'access': access, 'cfg': cfg}
     sha = queue.get('source_swf_sha256')
     if not isinstance(sha, str) or not re.fullmatch(r'[0-9a-f]{64}', sha):
         raise ValueError('invalid SWF fingerprint')
     if not _integer(limit, 1) or limit > 50:
         raise ValueError('invalid review limit')
+    if target_frame is not None and not _integer(target_frame, 1):
+        raise ValueError('invalid target frame')
     candidates = queue.get('candidates')
     if (not isinstance(candidates, list) or len(candidates) > 100
             or len(candidates) != queue.get('selected_candidate_count')):
@@ -133,12 +135,14 @@ def build_packets(queue, edges, access, cfg, limit=12):
     if (len(packets) != edges.get('if_edges')
             or sum(len(r['edges']) for r in edges['candidates']) != edges.get('total_branch_edges')):
         raise ValueError('aggregate branch count mismatch')
-    ordered = sorted(packets, key=lambda r: (-r['structural_priority'],
+    eligible = [p for p in packets if target_frame is None or p['root_frame'] == target_frame]
+    ordered = sorted(eligible, key=lambda r: (-r['structural_priority'],
                     r['root_frame'], r['action_tag_ordinal'], r['if_source_offset']))
     return {
         'schema': 'swf-root-if-review-packets-v1', 'source_swf_sha256': sha,
         'selected_action_tags': len(candidates), 'total_if_review_packets': len(packets),
-        'manual_review_limit': limit, 'manual_review_queue': ordered[:limit],
+        'manual_review_limit': limit, 'target_frame': target_frame,
+        'target_frame_if_count': len(eligible), 'manual_review_queue': ordered[:limit],
         'syntactically_reachable_if_count': sum(p['if_record_reachable'] for p in packets),
         'syntactically_unreachable_if_count': sum(not p['if_record_reachable'] for p in packets),
         'selected_syntactically_reachable_count': sum(p['if_record_reachable'] for p in ordered[:limit]),
@@ -153,10 +157,12 @@ def main():
         parser.add_argument('--' + name, required=True)
     parser.add_argument('--out', required=True)
     parser.add_argument('--limit', type=int, default=12)
+    parser.add_argument('--target-frame', type=int, default=None,
+                        help='Restrict private review queue to a root timeline frame; does not verify semantics')
     args = parser.parse_args()
     reports = [json.loads(Path(getattr(args, name)).read_text(encoding='utf-8'))
                for name in SCHEMAS]
-    result = build_packets(*reports, limit=args.limit)
+    result = build_packets(*reports, limit=args.limit, target_frame=args.target_frame)
     target = Path(args.out)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
