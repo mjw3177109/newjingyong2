@@ -99,7 +99,7 @@ def build_frame_jump_evidence(root, swf, queue, limit=32):
             'candidate_id': cid,
             'path_sha256': ph,
             'content_sha256': ch,
-            **scan_script(data.decode('utf-8', errors='replace'), limit),
+            **scan_script(data.decode('utf-8'), limit),
         }
     if count != queue.get('indexed_script_count') or len(found) != len(targets):
         raise ValueError('Source export count or candidate membership mismatch')
