@@ -48,3 +48,11 @@
 - 这说明三次导出仍存在单脚本间歇差异，但本轮 99 个保留候选均通过 C 的内容哈希复核。不能指定 B 为错误或把 A/C 一致推广为跨运行确定性。**原作已语义核实剧情事件仍为 0。**
 
 Artifact： [三次导出 triage](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313/artifacts/13360271955)、[双导出可复现性](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313/artifacts/13360526585)、[稳定候选集](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313/artifacts/13360376898)、[第三次隔离](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313/artifacts/13360406824)。
+
+
+## 2026-11-04 Push Actions #41906667212：本轮双导出稳定
+
+- 最新 head `583de49` 的 [Push Actions #41906667212](https://github.com/mjw3177109/newjingyong2/actions/runs/41906667212) 四个作业全部 success。Java 8 + FFDec 两次独立导出均成功，各 4,560 个脚本。
+- 本轮 A/B 完整匿名映射为 `stable`；100 个入选候选全部稳定、排除 0；字面帧跳转 83、简单守卫 3。因为 A/B 稳定，按工作流规则没有第三次导出，故本轮不应有 three-run triage 或 third-export quarantine Artifact。
+- 与较早的 [#41906141313](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313) 同日样本对照：前一轮 A/B divergent、A/C equal、B outlier；本轮 A/B stable。**这说明间歇性差异仍未定位根因**，不能把单次 stable 当作永久可复现保证。
+- 原作剧情语义核实仍为 **0 条**；稳定索引/跳转统计不构成剧情、地图或战斗数值证据。
