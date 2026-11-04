@@ -126,46 +126,58 @@ class ReviewPacketsTests(unittest.TestCase):
 
     def test_frame55_queue_limit_covers_all_thirteen_if_candidates(self):
         rows = fixture()
+        # Mirror the real source shape: one root-frame-55 DoAction with 13 IFs.
         for report in rows:
             report['candidates'][0]['root_frame'] = 55
-        # Model the real SWF report: thirteen IFs in frame 55 / one action tag.
-        # Each synthetic action has one IF and one Jump so all four evidence
-        # inputs remain aligned while the packet cap is exercised.
-        for index in range(1, 13):
-            delta = index * 20
-            for report in rows:
-                candidate = copy.deepcopy(report['candidates'][0])
-                candidate['root_frame'] = 55
-                candidate['action_tag_ordinal'] = index + 2
-                candidate['action_sha256'] = f'{index + 1:064x}'
-                if 'edges' in candidate:
-                    for edge in candidate['edges']:
-                        edge['source_offset'] += delta
-                        edge['target_offset'] += delta
-                if 'if_preceding_access_hints' in candidate:
-                    for hint in candidate['if_preceding_access_hints']:
-                        hint['if_source_offset'] += delta
-                        for access_hint in hint['prior_eight_records_access_hints']:
-                            access_hint['offset'] += delta
-                if 'if_successors' in candidate:
-                    for successor in candidate['if_successors']:
-                        successor['if_source_offset'] += delta
-                        successor['branch_target_offset'] += delta
-                        successor['fallthrough_offset'] += delta
-                report['candidates'].append(candidate)
+            report['candidates'][0]['action_tag_ordinal'] = 9
+        queue_candidate = rows[0]['candidates'][0]
+        queue_candidate['conditional_opcode_count'] = 13
+        queue_candidate['jump_opcode_count'] = 0
 
-        rows[0]['selected_candidate_count'] = 13
-        for report in rows[1:]:
-            report['selected_action_tags'] = 13
+        edge_candidate = rows[1]['candidates'][0]
+        edge_candidate['edges'] = []
+        access_candidate = rows[2]['candidates'][0]
+        access_candidate['if_preceding_access_hints'] = []
+        cfg_candidate = rows[3]['candidates'][0]
+        cfg_candidate['conditional_count'] = 13
+        cfg_candidate['jump_count'] = 0
+        cfg_candidate['if_successors'] = []
+
+        offsets = [6523, 6556, 6607, 6640, 6673, 6706, 6739,
+                   6772, 6805, 6838, 6871, 6904, 6937]
+        for source in offsets:
+            target, fallthrough = source + 16, source + 5
+            edge_candidate['edges'].append({
+                'opcode': 'if', 'source_offset': source,
+                'target_offset': target, 'target_alignment': 'record_boundary',
+            })
+            access_candidate['if_preceding_access_hints'].append({
+                'if_source_offset': source,
+                'prior_eight_records_access_hints': [
+                    {'offset': source - 18, 'opcode': 'set_variable',
+                     'records_before_if': 7},
+                    {'offset': source - 12, 'opcode': 'get_variable',
+                     'records_before_if': 5},
+                ],
+            })
+            cfg_candidate['if_successors'].append({
+                'if_source_offset': source,
+                'branch_target_offset': target,
+                'fallthrough_offset': fallthrough,
+                'branch_and_fallthrough_distinct': True,
+                'if_record_reachable': True,
+            })
+
         rows[1]['if_edges'] = 13
-        rows[1]['total_branch_edges'] = 26
+        rows[1]['total_branch_edges'] = 13
 
         complete = build_packets(*rows, limit=50, target_frame=55)
         self.assertEqual(complete['target_frame_if_count'], 13)
-        self.assertEqual(complete['target_frame_action_tags_in_sample'], 13)
+        self.assertEqual(complete['target_frame_action_tags_in_sample'], 1)
         self.assertEqual(len(complete['manual_review_queue']), 13)
         self.assertEqual(complete['manual_review_limit'], 50)
         self.assertEqual(complete['verified_story_events'], 0)
+        self.assertEqual(complete['manual_review_queue'][-1]['if_source_offset'], 6937)
 
         truncated = build_packets(*rows, limit=12, target_frame=55)
         self.assertEqual(truncated['target_frame_if_count'], 13)
