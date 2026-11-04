@@ -104,3 +104,18 @@
 - 本轮重新确认根帧 55 / DoAction 9 的 13 个 IF 全部进入 packet、opcode windows、handoff 和 reconciliation；所有候选仍未核实剧情语义。
 - 本轮 FFDec 双导出 stable：各 4,560 脚本、100 稳定候选、0 排除、83 字面跳转/3 简单守卫。与同日较早 divergent 的 #41906141313 对照，说明漂移是间歇观察，根因仍未知。
 - **已语义核实原作剧情事件仍为 0，ready_for_html5_mapping=0。**
+
+
+## 2026-11-04 权利范围与公开证据字段门禁强化
+
+- 发现旧版 `validate_story_audit.py` 允许记录附加未声明字段；这会让原始对白、脚本片段、原始路径或媒体链接意外混入公开审计 JSON，而旧校验仍可能通过。
+- 现改为严格字段白名单，并限制证据摘要为短单行文本；未知字段（例如 `source_text`、`raw_actionscript`、`dialogue`、`source_path`、`media_url`）一律拒绝。
+- 新增 `rights_scope` 和 `rights_evidence_ref`：`authorized` 必须附具体证据引用；`publication_ready=true` 还必须有 `adaptation_and_distribution` 范围、已验证事件和具体 HTML5 映射。仅分析、仅改编或仅发行的权限均不能通过完整发布门禁。
+- 机器门禁只能检查字段与状态，不能替代对授权主体、期限、地域、平台、商业使用和再许可条款的人工法律审查。
+
+## 2026-11-04 21:27 UTC 最新 Push 验收（提交 b3279c7）
+
+- [Push Actions #41916211704](https://github.com/mjw3177109/newjingyong2/actions/runs/41916211704) 四个作业全部 **success**；Node **117/117**、Python **259/259**、Chromium 浏览器冒烟 success、SWF 结构审计 success、Java 8 + FFDec success。
+- 最新脱敏 reconciliation：候选 **13**、私有审查证明 **0**、权利证明 **0**、已核实原作事件 **0**、可映射事件 **0**。13 条均仍为结构候选。
+- FFDec 两次独立导出各 4,560 脚本，内容比较 stable；匿名候选 100、排除 0、稳定字面跳转 83、简单守卫 3。日志指纹虽不同，但导出内容哈希一致；日志差异原因仍未知。
+- [PR Actions #41916220641](https://github.com/mjw3177109/newjingyong2/actions/runs/41916220641) success；PR 触发的 FFDec job 按工作流规则 skipped，Push 触发的 FFDec job 已实际执行并通过。

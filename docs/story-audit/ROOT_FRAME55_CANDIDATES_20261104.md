@@ -37,7 +37,7 @@
 
 ## 第 55 帧根时间轴 IF 结构候选
 
-同一 SWF 指纹下，结构审查包与操作码窗口交叉核验得到 12 个目标。下表中的 `comparison` 和 `write hints` 只是有限字节码窗口中的操作码类别计数，不是已恢复的比较值、变量身份或实际状态副作用。
+同一 SWF 指纹下，结构审查包与操作码窗口交叉核验得到 13 个目标。下表中的 `comparison` 和 `write hints` 只是有限字节码窗口中的操作码类别计数，不是已恢复的比较值、变量身份或实际状态副作用。
 
 | rank | candidate_id | root frame / DoAction | IF offset | branch target | fallthrough | comparison opcodes | branch / fallthrough write hints | status |
 | ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
@@ -53,14 +53,14 @@
 | 10 | `e569b99ba59ce00dab97877c` | 55 / 9 | 6838 | 6854 | 6843 | 2 | 0 / 1 | unverified |
 | 11 | `eabaf0a62e40305a2c98a8c3` | 55 / 9 | 6871 | 6887 | 6876 | 2 | 0 / 1 | unverified |
 | 12 | `9d3e97d6eb97c36ec39d89cc` | 55 / 9 | 6904 | 6920 | 6909 | 2 | 0 / 1 | unverified |
-| 13 | `31ab283f11d1f68661b75158` | 55 / 9 | 6937 | 6953 | 6942 | unknown | unknown | unverified |
+| 13 | `31ab283f11d1f68661b75158` | 55 / 9 | 6937 | 6953 | 6942 | 2 | 2 / 1 | unverified |
 
 来源 Artifact：
 - [IF 操作码窗口](https://github.com/mjw3177109/newjingyong2/actions/runs/41887040731/artifacts/13351048155)
 - [交接窗口交叉核验](https://github.com/mjw3177109/newjingyong2/actions/runs/41887040731/artifacts/13350788644)
 - [私有人工审查交接单（当前为空白）](https://github.com/mjw3177109/newjingyong2/actions/runs/41887040731/artifacts/13351842034)
 
-交叉核验确认 12/12 个候选在同一 SWF 指纹、根帧、DoAction 序号、IF 偏移及双后继坐标上对齐；12/12 的有限后继窗口均有不同的写操作码提示计数。它只证明审计定位与脱敏结构摘要自洽，**不证明** IF 谓词、变量名/值、运行时路径、地图、NPC、任务、道具、战斗或剧情含义。
+交叉核验确认 13/13 个候选在同一 SWF 指纹、根帧、DoAction 序号、IF 偏移及双后继坐标上对齐；13/13 的有限后继窗口均有不同的写操作码提示计数。它只证明审计定位与脱敏结构摘要自洽，**不证明** IF 谓词、变量名/值、运行时路径、地图、NPC、任务、道具、战斗或剧情含义。
 
 ## 原作事件对照表状态
 
@@ -70,11 +70,11 @@
 | --- | --- | --- | --- | --- |
 | （暂无） | 未经私有脚本上下文及运行时核实 | 未知 | none | 未验证 |
 
-`verified_story_events=0`，`ready_for_html5_mapping=0`。当前 12 条只作为私有审查候选；不得用原创试玩事件填充原作事件表。
+`verified_story_events=0`，`ready_for_html5_mapping=0`。当前 13 条只作为私有审查候选；不得用原创试玩事件填充原作事件表。
 
 ## 下一阶段
 
-1. 在获授权、隔离且不向公开 CI 上传脚本内容的环境中，对 12 条候选逐项查看私有 FFDec 上下文，先追踪 IF 条件栈与变量初始化/写入来源。
+1. 在获授权、隔离且不向公开 CI 上传脚本内容的环境中，对 13 条候选逐项查看私有 FFDec 上下文，先追踪 IF 条件栈与变量初始化/写入来源。
 2. 对每条候选分别验证分支成立与不成立两条路径，并核对时间轴/精灵归属；无法证实的地图、对话、任务、道具和战斗字段保持 unknown。
 3. 先对 6607、6640 两个已有操作码结构对照目标建立独立私有复核记录；仅在脚本哈希稳定且有运行时/独立交叉证据后，才允许登记 verified。
 4. 权利确认独立于技术核验；在改编与发布权利未确认前，不将受保护剧情纳入可公开发行版本。
@@ -120,3 +120,25 @@ Push Actions [#41906141313](https://github.com/mjw3177109/newjingyong2/actions/r
 ## 2026-11-04 20:25 UTC：FFDec Java 8 探针完成
 
 同一 Push Actions [#41906141313](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313) 的 `ffdec-java8-probe` 已 success。A/B/C 三次独立导出均成功，各 4,560 个脚本。A/B divergent、A/C equal、B 是本轮 outlier；1 个匿名路径内容变化、路径成员变化 0。A/B 双导出稳定候选 99 个全部通过 C 的内容哈希核对，第三次隔离 0。**间歇性导出差异尚未定位根因**，不能把本轮 A/C 一致视为永久稳定。已语义核实原作剧情事件仍为 0。
+
+
+## 2026-11-04 21:27 UTC：权利门禁修复后的最新 Push 验收
+
+Push Actions [#41916211704](https://github.com/mjw3177109/newjingyong2/actions/runs/41916211704) 四个作业全部 **success**。本次重新读取本轮生成的脱敏 Artifact，而非只依赖 Actions 状态：
+
+- 原始 SWF SHA-256 仍为 `d762a8f95d22b87916ae375968d425b4d4d34390bbc5d234338bfb58f85d4a30`。
+- 第 55 帧 / DoAction 9 的 IF opcode windows：**13 条**；审查 packet 与 reconciliation：**13 条**；`private_review_attestations=0`、`rights_attestations=0`、`verified_story_events=0`、`ready_for_html5_mapping=0`。
+- 第 13 条（6937 → 6953，fallthrough 6942）现在有完整有限窗口摘要：前驱 12 条中仅 6 条属于保守直线窗口，`comparison_opcode_count=2`；分支后继 8 条窗口含 2 个写操作码提示，顺序后继窗口含 1 个。以上仍只是操作码类别和字节偏移，不恢复变量名/值，也不证明实际执行或剧情含义。
+- 优先复核的 6607、6640、6937 三条 IF 前八条记录提示：6607 附近有 GetVariable(6588)、SetVariable(6589)、GetVariable(6595)；6640 附近有 SetVariable(6622)、GetVariable(6628)；6937 附近有 SetVariable(6919)、GetVariable(6925)。这些只是位置邻近关系，不是条件栈依赖或状态副作用证明。
+- Java 8 + FFDec 两次独立导出均 exit 0，各 4,560 个脚本；本轮导出内容比较 stable，100 个匿名语法候选保留、排除 0，83 个稳定字面跳转、3 个简单守卫，已核实剧情事件仍为 0。
+- 两份 FFDec 日志指纹不同（各 4,565 行、0 个启发式 error/warning marker），但导出文件内容哈希一致；日志差异原因未知，不将日志差异当作导出漂移或剧情证据。
+- Node **117/117**、Python **259/259**、Chromium 浏览器冒烟、SWF 结构审计和 FFDec Java 8 均通过。PR 事件 [#41916220641](https://github.com/mjw3177109/newjingyong2/actions/runs/41916220641) 也 success；按工作流规则，PR 事件中的 FFDec job 为 skipped，Push job 才执行了 Java 8 导出。
+
+最新 Artifact：
+- [IF opcode windows](https://github.com/mjw3177109/newjingyong2/actions/runs/41916211704/artifacts/13365201808)
+- [state access hints](https://github.com/mjw3177109/newjingyong2/actions/runs/41916211704/artifacts/13364942226)
+- [review reconciliation](https://github.com/mjw3177109/newjingyong2/actions/runs/41916211704/artifacts/13363664187)
+- [FFDec stable audit set](https://github.com/mjw3177109/newjingyong2/actions/runs/41916211704/artifacts/13364707062)
+- [FFDec reproducibility summary](https://github.com/mjw3177109/newjingyong2/actions/runs/41916211704/artifacts/13364682058)
+
+以上全部是结构审计结果。**13 条候选仍全部 unverified；已语义核实原作剧情事件为 0 条。**
