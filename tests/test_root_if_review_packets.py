@@ -93,6 +93,36 @@ class ReviewPacketsTests(unittest.TestCase):
         self.assertEqual(result['selected_syntactically_reachable_count'], 1)
         self.assertEqual(result['verified_story_events'], 0)
 
+    def test_target_frame_filters_queue_but_keeps_global_counts(self):
+        rows = fixture()
+        for report in rows:
+            second = copy.deepcopy(report['candidates'][0])
+            second['root_frame'] = 55
+            second['action_tag_ordinal'] = 9
+            second['action_sha256'] = 'c' * 64
+            report['candidates'].append(second)
+        rows[0]['selected_candidate_count'] = 2
+        for report in rows[1:]:
+            report['selected_action_tags'] = 2
+        rows[1]['if_edges'] = 2
+        rows[1]['total_branch_edges'] = 4
+        result = build_packets(*rows, target_frame=55)
+        self.assertEqual(result['total_if_review_packets'], 2)
+        self.assertEqual(result['target_frame_if_count'], 1)
+        self.assertEqual(result['target_frame'], 55)
+        self.assertEqual(result['manual_review_queue'][0]['root_frame'], 55)
+        self.assertEqual(result['verified_story_events'], 0)
+        empty = build_packets(*rows, target_frame=56)
+        self.assertEqual(empty['target_frame_if_count'], 0)
+        self.assertEqual(empty['manual_review_queue'], [])
+        self.assertEqual(empty['total_if_review_packets'], 2)
+
+    def test_rejects_invalid_target_frame(self):
+        for invalid in (0, -1, True, '55'):
+            with self.subTest(invalid=invalid):
+                with self.assertRaises(ValueError):
+                    build_packets(*fixture(), target_frame=invalid)
+
     def test_rejects_source_mismatch(self):
         rows = fixture()
         rows[3]['source_swf_sha256'] = 'c' * 64
