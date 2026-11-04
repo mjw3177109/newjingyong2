@@ -17,10 +17,10 @@ else:
 HEX64 = re.compile(r'^[0-9a-f]{64}$')
 CANDIDATE = re.compile(r'^SRC-[0-9a-f]{20}$')
 LEX = re.compile(r'//[^\n]*|/\*[\s\S]*?\*/|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'')
-JUMP = re.compile(r'\bgotoAnd(?P<mode>Play|Stop)\s*\(\s*(?P<frame>\d+)\s*\)')
+JUMP = re.compile(r'(?<![\w$.])gotoAnd(?P<mode>Play|Stop)\s*\(\s*(?P<frame>\d+)\s*\)')
 SIMPLE_IF = re.compile(
     r'\bif\s*\(\s*(?P<condition>[^()\n]+?)\s*\)\s*\{\s*'
-    r'gotoAnd(?P<mode>Play|Stop)\s*\(\s*(?P<frame>\d+)\s*\)\s*;\s*\}',
+    r'(?<![\w$.])gotoAnd(?P<mode>Play|Stop)\s*\(\s*(?P<frame>\d+)\s*\)\s*;\s*\}',
     re.MULTILINE,
 )
 
@@ -44,7 +44,7 @@ def scan_script(source, limit=32):
     # This remains syntax-only evidence, not proof of a runtime story condition.
     unbraced = re.compile(
         r'\bif\s*\(\s*(?P<condition>[^()\n]+?)\s*\)\s*'
-        r'(?P<jump>gotoAnd(?:Play|Stop)\s*\(\s*\d+\s*\)\s*;)',
+        r'(?P<jump>(?<![\w$.])gotoAnd(?:Play|Stop)\s*\(\s*\d+\s*\)\s*;)',
         re.MULTILINE,
     )
     for m in unbraced.finditer(clean):
