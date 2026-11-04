@@ -8,3 +8,8 @@
 - 输出仅含匿名哈希、数量、状态，不包含反编译源码、原路径、台词、图像或音频。三次内容一致也**不等于** FFDec 权威输出、跨 CI 稳定、已核实剧情或改编授权。原作已语义核实剧情事件仍为 **0**。
 
 合成回归：`python -m unittest discover -s tests -p 'test_*.py'`。真实 FFDec 漂移条件下的 CI 分支仍需观察。
+
+
+## 2026-11-04 Push Actions #41906141313 实际结果
+
+本轮 A/B 两次 FFDec 导出存在 1 个同路径内容差异，触发第三次 C。第三次与 A 的完整匿名映射一致；A/B 双导出稳定候选 99 个全部在 C 中保持内容一致，`retained_candidate_count=99`、`quarantined_candidate_count=0`。这只确认本轮候选内容哈希一致，不证明 FFDec 权威性、跨 CI 确定性或剧情语义；原作已核实事件仍为 0。Artifact：[第三次导出候选隔离](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313/artifacts/13360406824)。
