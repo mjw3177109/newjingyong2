@@ -37,3 +37,14 @@
 - 最小补强：`tools/triage_ffdec_three_exports.py` 对每个发生差异的匿名路径分别统计 `a_b_equal`、`a_c_equal`、`b_c_equal`、`all_distinct`，再区分 **内容差异** 和 **路径成员差异**。新增 `changed_path_variation_examples`（仅 SHA-256、模式和差异类别），保留旧字段兼容已有消费者；样例仍受 `--limit` 限制，汇总计数不截断。
 - 证据边界：这些字段只说明同一哈希路径在三次独立导出中的一致性；不包含原始路径、反编译脚本、字符串或素材，也不判定哪一次是权威结果。只有出现前两次不一致时 CI 才会触发第三次导出。原作语义已核实事件仍为 **0**。
 - 合成回归覆盖：整体三份各异但各脚本存在不同重复对、内容变化与成员变化混合、样例截断不影响计数。执行 `python -m unittest discover -s tests -p 'test_*.py'`；真实 FFDec 漂移需等待相应 GitHub Actions 触发才有新样本。
+
+
+## 2026-11-04 Push Actions #41906141313：三次 FFDec 导出实测
+
+- [Push Actions #41906141313](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313) 的 `ffdec-java8-probe` 最终 **success**；Java 8 + 仓库 FFDec CLI 三次独立导出均完成，A/B/C 各索引 **4,560** 个脚本。
+- A/B 为 `divergent`：路径成员变化 0，同一路径内容变化 1；A/C 完整匿名映射相等，B 为本次观察到的 outlier（不是错误版本判定）。本轮 A/B 前 100 候选字面跳转/简单守卫分别为 **83/3** 与 **69/2**。
+- A/B 稳定候选集 99、排除 2；第三次 C 与 99 个保留候选全部一致，第三次隔离数 0。稳定候选集合计 69 个字面跳转、2 个简单守卫。
+- FFDec 日志指纹模式为 `all_distinct`，只代表原始日志字节不完全相同；日志内容未上传，标记计数不等于报错或剧情证据。
+- 这说明三次导出仍存在单脚本间歇差异，但本轮 99 个保留候选均通过 C 的内容哈希复核。不能指定 B 为错误或把 A/C 一致推广为跨运行确定性。**原作已语义核实剧情事件仍为 0。**
+
+Artifact： [三次导出 triage](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313/artifacts/13360271955)、[双导出可复现性](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313/artifacts/13360526585)、[稳定候选集](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313/artifacts/13360376898)、[第三次隔离](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313/artifacts/13360406824)。
