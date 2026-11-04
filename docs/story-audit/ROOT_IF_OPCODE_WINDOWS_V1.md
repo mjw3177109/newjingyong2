@@ -41,3 +41,8 @@ GitHub Actions 的 `swf-inventory` 作业将上传 `swf-root-if-opcode-windows` 
 ## 2026-11-04：第 55 帧 opcode-window 覆盖上限修正
 
 Push Actions [#41897522373](https://github.com/mjw3177109/newjingyong2/actions/runs/41897522373) 的脱敏条件边与局部控制流 Artifact 显示，根帧 55 / DoAction 9 实际有 13 个 IF（最后一条：6937 → 6953，fallthrough 6942）。但当次 review-packet 的 `manual_review_limit=12`，所以本 Artifact 的 `selected_if_count=12` 是审查队列截取数量，不是该 Action 的 IF 总数。现已把 CI 的 packet limit 提高到 50，并增加 13 条完整覆盖的回归测试；待下一次 Actions 重新生成并验证 13 条 opcode windows。该修正只补齐结构审查覆盖，不增加任何已核实剧情事件，所有候选仍为 `unverified`。
+
+
+## 2026-11-04：13 个 IF opcode windows 已由 CI 验收
+
+Push Actions [#41906141313](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313) 的 `swf-inventory` 作业成功，实际 Artifact `swf-root-if-opcode-windows` 的 `selected_if_count=13`，对应根帧 55 / DoAction 9 的全部 13 个 IF。最后一条偏移 6937，分支目标 6953，顺序后继 6942。它已与 13 条审查 packet、handoff 和 reconciliation 对齐；全部仍为 `unverified`，没有剧情语义或权利结论。Artifact：[IF opcode windows](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313/artifacts/13360416493)。
