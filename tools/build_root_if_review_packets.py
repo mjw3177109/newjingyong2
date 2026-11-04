@@ -135,6 +135,10 @@ def build_packets(queue, edges, access, cfg, limit=12, target_frame=None):
     if (len(packets) != edges.get('if_edges')
             or sum(len(r['edges']) for r in edges['candidates']) != edges.get('total_branch_edges')):
         raise ValueError('aggregate branch count mismatch')
+    # The upstream queue is capped at 100 action tags. An empty target result
+    # therefore never proves the target frame has no IF instructions in the SWF.
+    target_action_tags_in_sample = (None if target_frame is None else
+        sum(c['root_frame'] == target_frame for c in candidates))
     eligible = [p for p in packets if target_frame is None or p['root_frame'] == target_frame]
     ordered = sorted(eligible, key=lambda r: (-r['structural_priority'],
                     r['root_frame'], r['action_tag_ordinal'], r['if_source_offset']))
@@ -142,7 +146,12 @@ def build_packets(queue, edges, access, cfg, limit=12, target_frame=None):
         'schema': 'swf-root-if-review-packets-v1', 'source_swf_sha256': sha,
         'selected_action_tags': len(candidates), 'total_if_review_packets': len(packets),
         'manual_review_limit': limit, 'target_frame': target_frame,
-        'target_frame_if_count': len(eligible), 'manual_review_queue': ordered[:limit],
+        'target_frame_if_count': len(eligible),
+        'target_frame_action_tags_in_sample': target_action_tags_in_sample,
+        'target_frame_coverage': ('not_requested' if target_frame is None else
+            'absent_from_capped_sample' if target_action_tags_in_sample == 0 else
+            'present_in_capped_sample_not_exhaustive'),
+        'manual_review_queue': ordered[:limit],
         'syntactically_reachable_if_count': sum(p['if_record_reachable'] for p in packets),
         'syntactically_unreachable_if_count': sum(not p['if_record_reachable'] for p in packets),
         'selected_syntactically_reachable_count': sum(p['if_record_reachable'] for p in ordered[:limit]),
