@@ -55,6 +55,8 @@ def scan_script(source, limit=32):
     for m in jumps[:limit]:
         results.append({
             'line': clean.count('\n', 0, m.start()) + 1,
+            'column': m.start() - clean.rfind('\n', 0, m.start()),
+            'utf8_byte_offset': len(source[:m.start()].encode('utf-8')),
             'mode': m.group('mode').lower(),
             'literal_frame': int(m.group('frame')),
             'direct_if_guard_sha256': guarded.get(m.start()),
