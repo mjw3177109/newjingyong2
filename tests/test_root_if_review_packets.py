@@ -43,6 +43,8 @@ class ReviewPacketsTests(unittest.TestCase):
     def test_builds_source_free_target_without_claiming_story(self):
         result = build_packets(*fixture())
         self.assertEqual(result['total_if_review_packets'], 1)
+        self.assertIsNone(result['target_frame_action_tags_in_sample'])
+        self.assertEqual(result['target_frame_coverage'], 'not_requested')
         packet = result['manual_review_queue'][0]
         self.assertEqual(packet['structural_priority'], 15)
         self.assertEqual(result['syntactically_reachable_if_count'], 1)
@@ -109,11 +111,15 @@ class ReviewPacketsTests(unittest.TestCase):
         result = build_packets(*rows, target_frame=55)
         self.assertEqual(result['total_if_review_packets'], 2)
         self.assertEqual(result['target_frame_if_count'], 1)
+        self.assertEqual(result['target_frame_action_tags_in_sample'], 1)
+        self.assertEqual(result['target_frame_coverage'], 'present_in_capped_sample_not_exhaustive')
         self.assertEqual(result['target_frame'], 55)
         self.assertEqual(result['manual_review_queue'][0]['root_frame'], 55)
         self.assertEqual(result['verified_story_events'], 0)
         empty = build_packets(*rows, target_frame=56)
         self.assertEqual(empty['target_frame_if_count'], 0)
+        self.assertEqual(empty['target_frame_action_tags_in_sample'], 0)
+        self.assertEqual(empty['target_frame_coverage'], 'absent_from_capped_sample')
         self.assertEqual(empty['manual_review_queue'], [])
         self.assertEqual(empty['total_if_review_packets'], 2)
 
