@@ -229,7 +229,7 @@ def main():
             exported = json.loads(Path(download.path()).read_text(encoding='utf-8'))
             assert exported['format'] == 'demo-event-envelope' and exported['version'] == 1
             assert exported['game']['version'] == 2 and exported['game']['quest'] == 'completed'
-            assert exported['eventHistory'] == {}
+            assert exported['eventHistory'] == {'demo_quest_accepted': True}, 'quest acceptance marker must survive save/export'
 
             fresh = browser.new_context(accept_downloads=True)
             imported_page = fresh.new_page()
