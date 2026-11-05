@@ -44,7 +44,11 @@ export function triggerEvent(event,state) {
         return {applied:false,state};
     }
   }
-  const next=structuredClone(state);
+  // Imported or legacy state may contain values that cannot be cloned.
+  // Reject safely rather than throwing midway through a quest interaction.
+  let next;
+  try { next=structuredClone(state); }
+  catch { return {applied:false,state}; }
   for (const effect of event.effects) {
     let cursor=next;
     for (const key of effect.path.slice(0,-1)) cursor=cursor[key];
