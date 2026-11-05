@@ -47,3 +47,16 @@ test('reject unknown envelope fields and unsafe replay keys', () => {
   assert.equal(unpackEventSave(JSON.stringify({format:'demo-event-envelope',version:1,game,eventHistory:JSON.parse('{"__proto__":true}')})),null);
   assert.equal(packEventSave({...game,unknown:1}),null);
 });
+
+
+test('unserializable game state fails closed without throwing', () => {
+  const circular = initialState();
+  circular.loop = circular;
+  assert.equal(packEventSave(circular), null);
+  const getter = initialState();
+  Object.defineProperty(getter, 'quest', {enumerable:true, get(){throw new Error('bad getter');}});
+  assert.equal(packEventSave(getter), null);
+  const result = applySavedEvent(demoEvent, getter);
+  assert.equal(result.applied, false);
+  assert.equal(result.game, getter);
+});
