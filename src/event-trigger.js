@@ -20,13 +20,19 @@ export function validateEvent(e) {
 export function triggerEvent(event,state) {
   if (!validateEvent(event) || !state || typeof state !== 'object' || Array.isArray(state))
     return {applied:false,state};
-  const history = own(state,'eventHistory') ? state.eventHistory : {};
-  if (!history || typeof history !== 'object' || Array.isArray(history) ||
-      ![Object.prototype, null].includes(Object.getPrototypeOf(history)) ||
-      Object.keys(history).some(k => !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(k) ||
-        ['__proto__','constructor','prototype'].includes(k) || history[k] !== true) ||
-      own(history,event.id) || !evaluateCondition(event.condition,state))
-    return {applied:false,state};
+  // Legacy in-memory states can expose throwing accessors or proxies.
+  // Reject them without crashing a dialogue/quest handler or mutating state.
+  let history, conditionMet;
+  try {
+    history = own(state,'eventHistory') ? state.eventHistory : {};
+    if (!history || typeof history !== 'object' || Array.isArray(history) ||
+        ![Object.prototype, null].includes(Object.getPrototypeOf(history)) ||
+        Object.keys(history).some(k => !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(k) ||
+          ['__proto__','constructor','prototype'].includes(k) || history[k] !== true) ||
+        own(history,event.id)) return {applied:false,state};
+    conditionMet = evaluateCondition(event.condition,state);
+  } catch { return {applied:false,state}; }
+  if (!conditionMet) return {applied:false,state};
   for (const effect of event.effects) {
     let cursor=state;
     for (const key of effect.path.slice(0,-1)) {
