@@ -22,7 +22,7 @@ export function triggerEvent(event,state) {
     return {applied:false,state};
   const history = own(state,'eventHistory') ? state.eventHistory : {};
   if (!history || typeof history !== 'object' || Array.isArray(history) ||
-      history[event.id] === true || !evaluateCondition(event.condition,state))
+      own(history,event.id) || !evaluateCondition(event.condition,state))
     return {applied:false,state};
   for (const effect of event.effects) {
     let cursor=state;
