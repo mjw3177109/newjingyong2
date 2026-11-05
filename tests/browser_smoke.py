@@ -147,6 +147,18 @@ def main():
             )
             assert accepted['eventHistory'] == {'demo_quest_accepted': True}
             assert accepted['game']['quest'] == 'active'
+            # Acceptance metadata must survive a real reload and explicit UI load.
+            # This is a demo marker, not a recovered jin.swf event.
+            page.reload(wait_until='networkidle')
+            assert page.locator('#silver').inner_text() == '10'
+            page.once('dialog', lambda dialog: dialog.accept())
+            page.locator('#load').click()
+            page.locator('#save').click()
+            reloaded_acceptance = page.evaluate(
+                "JSON.parse(localStorage.getItem('jianghu-q-save-v1'))"
+            )
+            assert reloaded_acceptance['game']['quest'] == 'active'
+            assert reloaded_acceptance['eventHistory'] == {'demo_quest_accepted': True}
             page.keyboard.press('Escape')  # dismiss dialogue without activating focused button
             assert not page.locator('#dialog').is_visible()
             walk_to_objective(page)
