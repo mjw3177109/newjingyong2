@@ -100,3 +100,15 @@ test('malformed imported event history is rejected without reward mutation', () 
     assert.equal(before.inventory.herbs, 0);
   }
 });
+
+test('unsafe or malformed imported history keys are rejected atomically', () => {
+  for (const key of ['__proto__', 'constructor', 'prototype', 'bad.key', '1invalid']) {
+    const history = JSON.parse('{"' + key + '":true}');
+    const before = {...initial(), eventHistory: history};
+    const result = triggerEvent(event, before);
+    assert.equal(result.applied, false, key);
+    assert.equal(result.state, before, key);
+    assert.equal(before.inventory.herbs, 0, key);
+    assert.equal(before.quest, 'active', key);
+  }
+});
