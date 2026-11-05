@@ -76,3 +76,15 @@ test('duplicate destination paths are rejected before state mutation', () => {
   assert.equal(result.applied, false);
   assert.deepEqual(before, initial());
 });
+
+
+test('uncloneable imported state fails without throwing or partially applying effects', () => {
+  const before = {...initial(), legacyCallback: () => 'not serializable'};
+  let result;
+  assert.doesNotThrow(() => { result = triggerEvent(event, before); });
+  assert.equal(result.applied, false);
+  assert.equal(result.state, before);
+  assert.equal(before.quest, 'active');
+  assert.equal(before.inventory.herbs, 0);
+  assert.equal(Object.hasOwn(before, 'eventHistory'), false);
+});
