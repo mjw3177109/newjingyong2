@@ -35,6 +35,8 @@ export function triggerEvent(event,state) {
           Array.isArray(cursor[key])) return {applied:false,state};
       cursor=cursor[key];
     }
+    // Do not silently create arbitrary state fields from malformed event data.
+    if (!own(cursor, effect.path.at(-1))) return {applied:false,state};
   }
   // Reject overlapping write targets: an earlier effect may replace an object
   // required by a later effect, otherwise causing a partial/throwing transaction.
