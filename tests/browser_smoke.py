@@ -66,6 +66,28 @@ def main():
             assert page.evaluate(
                 "JSON.parse(localStorage.getItem('jianghu-q-save-v1')).game.player.x"
             ) == 6, 'focused game button swallowed the movement shortcut'
+            # A legacy strict-v2 checkpoint must still load through the real UI.
+            # This tests browser integration, not just the standalone adapter.
+            legacy_game = page.evaluate(
+                "JSON.parse(localStorage.getItem('jianghu-q-save-v1')).game"
+            )
+            page.evaluate(
+                """game => localStorage.setItem(
+                    'jianghu-q-save-v1', JSON.stringify(game)
+                )""",
+                legacy_game,
+            )
+            page.reload(wait_until='networkidle')
+            page.once('dialog', lambda dialog: dialog.accept())
+            page.locator('#load').click()
+            assert page.locator('#silver').inner_text() == '10'
+            page.locator('#save').click()
+            upgraded = page.evaluate(
+                "JSON.parse(localStorage.getItem('jianghu-q-save-v1'))"
+            )
+            assert upgraded['format'] == 'demo-event-envelope'
+            assert upgraded['game']['player']['x'] == 6
+            assert upgraded['eventHistory'] == {}
             # Canvas pointer coordinates must respect CSS scaling; each click moves one tile.
             canvas_box = page.locator('#game').bounding_box()
             assert canvas_box
