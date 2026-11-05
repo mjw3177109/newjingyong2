@@ -88,3 +88,15 @@ test('uncloneable imported state fails without throwing or partially applying ef
   assert.equal(before.inventory.herbs, 0);
   assert.equal(Object.hasOwn(before, 'eventHistory'), false);
 });
+
+
+test('malformed imported event history is rejected without reward mutation', () => {
+  for (const eventHistory of [new Date('2020-01-01'), {old_event: false}, {old_event: 1}]) {
+    const before = {...initial(), eventHistory};
+    const result = triggerEvent(event, before);
+    assert.equal(result.applied, false);
+    assert.equal(result.state, before);
+    assert.equal(before.quest, 'active');
+    assert.equal(before.inventory.herbs, 0);
+  }
+});
