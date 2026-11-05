@@ -22,6 +22,8 @@ export function triggerEvent(event,state) {
     return {applied:false,state};
   const history = own(state,'eventHistory') ? state.eventHistory : {};
   if (!history || typeof history !== 'object' || Array.isArray(history) ||
+      ![Object.prototype, null].includes(Object.getPrototypeOf(history)) ||
+      Object.keys(history).some(k => history[k] !== true) ||
       own(history,event.id) || !evaluateCondition(event.condition,state))
     return {applied:false,state};
   for (const effect of event.effects) {
