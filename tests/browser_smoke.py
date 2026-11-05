@@ -140,6 +140,13 @@ def main():
             assert page.evaluate("document.activeElement.id") == 'interact'
             page.keyboard.press('e')
             assert '清心草' in page.locator('#quest-progress').inner_text()
+            # Real UI acceptance must produce exactly one replay marker in the envelope.
+            page.locator('#save').click()
+            accepted = page.evaluate(
+                "JSON.parse(localStorage.getItem('jianghu-q-save-v1'))"
+            )
+            assert accepted['eventHistory'] == {'demo_quest_accepted': True}
+            assert accepted['game']['quest'] == 'active'
             page.keyboard.press('Escape')  # dismiss dialogue without activating focused button
             assert not page.locator('#dialog').is_visible()
             walk_to_objective(page)
