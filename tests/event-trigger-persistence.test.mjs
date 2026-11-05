@@ -136,3 +136,31 @@ test('existing final destination still accepts a valid event transaction', () =>
   assert.equal(result.state.eventHistory.demo_save_reward, true);
   assert.deepEqual(before, initial());
 });
+
+test('throwing legacy condition accessor is rejected without mutating rewards', () => {
+  const before = initial();
+  Object.defineProperty(before, 'quest', {
+    enumerable: true, configurable: true,
+    get() { throw new Error('legacy accessor'); }
+  });
+  let result;
+  assert.doesNotThrow(() => { result = triggerEvent(event, before); });
+  assert.equal(result.applied, false);
+  assert.equal(result.state, before);
+  assert.equal(before.inventory.herbs, 0);
+  assert.equal(Object.hasOwn(before, 'eventHistory'), false);
+});
+
+test('throwing imported event history getter is rejected without reward mutation', () => {
+  const before = initial();
+  Object.defineProperty(before, 'eventHistory', {
+    enumerable: true, configurable: true,
+    get() { throw new Error('invalid legacy history'); }
+  });
+  let result;
+  assert.doesNotThrow(() => { result = triggerEvent(event, before); });
+  assert.equal(result.applied, false);
+  assert.equal(result.state, before);
+  assert.equal(before.quest, 'active');
+  assert.equal(before.inventory.herbs, 0);
+});
