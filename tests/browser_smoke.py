@@ -297,6 +297,24 @@ def main():
             page.reload(wait_until='networkidle')
             page.locator('#load').click()
             assert '没有有效的存档' in page.locator('#toast').inner_text()
+            # A malformed event envelope must never be interpreted as a legacy save.
+            # Reject it without a confirmation prompt, mutating progress, or deleting data.
+            malformed = json.dumps({
+                'format': 'demo-event-envelope',
+                'version': 1,
+                'game': {'version': 2},
+                'eventHistory': {},
+            })
+            page.evaluate(
+                "(raw) => localStorage.setItem('jianghu-q-save-v1', raw)",
+                malformed,
+            )
+            page.locator('#load').click()
+            assert '没有有效的存档' in page.locator('#toast').inner_text()
+            assert page.locator('#silver').inner_text() == '10'
+            assert page.evaluate(
+                "localStorage.getItem('jianghu-q-save-v1')"
+            ) == malformed, 'invalid checkpoint must remain available for manual recovery'
             # Local checkpoints obey the same UTF-8 64 KiB limit as portable imports.
             # This payload is short in JS code units but oversized in UTF-8 bytes.
             page.evaluate("localStorage.setItem('jianghu-q-save-v1', '汉'.repeat(22000))")
