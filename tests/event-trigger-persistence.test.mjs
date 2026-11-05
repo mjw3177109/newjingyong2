@@ -112,3 +112,27 @@ test('unsafe or malformed imported history keys are rejected atomically', () => 
     assert.equal(before.quest, 'active', key);
   }
 });
+
+test('unknown final destination is rejected without creating state fields', () => {
+  const before = initial();
+  const unknown = {...event, effects: [
+    {path: ['quest'], value: 'done'},
+    {path: ['inventory', 'unverifiedReward'], value: 99}
+  ]};
+  const result = triggerEvent(unknown, before);
+  assert.equal(result.applied, false);
+  assert.equal(result.state, before);
+  assert.deepEqual(before, initial());
+  assert.equal(Object.hasOwn(before.inventory, 'unverifiedReward'), false);
+  assert.equal(Object.hasOwn(before, 'eventHistory'), false);
+});
+
+test('existing final destination still accepts a valid event transaction', () => {
+  const before = initial();
+  const result = triggerEvent(event, before);
+  assert.equal(result.applied, true);
+  assert.equal(result.state.quest, 'done');
+  assert.equal(result.state.inventory.herbs, 2);
+  assert.equal(result.state.eventHistory.demo_save_reward, true);
+  assert.deepEqual(before, initial());
+});
