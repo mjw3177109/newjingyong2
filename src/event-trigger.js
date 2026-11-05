@@ -33,6 +33,17 @@ export function triggerEvent(event,state) {
       cursor=cursor[key];
     }
   }
+  // Reject overlapping write targets: an earlier effect may replace an object
+  // required by a later effect, otherwise causing a partial/throwing transaction.
+  for (let i=0;i<event.effects.length;i++) {
+    const a=event.effects[i].path;
+    for (let j=i+1;j<event.effects.length;j++) {
+      const b=event.effects[j].path;
+      const n=Math.min(a.length,b.length);
+      if (a.slice(0,n).every((key,k)=>key===b[k]))
+        return {applied:false,state};
+    }
+  }
   const next=structuredClone(state);
   for (const effect of event.effects) {
     let cursor=next;
