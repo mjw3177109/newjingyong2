@@ -64,7 +64,7 @@ def main():
             page.keyboard.press('ArrowRight')
             page.locator('#save').click()
             assert page.evaluate(
-                "JSON.parse(localStorage.getItem('jianghu-q-save-v1')).player.x"
+                "JSON.parse(localStorage.getItem('jianghu-q-save-v1')).game.player.x"
             ) == 6, 'focused game button swallowed the movement shortcut'
             # Canvas pointer coordinates must respect CSS scaling; each click moves one tile.
             canvas_box = page.locator('#game').bounding_box()
@@ -76,10 +76,10 @@ def main():
                 )
             click_tile(7, 8)
             page.locator('#save').click()
-            assert page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).player.x") == 7
+            assert page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).game.player.x") == 7
             click_tile(6, 8)
             page.locator('#save').click()
-            assert page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).player.x") == 6
+            assert page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).game.player.x") == 6
             page.keyboard.press('b')
             assert '背包：' in page.locator('#toast').inner_text()
             page.keyboard.press('j')
@@ -159,7 +159,7 @@ def main():
             page.once('dialog', lambda dialog: (load_previews.append(dialog.message), dialog.dismiss()))
             page.locator('#load').click()
             assert page.locator('#silver').inner_text() == '10'
-            assert page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).quest") == 'completed'
+            assert page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).game.quest") == 'completed'
             page.once('dialog', lambda dialog: (load_previews.append(dialog.message), dialog.accept()))
             page.locator('#load').click()
             assert page.locator('#silver').inner_text() == '40'
@@ -170,7 +170,9 @@ def main():
                 page.locator('#export-save').click()
             download = download_info.value
             exported = json.loads(Path(download.path()).read_text(encoding='utf-8'))
-            assert exported['version'] == 2 and exported['quest'] == 'completed'
+            assert exported['format'] == 'demo-event-envelope' and exported['version'] == 1
+            assert exported['game']['version'] == 2 and exported['game']['quest'] == 'completed'
+            assert exported['eventHistory'] == {}
 
             fresh = browser.new_context(accept_downloads=True)
             imported_page = fresh.new_page()
@@ -214,7 +216,8 @@ def main():
             saved = mobile_page.evaluate(
                 "JSON.parse(localStorage.getItem('jianghu-q-save-v1'))"
             )
-            assert (saved['player']['x'], saved['player']['y']) == (6, 8), (
+            assert saved['format'] == 'demo-event-envelope' and saved['version'] == 1
+            assert (saved['game']['player']['x'], saved['game']['player']['y']) == (6, 8), (
                 'touch direction must move exactly one walkable tile'
             )
             mobile_box = mobile_page.locator('#game').bounding_box()
@@ -226,10 +229,10 @@ def main():
                 )
             tap_tile(7, 8)
             mobile_page.locator('#save').tap()
-            assert mobile_page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).player.x") == 7
+            assert mobile_page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).game.player.x") == 7
             tap_tile(6, 8)
             mobile_page.locator('#save').tap()
-            assert mobile_page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).player.x") == 6
+            assert mobile_page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).game.player.x") == 6
             mobile_page.reload(wait_until='networkidle')
             assert mobile_page.locator('#silver').inner_text() == '10'
             mobile_page.once('dialog', lambda dialog: dialog.accept())
@@ -261,7 +264,7 @@ def main():
             page.once('dialog', lambda dialog: dialog.dismiss())
             page.locator('#new-game').click()
             assert page.locator('#silver').inner_text() == '40'
-            assert page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).quest") == 'completed'
+            assert page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).game.quest") == 'completed'
             # Confirmed restart clears both current run and this browser's checkpoint.
             page.once('dialog', lambda dialog: dialog.accept())
             page.locator('#new-game').click()
