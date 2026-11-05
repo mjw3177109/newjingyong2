@@ -33,6 +33,9 @@ export function triggerEvent(event,state) {
     conditionMet = evaluateCondition(event.condition,state);
   } catch { return {applied:false,state}; }
   if (!conditionMet) return {applied:false,state};
+  // Imported states may contain getters/proxies that throw during path validation.
+  // Preflight is read-only; reject these without crashing the caller.
+  try {
   for (const effect of event.effects) {
     let cursor=state;
     for (const key of effect.path.slice(0,-1)) {
@@ -44,6 +47,7 @@ export function triggerEvent(event,state) {
     // Do not silently create arbitrary state fields from malformed event data.
     if (!own(cursor, effect.path.at(-1))) return {applied:false,state};
   }
+  } catch { return {applied:false,state}; }
   // Reject overlapping write targets: an earlier effect may replace an object
   // required by a later effect, otherwise causing a partial/throwing transaction.
   for (let i=0;i<event.effects.length;i++) {
