@@ -180,6 +180,9 @@ def main():
             for _ in range(2):
                 page.locator('#attack').click()
             assert not page.locator('#combat').is_visible()
+            page.locator('#save').click()
+            first_victory = page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).eventHistory")
+            assert first_victory == {'demo_quest_accepted': True, 'demo_first_bandit_victory': True}
             walk_to_objective(page)
             page.locator('#interact').click()
             assert page.locator('#silver').inner_text() == '40'
@@ -212,6 +215,9 @@ def main():
             assert '再试胜利！不重复发放任务奖励' in page.locator('#journal').inner_text()
             assert page.locator('#silver').inner_text() == '40'
             assert page.locator('#inventory').inner_text().count('竹纹短剑') == 1
+            page.locator('#save').click()
+            after_rematch = page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).eventHistory")
+            assert after_rematch == first_victory, 'rematch must not duplicate the first victory event'
             # The button path must use the same capped heal rule as the R shortcut.
             assert page.locator('#hp-num').inner_text() == '94 / 100'
             assert '恢复 6 气血' in page.locator('#rest-village').inner_text()
@@ -241,7 +247,7 @@ def main():
             exported = json.loads(Path(download.path()).read_text(encoding='utf-8'))
             assert exported['format'] == 'demo-event-envelope' and exported['version'] == 1
             assert exported['game']['version'] == 2 and exported['game']['quest'] == 'completed'
-            assert exported['eventHistory'] == {'demo_quest_accepted': True}, 'quest acceptance marker must survive save/export'
+            assert exported['eventHistory'] == {'demo_quest_accepted': True, 'demo_first_bandit_victory': True}, 'quest and first-victory markers must survive save/export'
 
             fresh = browser.new_context(accept_downloads=True)
             imported_page = fresh.new_page()
