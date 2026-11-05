@@ -51,3 +51,28 @@ test('invalid nested destination does not write any earlier effect or history', 
   assert.deepEqual(before, initial());
   assert.equal(Object.hasOwn(before, 'eventHistory'), false);
 });
+
+test('overlapping effect paths fail atomically instead of throwing', () => {
+  const before = initial();
+  const overlap = {...event, effects: [
+    {path: ['inventory'], value: 'replaced'},
+    {path: ['inventory', 'herbs'], value: 5}
+  ]};
+  assert.doesNotThrow(() => triggerEvent(overlap, before));
+  const result = triggerEvent(overlap, before);
+  assert.equal(result.applied, false);
+  assert.equal(result.state, before);
+  assert.deepEqual(before, initial());
+  assert.equal(Object.hasOwn(before, 'eventHistory'), false);
+});
+
+test('duplicate destination paths are rejected before state mutation', () => {
+  const before = initial();
+  const duplicate = {...event, effects: [
+    {path: ['quest'], value: 'done'},
+    {path: ['quest'], value: 'overwritten'}
+  ]};
+  const result = triggerEvent(duplicate, before);
+  assert.equal(result.applied, false);
+  assert.deepEqual(before, initial());
+});
