@@ -23,7 +23,8 @@ export function triggerEvent(event,state) {
   const history = own(state,'eventHistory') ? state.eventHistory : {};
   if (!history || typeof history !== 'object' || Array.isArray(history) ||
       ![Object.prototype, null].includes(Object.getPrototypeOf(history)) ||
-      Object.keys(history).some(k => history[k] !== true) ||
+      Object.keys(history).some(k => !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(k) ||
+        ['__proto__','constructor','prototype'].includes(k) || history[k] !== true) ||
       own(history,event.id) || !evaluateCondition(event.condition,state))
     return {applied:false,state};
   for (const effect of event.effects) {
