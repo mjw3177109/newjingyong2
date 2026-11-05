@@ -51,6 +51,21 @@ function action(){
  }
  update(next);
 }
+// Original-demo combat milestone only; never infer a jin.swf event from this marker.
+const DEMO_FIRST_VICTORY_MARKER={
+ id:'demo_first_bandit_victory',
+ condition:{path:['flags','banditBeaten'],op:'eq',value:true},
+ effects:[{path:['flags','banditBeaten'],value:true}]
+};
+function combatAction(command){
+ const previous=state;
+ const next=battle(previous,command);
+ if(previous.combat && !previous.flags.banditBeaten && next.flags.banditBeaten && !next.combat){
+  const result=applySavedEvent(DEMO_FIRST_VICTORY_MARKER,next,eventHistory);
+  if(result.applied){eventHistory=result.eventHistory;update(result.game);return;}
+ }
+ update(next);
+}
 // Mouse and touch taps move only one legal tile; they never auto-trigger dialogue or combat.
 canvas.addEventListener('click', event => {
  if(state.dialog || state.combat)return;
@@ -73,7 +88,7 @@ document.addEventListener('keydown',e=>{
  else if(command.kind==='potion')update(usePotion(state));
  else if(command.kind==='rest')update(restAtVillage(state));
  else if(command.kind==='route-step')update(stepTowardObjective(state));
- else if(command.kind==='combat' && (command.action!=='drink' || canDrinkPotion(state))) update(battle(state,command.action));
+ else if(command.kind==='combat' && (command.action!=='drink' || canDrinkPotion(state))) combatAction(command.action);
  else if(command.kind==='inventory')toast(`背包：${state.inventory.join('、')||'空空如也'}`);
  else if(command.kind==='quest')toast(questStatus(state).progress);
 });
@@ -115,7 +130,7 @@ $('rest-village').onclick=()=>update(restAtVillage(state));
 $('equip-weapon').onclick=()=>update(equipWeapon(state));
 $('discard-potion').onclick=()=>update(discardPotion(state));
 $('use-potion').onclick=()=>update(usePotion(state));
-for(const a of ['attack','guard','drink','flee'])$(a).onclick=()=>update(battle(state,a));
+for(const a of ['attack','guard','drink','flee'])$(a).onclick=()=>combatAction(a);
 for(const b of document.querySelectorAll('[data-direction]')) b.onclick=()=>{const d={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[b.dataset.direction];doMove(...d);};
 function poly(points,fill){ctx.beginPath();ctx.moveTo(...points[0]);for(const p of points.slice(1))ctx.lineTo(...p);ctx.closePath();ctx.fillStyle=fill;ctx.fill();}
 function tile(x,y){
