@@ -11,8 +11,10 @@ const validHistory = h => h && typeof h === 'object' && !Array.isArray(h) &&
   Object.keys(h).every(k => ID.test(k) && !FORBIDDEN.has(k) && h[k] === true);
 
 export function packEventSave(gameState, eventHistory = {}) {
-  if (!parseSave(JSON.stringify(gameState)) || !validHistory(eventHistory)) return null;
-  return JSON.stringify({format:'demo-event-envelope',version:1,game:gameState,eventHistory});
+  try {
+    if (!validHistory(eventHistory) || !parseSave(JSON.stringify(gameState))) return null;
+    return JSON.stringify({format:'demo-event-envelope',version:1,game:gameState,eventHistory});
+  } catch { return null; }
 }
 
 export function unpackEventSave(raw) {
@@ -22,7 +24,8 @@ export function unpackEventSave(raw) {
       Object.keys(data).sort().join(',') !== 'eventHistory,format,game,version' ||
       data.format !== 'demo-event-envelope' || data.version !== 1 ||
       !validHistory(data.eventHistory)) return null;
-  const game = parseSave(JSON.stringify(data.game));
+  let game;
+  try { game = parseSave(JSON.stringify(data.game)); } catch { return null; }
   if (!game) return null;
   return {game, eventHistory: data.eventHistory};
 }
