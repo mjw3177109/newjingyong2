@@ -164,3 +164,34 @@ test('throwing imported event history getter is rejected without reward mutation
   assert.equal(before.quest, 'active');
   assert.equal(before.inventory.herbs, 0);
 });
+
+
+test('throwing nested state getter is rejected atomically during preflight', () => {
+  const before = initial();
+  Object.defineProperty(before.inventory, 'herbs', {
+    enumerable: true, configurable: true,
+    get() { throw new Error('corrupt imported getter'); }
+  });
+  let result;
+  assert.doesNotThrow(() => { result = triggerEvent(event, before); });
+  assert.equal(result.applied, false);
+  assert.equal(result.state, before);
+  assert.equal(before.quest, 'active');
+  assert.equal(Object.hasOwn(before, 'eventHistory'), false);
+});
+
+test('throwing nested proxy lookup is rejected without modifying state', () => {
+  const before = initial();
+  before.inventory = new Proxy(before.inventory, {
+    getOwnPropertyDescriptor(target, key) {
+      if (key === 'herbs') throw new Error('corrupt imported proxy');
+      return Reflect.getOwnPropertyDescriptor(target, key);
+    }
+  });
+  let result;
+  assert.doesNotThrow(() => { result = triggerEvent(event, before); });
+  assert.equal(result.applied, false);
+  assert.equal(result.state, before);
+  assert.equal(before.quest, 'active');
+  assert.equal(Object.hasOwn(before, 'eventHistory'), false);
+});
