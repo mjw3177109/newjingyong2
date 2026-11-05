@@ -240,7 +240,8 @@ def main():
             with mobile_page.expect_download() as mobile_download:
                 mobile_page.locator('#export-save').tap()
             restored = json.loads(Path(mobile_download.value.path()).read_text(encoding='utf-8'))
-            assert (restored['player']['x'], restored['player']['y']) == (6, 8)
+            assert restored['format'] == 'demo-event-envelope' and restored['version'] == 1
+            assert (restored['game']['player']['x'], restored['game']['player']['y']) == (6, 8)
             route_button = mobile_page.locator('#step-route')
             for _ in range(400):
                 if route_button.is_disabled():
