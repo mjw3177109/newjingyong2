@@ -1,10 +1,12 @@
 import {initialState,move,interact,battle,questStatus,equipWeapon,attackDamage,attackName,DEMO_SWORD,discardPotion,usePotion,canRematch,startRematch,canDrinkPotion,canRestAtVillage,restAtVillage} from './engine.js';
 import {ACTORS,WIDTH,HEIGHT,TILE,BLOCKS} from './demo-data.js';
 import {commandForKey} from './controls.js';
-import {MAX_SAVE_FILE_BYTES, exportSaveText, importSaveText} from './save-transfer.js';
+import {MAX_SAVE_FILE_BYTES} from './save-transfer.js';
+import {encodeCheckpoint,decodeCheckpoint} from './browser-checkpoint.js';
 import {nextObjective,pathToObjective,stepTowardObjective} from './objectives.js';
 import {pathToTile} from './tile-path.js';
 let state=initialState();
+let eventHistory={};
 const $=id=>document.getElementById(id), canvas=$('game'),ctx=canvas.getContext('2d');
 const images={};
 for(const id of ['hero','elder','merchant','herb','bandit']){
@@ -13,22 +15,23 @@ for(const id of ['hero','elder','merchant','herb','bandit']){
 const keyName = 'jianghu-q-save-v1';
 function toast(txt){const t=$('toast');t.textContent=txt;t.classList.remove('hidden');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.add('hidden'),1800);}
 function update(next){state=next;paint();}
-function save(){try{localStorage.setItem(keyName,exportSaveText(state));toast('进度已存入本机浏览器');}catch{toast('存档无效或浏览器存储不可用');}}
+function save(){try{const raw=encodeCheckpoint(state,eventHistory);if(!raw || new TextEncoder().encode(raw).byteLength>MAX_SAVE_FILE_BYTES)throw new Error('invalid checkpoint');localStorage.setItem(keyName,raw);toast('进度已存入本机浏览器');}catch{toast('存档无效或浏览器存储不可用');}}
 function load(){let raw;try{raw=localStorage.getItem(keyName);}catch{toast('浏览器存储不可用');return;}
  // Apply the same UTF-8 byte cap as portable JSON imports before parsing local data.
  if(raw && new TextEncoder().encode(raw).byteLength>MAX_SAVE_FILE_BYTES){toast('本机存档超过 64 KB，已拒绝读取');return;}
- const parsed=raw&&importSaveText(raw);if(!parsed){toast('没有有效的存档');return;}
+ const checkpoint=raw&&decodeCheckpoint(raw);if(!checkpoint){toast('没有有效的存档');return;}
+ const parsed=checkpoint.game;
  // Loading a checkpoint must not silently destroy unsaved progress.
  const questLabel={unstarted:'未开始',active:'进行中',completed:'已完成'}[parsed.quest];
  const preview=`即将读取本机存档：任务${questLabel}，气血 ${parsed.player.hp}，银两 ${parsed.player.silver}。\n这会替换当前未保存的游戏进度，但不会删除或修改本机存档。确定继续？`;
  if(!window.confirm(preview)){toast('已取消读取，当前进度未变');return;}
- update(parsed);toast('进度读取成功');}
+ eventHistory=checkpoint.eventHistory;update(parsed);toast('进度读取成功');}
 // Reset both in-memory progress and this browser's saved checkpoint only after consent.
 // If storage is blocked, keep the current run rather than leaving a stale save.
 function newGame(){
  if(!window.confirm('确定重新开始原创试玩并清除本机存档？此操作无法撤销。'))return;
  try{localStorage.removeItem(keyName);}catch{toast('无法清除本机存档，未重新开始');return;}
- update(initialState());toast('已重新开始原创试玩');
+ eventHistory={};update(initialState());toast('已重新开始原创试玩');
 }
 function doMove(dx,dy){update(move(state,dx,dy));}
 function action(){update(interact(state));}
@@ -60,7 +63,9 @@ document.addEventListener('keydown',e=>{
 });
 function exportSave() {
  try {
-  const blob = new Blob([exportSaveText(state)], {type:'application/json;charset=utf-8'});
+  const raw=encodeCheckpoint(state,eventHistory);
+  if(!raw || new TextEncoder().encode(raw).byteLength>MAX_SAVE_FILE_BYTES)throw new Error('invalid checkpoint');
+  const blob = new Blob([raw], {type:'application/json;charset=utf-8'});
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url; link.download = 'zhuying-jianghu-save-v2.json';
@@ -78,12 +83,13 @@ $('import-save-file').onchange=async e=>{
  if(!file)return;
  if(file.size>MAX_SAVE_FILE_BYTES){toast('存档文件超过 64 KB');return;}
  try {
-  const imported=importSaveText(await file.text());
-  if(!imported){toast('存档文件无效或版本不兼容');return;}
+  const checkpoint=decodeCheckpoint(await file.text());
+  if(!checkpoint){toast('存档文件无效或版本不兼容');return;}
+  const imported=checkpoint.game;
   const questLabel={unstarted:'未开始',active:'进行中',completed:'已完成'}[imported.quest];
   const preview=`即将导入存档：任务${questLabel}，气血 ${imported.player.hp}，银两 ${imported.player.silver}。\n这会替换当前未保存的游戏进度，但不会自动覆盖本机存档。确定继续？`;
   if(!window.confirm(preview)){toast('已取消导入，当前进度未变');return;}
-  update(imported);
+  eventHistory=checkpoint.eventHistory;update(imported);
   toast('已导入当前游戏，请点击保存进度以持久化');
  } catch { toast('读取存档文件失败'); }
 };
