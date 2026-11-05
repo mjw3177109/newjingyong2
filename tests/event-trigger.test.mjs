@@ -31,3 +31,11 @@ test('unsafe or malformed event definitions are rejected',()=>{
     assert.equal(triggerEvent(bad,state()).applied,false);
   }
 });
+
+test('inherited history properties do not block a valid first trigger',()=>{
+  const first={...event,id:'toString'};
+  const result=triggerEvent(first,state());
+  assert.equal(result.applied,true);
+  assert.equal(Object.prototype.hasOwnProperty.call(result.state.eventHistory,'toString'),true);
+  assert.equal(triggerEvent(first,result.state).applied,false);
+});
