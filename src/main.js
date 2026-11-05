@@ -3,6 +3,7 @@ import {ACTORS,WIDTH,HEIGHT,TILE,BLOCKS} from './demo-data.js';
 import {commandForKey} from './controls.js';
 import {MAX_SAVE_FILE_BYTES} from './save-transfer.js';
 import {encodeCheckpoint,decodeCheckpoint} from './browser-checkpoint.js';
+import {applySavedEvent} from './event-save-adapter.js';
 import {nextObjective,pathToObjective,stepTowardObjective} from './objectives.js';
 import {pathToTile} from './tile-path.js';
 let state=initialState();
@@ -34,7 +35,22 @@ function newGame(){
  eventHistory={};update(initialState());toast('已重新开始原创试玩');
 }
 function doMove(dx,dy){update(move(state,dx,dy));}
-function action(){update(interact(state));}
+// Original-demo milestone only; this is not a recovered jin.swf story event.
+// The replay marker is committed only after a real quest acceptance transition.
+const DEMO_ACCEPT_MARKER={
+ id:'demo_quest_accepted',
+ condition:{path:['quest'],op:'eq',value:'active'},
+ effects:[{path:['quest'],value:'active'}]
+};
+function action(){
+ const previous=state;
+ const next=interact(previous);
+ if(previous.quest==='unstarted' && next.quest==='active'){
+  const result=applySavedEvent(DEMO_ACCEPT_MARKER,next,eventHistory);
+  if(result.applied){eventHistory=result.eventHistory;update(result.game);return;}
+ }
+ update(next);
+}
 // Mouse and touch taps move only one legal tile; they never auto-trigger dialogue or combat.
 canvas.addEventListener('click', event => {
  if(state.dialog || state.combat)return;
