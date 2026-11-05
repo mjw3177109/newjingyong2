@@ -88,6 +88,34 @@ def main():
             assert upgraded['format'] == 'demo-event-envelope'
             assert upgraded['game']['player']['x'] == 6
             assert upgraded['eventHistory'] == {}
+            # Non-empty replay metadata must survive the actual browser load/save path.
+            # This is adapter persistence coverage, not an original-SWF event mapping.
+            with_history = {**upgraded, 'eventHistory': {'demo_event_1': True}}
+            page.evaluate(
+                "(raw) => localStorage.setItem('jianghu-q-save-v1', raw)",
+                json.dumps(with_history),
+            )
+            page.once('dialog', lambda dialog: dialog.accept())
+            page.locator('#load').click()
+            page.locator('#save').click()
+            persisted = page.evaluate(
+                "JSON.parse(localStorage.getItem('jianghu-q-save-v1'))"
+            )
+            assert persisted['eventHistory'] == {'demo_event_1': True}
+            page.reload(wait_until='networkidle')
+            page.once('dialog', lambda dialog: dialog.accept())
+            page.locator('#load').click()
+            page.locator('#save').click()
+            assert page.evaluate(
+                "JSON.parse(localStorage.getItem('jianghu-q-save-v1')).eventHistory"
+            ) == {'demo_event_1': True}
+            # Reset metadata to keep the remaining original-demo assertions isolated.
+            page.evaluate(
+                "(raw) => localStorage.setItem('jianghu-q-save-v1', raw)",
+                json.dumps(upgraded),
+            )
+            page.once('dialog', lambda dialog: dialog.accept())
+            page.locator('#load').click()
             # Canvas pointer coordinates must respect CSS scaling; each click moves one tile.
             canvas_box = page.locator('#game').bounding_box()
             assert canvas_box
