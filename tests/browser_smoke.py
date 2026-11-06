@@ -335,8 +335,27 @@ def main():
                 'accepted portable import must restore all completion milestones'
             )
             assert imported_page.evaluate("localStorage.getItem('jianghu-q-save-v1')") is None
+            # Explicit save after portable import must persist the imported event
+            # milestones; import alone must never write a local checkpoint.
+            imported_page.locator('#save').click()
+            imported_checkpoint = imported_page.evaluate(
+                "JSON.parse(localStorage.getItem('jianghu-q-save-v1'))"
+            )
+            assert imported_checkpoint['game']['quest'] == 'completed'
+            assert imported_checkpoint['eventHistory'] == completed_history
             imported_page.reload(wait_until='networkidle')
-            assert imported_page.locator('#silver').inner_text() == '10', 'import must not silently overwrite local save'
+            assert imported_page.locator('#silver').inner_text() == '10', 'checkpoint must require explicit load after refresh'
+            imported_page.once('dialog', lambda dialog: dialog.accept())
+            imported_page.locator('#load').click()
+            assert imported_page.locator('#silver').inner_text() == '40'
+            with imported_page.expect_download() as persisted_import_download:
+                imported_page.locator('#export-save').click()
+            persisted_import = json.loads(
+                Path(persisted_import_download.value.path()).read_text(encoding='utf-8')
+            )
+            assert persisted_import['eventHistory'] == completed_history, (
+                'explicitly saved imported milestones must survive refresh and load'
+            )
             # Independent touch-enabled Chromium context at a narrow mobile viewport.
             # Only original-demo controls are tested; this is not source-SWF fidelity.
             mobile = browser.new_context(
