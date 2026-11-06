@@ -138,12 +138,23 @@ def validate(records):
     return errors
 
 
+def _reject_duplicate_keys(pairs):
+    """Reject ambiguous JSON objects instead of silently keeping the last value."""
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON key: {key}")
+        result[key] = value
+    return result
+
+
 def main(argv):
     if len(argv) != 2:
         print("Usage: validate_story_audit.py <redacted-json>", file=sys.stderr)
         return 2
     try:
-        records = json.loads(Path(argv[1]).read_text(encoding="utf-8"))
+        records = json.loads(Path(argv[1]).read_text(encoding="utf-8"),
+                             object_pairs_hook=_reject_duplicate_keys)
     except (OSError, ValueError) as exc:
         print(f"Input error: {exc}", file=sys.stderr)
         return 2
