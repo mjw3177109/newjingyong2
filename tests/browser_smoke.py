@@ -237,7 +237,12 @@ def main():
             )
             page.once('dialog', lambda dialog: dialog.dismiss())
             page.locator('#load').click()
+            # Dismissing a stale checkpoint must not overwrite either the current
+            # run or the original stored bytes before the player explicitly saves.
+            assert page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1'))") == accepted
             assert page.locator('#silver').inner_text() == '40'
+            assert page.locator('#hp-num').inner_text() == '100 / 100'
+            assert page.locator('#inventory').inner_text().count('竹纹短剑') == 1
             assert page.locator('#rematch').is_enabled()
             page.locator('#save').click()
             after_cancelled_load = page.evaluate(
