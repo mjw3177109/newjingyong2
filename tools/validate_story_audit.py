@@ -114,7 +114,7 @@ def validate(records):
         else:
             mapping = row["html5_mapping"]
             if not (mapping is None or
-                    (isinstance(mapping, str) and mapping.strip().lower() == "none")):
+                    (isinstance(mapping, str) and mapping == "none")):
                 errors.append(f"{prefix}: unverified candidate cannot claim HTML5 mapping")
         if "publication_ready" in row and not isinstance(row["publication_ready"], bool):
             errors.append(f"{prefix}: publication_ready must be boolean")
