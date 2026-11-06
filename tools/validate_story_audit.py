@@ -74,9 +74,10 @@ def validate(records):
                 errors.append(f"{prefix}: invalid {key}")
         if not isinstance(row["negative_path_checked"], bool):
             errors.append(f"{prefix}: negative_path_checked must be boolean")
-        if not (row["html5_mapping"] is None or
-                (isinstance(row["html5_mapping"], str) and row["html5_mapping"].strip())):
-            errors.append(f"{prefix}: html5_mapping must be null or non-empty string")
+        mapping = row["html5_mapping"]
+        if not (mapping is None or (isinstance(mapping, str) and
+                re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,99}", mapping.strip()))):
+            errors.append(f"{prefix}: html5_mapping must be null or a short safe event ID")
         for key, limit in TEXT_LIMITS.items():
             value = row[key]
             if value is not None and (
