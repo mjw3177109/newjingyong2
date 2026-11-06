@@ -187,6 +187,18 @@ class AuditGateTests(unittest.TestCase):
                     rights_evidence_ref=value
                 )]))
 
+    def test_publication_mapping_collision_rejected(self):
+        published = dict(rights_status="authorized",
+                         rights_scope="adaptation_and_distribution",
+                         rights_evidence_ref="rights-doc:license-2026",
+                         publication_ready=True, html5_mapping="quest_1")
+        first = record(**published)
+        second = record(**dict(published, candidate_id="anon_002"))
+        self.assertTrue(any("duplicate publication HTML5 mapping" in error
+                            for error in validate([first, second])))
+        self.assertEqual(validate([first, record(candidate_id="anon_002",
+                                                status="partial", html5_mapping="none")]), [])
+
     def test_safe_mapping_identifier_remains_valid(self):
         self.assertEqual(validate([record(html5_mapping="quest_trial-1")]), [])
 
