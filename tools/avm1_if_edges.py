@@ -1,4 +1,4 @@
-"""Inspect AVM1 ActionIf (0x9D) edges from an isolated action byte stream.
+"""Inspect AVM1 ActionIf (0x9D) and ActionJump (0x99) edges from an isolated action byte stream.
 
 No SWF content is printed. Offsets are relative to the supplied action stream.
 This is structural analysis only; it does not establish predicate or story semantics.
@@ -27,12 +27,13 @@ def inspect_actions(data: bytes):
         if end > len(data):
             raise ValueError(f"truncated action payload at {start}")
         boundaries.add(start)
-        if opcode == 0x9D:
+        if opcode in (0x9D, 0x99):
             if length != 2:
-                raise ValueError(f"invalid ActionIf payload at {start}")
+                name = "ActionIf" if opcode == 0x9D else "ActionJump"
+                raise ValueError(f"invalid {name} payload at {start}")
             displacement = struct.unpack_from('<h', data, pos)[0]
             target = end + displacement
-            edges.append({"offset": start, "fallthrough": end, "branch": target})
+            edges.append({"offset": start, "fallthrough": end, "branch": target, "kind": "if" if opcode == 0x9D else "jump"})
         pos = end
         if opcode == 0:
             break
