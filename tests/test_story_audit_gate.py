@@ -1,6 +1,7 @@
 """Synthetic tests: no copyrighted source text or SWF content."""
 import unittest
-from tools.validate_story_audit import validate
+import json
+from tools.validate_story_audit import validate, _reject_duplicate_keys
 
 H = "a" * 64
 
@@ -198,6 +199,20 @@ class AuditGateTests(unittest.TestCase):
                             for error in validate([first, second])))
         self.assertEqual(validate([first, record(candidate_id="anon_002",
                                                 status="partial", html5_mapping="none")]), [])
+
+    def test_duplicate_json_keys_rejected_before_validation(self):
+        # json.loads normally keeps the last duplicate key, hiding an earlier claim.
+        for payload in (
+            '{"status":"unverified","status":"verified"}',
+            '{"rights_scope":"none","rights_scope":"adaptation_and_distribution"}',
+            '{"outer":{"candidate_id":"first","candidate_id":"second"}}',
+        ):
+            with self.subTest(payload=payload):
+                with self.assertRaisesRegex(ValueError, "duplicate JSON key"):
+                    json.loads(payload, object_pairs_hook=_reject_duplicate_keys)
+        self.assertEqual(json.loads('{"status":"unverified"}',
+                                    object_pairs_hook=_reject_duplicate_keys),
+                         {"status": "unverified"})
 
     def test_safe_mapping_identifier_remains_valid(self):
         self.assertEqual(validate([record(html5_mapping="quest_trial-1")]), [])
