@@ -36,6 +36,10 @@ def inspect_actions(data: bytes):
         pos = end
         if opcode == 0:
             break
+    # The byte immediately after the final action is a valid terminal exit.
+    # A branch to that offset must not be mislabeled as an invalid instruction.
+    if pos == len(data):
+        boundaries.add(pos)
     for edge in edges:
         edge["branch_on_action_boundary"] = edge["branch"] in boundaries
         edge["fallthrough_on_action_boundary"] = edge["fallthrough"] in boundaries
