@@ -33,7 +33,7 @@ TEXT_LIMITS = {
 
 def _usable_text(value):
     return (isinstance(value, str) and bool(value.strip())
-            and len(value) <= 240 and not any(ord(ch) < 32 or ord(ch) == 127 for ch in value)
+            and len(value) <= 240 and not any(ord(ch) < 32 or ord(ch) == 127 for ch in value))
 
 
 def _is_placeholder(value):
