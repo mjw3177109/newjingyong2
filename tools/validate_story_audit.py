@@ -76,7 +76,7 @@ def validate(records):
             errors.append(f"{prefix}: negative_path_checked must be boolean")
         mapping = row["html5_mapping"]
         if not (mapping is None or (isinstance(mapping, str) and
-                re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,99}", mapping.strip()))):
+                re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,99}", mapping))):
             errors.append(f"{prefix}: html5_mapping must be null or a short safe event ID")
         for key, limit in TEXT_LIMITS.items():
             value = row[key]
