@@ -163,6 +163,18 @@ class AuditGateTests(unittest.TestCase):
                                                  rights_scope="adaptation_and_distribution",
                                                  rights_evidence_ref=value)]))
 
+    def test_public_evidence_rejects_invisible_unicode_formatting(self):
+        # Prevent bidi spoofing and zero-width text in public audit summaries.
+        for value in ("safe\u202eunsafe", "safe\u200bunsafe", "safe\u2066unsafe"):
+            with self.subTest(value=repr(value)):
+                self.assertTrue(validate([record(trigger_summary=value)]))
+                self.assertTrue(validate([record(
+                    rights_status="authorized",
+                    rights_scope="adaptation_and_distribution",
+                    rights_evidence_ref=value
+                )]))
+        self.assertEqual(validate([record(trigger_summary="条件分支摘要")]), [])
+
     def test_safe_mapping_identifier_remains_valid(self):
         self.assertEqual(validate([record(html5_mapping="quest_trial-1")]), [])
 
