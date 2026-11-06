@@ -158,8 +158,11 @@ class AuditGateTests(unittest.TestCase):
     def test_safe_mapping_identifier_remains_valid(self):
         self.assertEqual(validate([record(html5_mapping="quest_trial-1")]), [])
 
-    def test_case_insensitive_none_mapping_is_allowed_before_verification(self):
-        self.assertEqual(validate([record(status="partial", html5_mapping=" NONE ")]), [])
+    def test_noncanonical_none_mapping_is_rejected_before_verification(self):
+        for mapping in (" NONE ", "None", "NONE", " none"):
+            with self.subTest(mapping=mapping):
+                self.assertTrue(validate([record(status="partial", html5_mapping=mapping)]))
+        self.assertEqual(validate([record(status="partial", html5_mapping="none")]), [])
 
 
 if __name__ == "__main__":
