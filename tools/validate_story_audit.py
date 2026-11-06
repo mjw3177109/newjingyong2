@@ -46,6 +46,7 @@ def validate(records):
     if not isinstance(records, list):
         return ["root: expected JSON array"]
     seen = set()
+    published_mappings = set()
     for i, row in enumerate(records):
         prefix = f"record[{i}]"
         if not isinstance(row, dict):
@@ -120,6 +121,10 @@ def validate(records):
         if "publication_ready" in row and not isinstance(row["publication_ready"], bool):
             errors.append(f"{prefix}: publication_ready must be boolean")
         if row.get("publication_ready") is True:
+            if isinstance(mapping, str) and mapping not in PLACEHOLDERS and re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,99}", mapping):
+                if mapping in published_mappings:
+                    errors.append(f"{prefix}: duplicate publication HTML5 mapping")
+                published_mappings.add(mapping)
             if row["rights_status"] != "authorized":
                 errors.append(f"{prefix}: publication requires separate authorization")
             if row["rights_scope"] != "adaptation_and_distribution":
