@@ -187,6 +187,9 @@ def main():
             page.locator('#interact').click()
             assert page.locator('#silver').inner_text() == '40'
             assert '竹纹短剑' in page.locator('#inventory').inner_text()
+            page.locator('#save').click()
+            completed_history = page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).eventHistory")
+            assert completed_history == {**first_victory, 'demo_quest_completed': True}
             assert page.locator('#rest-village').is_disabled(), 'reward dialogue must block village rest'
             page.locator('#interact').click()
             # Two enemy counterattacks cost 12 HP; R restores exactly the missing 12.
@@ -217,7 +220,7 @@ def main():
             assert page.locator('#inventory').inner_text().count('竹纹短剑') == 1
             page.locator('#save').click()
             after_rematch = page.evaluate("JSON.parse(localStorage.getItem('jianghu-q-save-v1')).eventHistory")
-            assert after_rematch == first_victory, 'rematch must not duplicate the first victory event'
+            assert after_rematch == completed_history, 'rematch must not duplicate milestone events'
             # The button path must use the same capped heal rule as the R shortcut.
             assert page.locator('#hp-num').inner_text() == '94 / 100'
             assert '恢复 6 气血' in page.locator('#rest-village').inner_text()
@@ -247,7 +250,7 @@ def main():
             exported = json.loads(Path(download.path()).read_text(encoding='utf-8'))
             assert exported['format'] == 'demo-event-envelope' and exported['version'] == 1
             assert exported['game']['version'] == 2 and exported['game']['quest'] == 'completed'
-            assert exported['eventHistory'] == {'demo_quest_accepted': True, 'demo_first_bandit_victory': True}, 'quest and first-victory markers must survive save/export'
+            assert exported['eventHistory'] == {'demo_quest_accepted': True, 'demo_first_bandit_victory': True, 'demo_quest_completed': True}, 'quest milestones must survive save/export'
 
             fresh = browser.new_context(accept_downloads=True)
             imported_page = fresh.new_page()
