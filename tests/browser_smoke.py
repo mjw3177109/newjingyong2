@@ -229,7 +229,24 @@ def main():
             assert page.locator('#rest-village').is_disabled()
             assert '恢复 6 点气血' in page.locator('#journal').inner_text()
 
+            # Rejecting an older local checkpoint must preserve unsaved completed
+            # progress AND its in-memory event replay history (not only UI silver).
+            page.evaluate(
+                "(raw) => localStorage.setItem('jianghu-q-save-v1', raw)",
+                json.dumps(accepted),
+            )
+            page.once('dialog', lambda dialog: dialog.dismiss())
+            page.locator('#load').click()
+            assert page.locator('#silver').inner_text() == '40'
+            assert page.locator('#rematch').is_enabled()
             page.locator('#save').click()
+            after_cancelled_load = page.evaluate(
+                "JSON.parse(localStorage.getItem('jianghu-q-save-v1'))"
+            )
+            assert after_cancelled_load['game']['quest'] == 'completed'
+            assert after_cancelled_load['eventHistory'] == completed_history, (
+                'cancelled load must preserve in-memory completion markers'
+            )
             page.reload(wait_until='networkidle')
             assert page.locator('#silver').inner_text() == '10'
             # Cancel local checkpoint preview: current run and stored checkpoint stay intact.
