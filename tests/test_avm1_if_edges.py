@@ -23,6 +23,22 @@ class Avm1IfEdgesTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             inspect_actions(bytes([0x9d, 1, 0, 0, 0]))
 
+    def test_branch_to_terminal_end_of_stream(self):
+        # IF at 0: fallthrough is ActionEnd at 5; jump exits after it at 6.
+        data = bytes([0x9d, 2, 0, 1, 0, 0])
+        edge = inspect_actions(data)[0]
+        self.assertEqual(edge['branch'], len(data))
+        self.assertTrue(edge['branch_on_action_boundary'])
+        self.assertTrue(edge['fallthrough_on_action_boundary'])
+
+    def test_branch_past_stream_is_not_boundary(self):
+        data = bytes([0x9d, 2, 0, 2, 0, 0])
+        self.assertFalse(inspect_actions(data)[0]['branch_on_action_boundary'])
+
+    def test_end_marker_does_not_validate_trailing_bytes(self):
+        data = bytes([0x9d, 2, 0, 1, 0, 0, 0x04])
+        self.assertFalse(inspect_actions(data)[0]['branch_on_action_boundary'])
+
     def test_non_boundary_target(self):
         data = bytes([0x9d, 2, 0, 2, 0, 0x04, 0])
         self.assertFalse(inspect_actions(data)[0]['branch_on_action_boundary'])
