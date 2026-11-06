@@ -259,6 +259,22 @@ def main():
             assert restored_completion['game']['quest'] == 'completed'
             assert restored_completion['eventHistory'] == completed_history
             assert restored_completion['game']['player']['silver'] == 40
+            # A rematch after loading a completed checkpoint must not replay rewards
+            # or append milestone events; exercise the real UI, not the adapter alone.
+            page.locator('#rematch').click()
+            assert page.locator('#combat').is_visible()
+            page.locator('#attack').click()
+            page.locator('#attack').click()
+            assert not page.locator('#combat').is_visible()
+            assert page.locator('#silver').inner_text() == '40'
+            assert page.locator('#inventory').inner_text().count('竹纹短剑') == 1
+            page.locator('#save').click()
+            after_restored_rematch = page.evaluate(
+                "JSON.parse(localStorage.getItem('jianghu-q-save-v1'))"
+            )
+            assert after_restored_rematch['game']['quest'] == 'completed'
+            assert after_restored_rematch['eventHistory'] == completed_history
+            assert after_restored_rematch['game']['player']['silver'] == 40
 
             with page.expect_download() as download_info:
                 page.locator('#export-save').click()
