@@ -149,6 +149,15 @@ class AuditGateTests(unittest.TestCase):
         self.assertTrue(validate([record(trigger_summary="x" * 241)]))
         self.assertTrue(validate([record(effect_summary="line one\nline two")]))
 
+    def test_mapping_rejects_multiline_and_oversized_or_source_like_values(self):
+        for mapping in ("quest_1\nraw script", "x" * 101, "script/path",
+                        "quest 1", "https://example.test/source", "事件原文"):
+            with self.subTest(mapping=mapping):
+                self.assertTrue(validate([record(html5_mapping=mapping)]))
+
+    def test_safe_mapping_identifier_remains_valid(self):
+        self.assertEqual(validate([record(html5_mapping="quest_trial-1")]), [])
+
     def test_case_insensitive_none_mapping_is_allowed_before_verification(self):
         self.assertEqual(validate([record(status="partial", html5_mapping=" NONE ")]), [])
 
