@@ -40,7 +40,8 @@ class Avm1IfEdgesTests(unittest.TestCase):
         self.assertFalse(inspect_actions(data)[0]['branch_on_action_boundary'])
 
     def test_non_boundary_target(self):
-        data = bytes([0x9d, 2, 0, 2, 0, 0x04, 0])
+        # IF at 0 ends at 5; -2 targets byte 3 inside its operand.
+        data = bytes([0x9d, 2, 0, 0xfe, 0xff, 0x04, 0])
         self.assertFalse(inspect_actions(data)[0]['branch_on_action_boundary'])
 
 
