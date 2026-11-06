@@ -34,7 +34,7 @@ TEXT_LIMITS = {
 
 def _usable_text(value):
     return (isinstance(value, str) and bool(value.strip())
-            and len(value) <= 240 and not any(unicodedata.category(ch) in {"Cc", "Cf"} for ch in value))
+            and len(value) <= 240 and not any(unicodedata.category(ch) in {"Cc", "Cf", "Zl", "Zp"} for ch in value))
 
 
 def _is_placeholder(value):
@@ -83,7 +83,7 @@ def validate(records):
             value = row[key]
             if value is not None and (
                 not isinstance(value, str) or not value.strip()
-                or len(value) > limit or any(unicodedata.category(ch) in {"Cc", "Cf"} for ch in value)
+                or len(value) > limit or any(unicodedata.category(ch) in {"Cc", "Cf", "Zl", "Zp"} for ch in value)
             ):
                 errors.append(f"{prefix}: {key} must be a short single-line string or null")
         if (not isinstance(row["rights_scope"], str)
