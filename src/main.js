@@ -42,9 +42,18 @@ const DEMO_ACCEPT_MARKER={
  condition:{path:['quest'],op:'eq',value:'active'},
  effects:[{path:['quest'],value:'active'}]
 };
+const DEMO_COMPLETION_MARKER={
+ id:'demo_quest_completed',
+ condition:{path:['quest'],op:'eq',value:'completed'},
+ effects:[{path:['quest'],value:'completed'}]
+};
 function action(){
  const previous=state;
  const next=interact(previous);
+ if(previous.quest==='active' && next.quest==='completed'){
+  const result=applySavedEvent(DEMO_COMPLETION_MARKER,next,eventHistory);
+  if(result.applied){eventHistory=result.eventHistory;update(result.game);return;}
+ }
  if(previous.quest==='unstarted' && next.quest==='active'){
   const result=applySavedEvent(DEMO_ACCEPT_MARKER,next,eventHistory);
   if(result.applied){eventHistory=result.eventHistory;update(result.game);return;}
