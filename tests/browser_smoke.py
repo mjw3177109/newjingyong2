@@ -323,6 +323,18 @@ def main():
             assert len(preview_messages) == 2
             assert all('银两 40' in message and '不会自动覆盖本机存档' in message for message in preview_messages)
             assert imported_page.locator('#attack-num').inner_text() == '16'
+            # Imported completion milestones must be retained in memory, even
+            # though importing does not silently write a local checkpoint.
+            with imported_page.expect_download() as imported_download_info:
+                imported_page.locator('#export-save').click()
+            imported_export = json.loads(
+                Path(imported_download_info.value.path()).read_text(encoding='utf-8')
+            )
+            assert imported_export['game']['quest'] == 'completed'
+            assert imported_export['eventHistory'] == completed_history, (
+                'accepted portable import must restore all completion milestones'
+            )
+            assert imported_page.evaluate("localStorage.getItem('jianghu-q-save-v1')") is None
             imported_page.reload(wait_until='networkidle')
             assert imported_page.locator('#silver').inner_text() == '10', 'import must not silently overwrite local save'
             # Independent touch-enabled Chromium context at a narrow mobile viewport.
