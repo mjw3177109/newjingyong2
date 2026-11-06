@@ -175,6 +175,18 @@ class AuditGateTests(unittest.TestCase):
                 )]))
         self.assertEqual(validate([record(trigger_summary="条件分支摘要")]), [])
 
+    def test_public_evidence_rejects_unicode_line_separators(self):
+        # U+2028/U+2029 split rendered lines without ASCII newline characters.
+        for value in ("safe\\u2028unsafe", "safe\\u2029unsafe"):
+            value = value.encode("ascii").decode("unicode_escape")
+            with self.subTest(value=repr(value)):
+                self.assertTrue(validate([record(trigger_summary=value)]))
+                self.assertTrue(validate([record(
+                    rights_status="authorized",
+                    rights_scope="adaptation_and_distribution",
+                    rights_evidence_ref=value
+                )]))
+
     def test_safe_mapping_identifier_remains_valid(self):
         self.assertEqual(validate([record(html5_mapping="quest_trial-1")]), [])
 
