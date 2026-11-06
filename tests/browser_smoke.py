@@ -244,6 +244,22 @@ def main():
             assert page.locator('#attack-num').inner_text() == '16'
             assert len(load_previews) == 2
             assert all('银两 40' in message and '不会删除或修改本机存档' in message for message in load_previews)
+            # Completed quest milestones must survive a second real UI reload/load.
+            # This is original-demo persistence coverage, not SWF plot fidelity.
+            page.locator('#save').click()
+            page.reload(wait_until='networkidle')
+            page.once('dialog', lambda dialog: dialog.accept())
+            page.locator('#load').click()
+            assert page.locator('#silver').inner_text() == '40'
+            assert page.locator('#rematch').is_enabled()
+            page.locator('#save').click()
+            restored_completion = page.evaluate(
+                "JSON.parse(localStorage.getItem('jianghu-q-save-v1'))"
+            )
+            assert restored_completion['game']['quest'] == 'completed'
+            assert restored_completion['eventHistory'] == completed_history
+            assert restored_completion['game']['player']['silver'] == 40
+
             with page.expect_download() as download_info:
                 page.locator('#export-save').click()
             download = download_info.value
