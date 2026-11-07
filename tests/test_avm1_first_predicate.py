@@ -249,6 +249,19 @@ class FirstPredicateTests(unittest.TestCase):
         self.assertEqual(report["reason"], "terminal_before_if")
         self.assertEqual(report["opcode"], 0x2A)
 
+    def test_set_variable_before_if_is_not_a_verified_condition(self):
+        # SetVariable has a side effect; do not carry earlier stack assumptions forward.
+        report = inspect_first_branch(bytes.fromhex("96020005011d9d0200000000"))
+        self.assertEqual(report["status"], "unknown")
+        self.assertEqual(report["reason"], "state_mutation_before_if")
+        self.assertEqual(report["opcode"], 0x1D)
+
+    def test_store_register_before_if_is_not_a_verified_condition(self):
+        report = inspect_first_branch(bytes.fromhex("9602000501870100019d0200000000"))
+        self.assertEqual(report["status"], "unknown")
+        self.assertEqual(report["reason"], "state_mutation_before_if")
+        self.assertEqual(report["opcode"], 0x87)
+
     def test_invalid_branch_rejected(self):
         with self.assertRaisesRegex(ValueError, "invalid branch boundary"):
             inspect_first_branch(bytes.fromhex("96020005019d0200ffff00"))
