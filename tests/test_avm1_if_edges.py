@@ -1,4 +1,8 @@
 import unittest
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
 from tools.avm1_if_edges import inspect_actions
 
 
@@ -52,6 +56,21 @@ class Avm1IfEdgesTests(unittest.TestCase):
             inspect_actions(bytes([0x99, 1, 0, 0, 0]))
         edge = inspect_actions(bytes([0x99, 2, 0, 0xfe, 0xff, 0]))[0]
         self.assertFalse(edge['branch_on_action_boundary'])
+
+    def test_strict_cli_exit_status(self):
+        with tempfile.TemporaryDirectory() as directory:
+            stream = Path(directory) / 'actions.bin'
+            for payload, expected in (
+                (bytes([0x99, 2, 0, 1, 0, 0x04, 0]), 0),
+                (bytes([0x99, 2, 0, 0xfe, 0xff, 0]), 1),
+            ):
+                with self.subTest(expected=expected):
+                    stream.write_bytes(payload)
+                    result = subprocess.run(
+                        [sys.executable, '-m', 'tools.avm1_if_edges', '--strict', str(stream)],
+                        capture_output=True, text=True, check=False,
+                    )
+                    self.assertEqual(result.returncode, expected, result.stderr)
 
     def test_non_boundary_target(self):
         # IF at 0 ends at 5; -2 targets byte 3 inside its operand.
