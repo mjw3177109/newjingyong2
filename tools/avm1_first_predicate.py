@@ -26,6 +26,10 @@ def inspect_first_branch(data: bytes):
             raise ValueError("truncated action payload")
         if opcode == 0x96:
             stack.extend(decode_push_literals(data[pos:end]))
+        elif opcode == 0x26:  # ActionTrace: consumes one value; does not change remaining stack
+            if not stack:
+                return {"status": "unknown", "reason": "stack_underflow", "offset": start}
+            stack.pop()
         elif opcode == 0x17:  # ActionPop: discard top entry without inferring its value
             if not stack:
                 return {"status": "unknown", "reason": "stack_underflow", "offset": start}
