@@ -71,7 +71,7 @@ def inspect_first_branch(data: bytes):
                         "offset": start, "left": left, "right": right}
             result = (left["value"] and right["value"]) if opcode == 0x10 else (left["value"] or right["value"])
             stack.append({"type": "boolean", "value": result})
-        elif opcode in (0x0E, 0x66):  # Equals / StrictEquals: known booleans only
+        elif opcode in (0x0E, 0x49, 0x66):  # Equals / Equals2 / StrictEquals: known booleans only
             if len(stack) < 2:
                 return {"status": "unknown", "reason": "stack_underflow", "offset": start}
             right, left = stack.pop(), stack.pop()
