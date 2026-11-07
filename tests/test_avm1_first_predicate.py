@@ -157,6 +157,21 @@ class FirstPredicateTests(unittest.TestCase):
         report = inspect_first_branch(bytes.fromhex("96060000666c6167001c4c669d0200000000"))
         self.assertEqual(report["reason"], "unresolved_equals_operands")
 
+    def test_stack_swap_changes_top_predicate(self):
+        # Push true, false; swap so ActionIf observes true.
+        report = inspect_first_branch(bytes.fromhex("960400050105004d9d0200000000"))
+        self.assertEqual(report["status"], "literal_candidate")
+        self.assertEqual(report["predicate"], {"type": "boolean", "value": True})
+
+    def test_stack_swap_underflow(self):
+        report = inspect_first_branch(bytes.fromhex("96020005014d9d0200000000"))
+        self.assertEqual(report["reason"], "stack_underflow")
+
+    def test_stack_swap_does_not_resolve_register(self):
+        report = inspect_first_branch(bytes.fromhex("960400040105014d9d0200000000"))
+        self.assertEqual(report["status"], "unknown")
+        self.assertEqual(report["predicate"], {"type": "register", "value": 1})
+
     def test_invalid_branch_rejected(self):
         with self.assertRaisesRegex(ValueError, "invalid branch boundary"):
             inspect_first_branch(bytes.fromhex("96020005019d0200ffff00"))
