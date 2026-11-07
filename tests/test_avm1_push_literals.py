@@ -37,12 +37,12 @@ class PushLiteralTests(unittest.TestCase):
         # AVM1 stores the high 32-bit word first, each word little-endian.
         raw = struct.pack('<d', -12.25)
         avm1 = raw[4:8] + raw[:4]
-        self.assertEqual(decode_push_literals(b'\\x06' + avm1), [
+        self.assertEqual(decode_push_literals(b'\x06' + avm1), [
             {'type': 'double', 'value': -12.25},
         ])
         for length in range(8):
             with self.subTest(length=length), self.assertRaises(ValueError):
-                decode_push_literals(b'\\x06' + avm1[:length])
+                decode_push_literals(b'\x06' + avm1[:length])
 
     def test_empty_and_false(self):
         self.assertEqual(decode_push_literals(b''), [])
