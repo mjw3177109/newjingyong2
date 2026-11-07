@@ -50,8 +50,12 @@ def inspect_actions(data: bytes):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action_stream', type=Path, help='Private raw AVM1 action stream (not a complete SWF)')
+    parser.add_argument('--strict', action='store_true', help='Fail if a branch or fallthrough is not an action boundary')
     args = parser.parse_args()
-    print(json.dumps(inspect_actions(args.action_stream.read_bytes()), indent=2))
+    edges = inspect_actions(args.action_stream.read_bytes())
+    print(json.dumps(edges, indent=2))
+    if args.strict and any(not e['branch_on_action_boundary'] or not e['fallthrough_on_action_boundary'] for e in edges):
+        parser.exit(1, 'invalid AVM1 control-flow edge detected\n')
 
 
 if __name__ == '__main__':
