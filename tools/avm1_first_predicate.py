@@ -1,7 +1,7 @@
 """Conservative linear ActionIf predicate evidence from isolated AVM1 bytes.
 
 Stops at the first branch. Never follows paths or infers story semantics.
-Supports ActionPush, boolean ActionNot/ActionAnd/ActionOr/ActionEquals/ActionStrictEquals, and branches.
+Supports ActionPush, ActionPop, stack operations, conservative boolean operations, and branches.
 """
 from tools.avm1_action_inventory import inspect_stream
 from tools.avm1_push_literals import decode_push_literals
@@ -26,6 +26,10 @@ def inspect_first_branch(data: bytes):
             raise ValueError("truncated action payload")
         if opcode == 0x96:
             stack.extend(decode_push_literals(data[pos:end]))
+        elif opcode == 0x17:  # ActionPop: discard top entry without inferring its value
+            if not stack:
+                return {"status": "unknown", "reason": "stack_underflow", "offset": start}
+            stack.pop()
         elif opcode == 0x1C:  # ActionGetVariable: preserve name, never assume runtime value
             if not stack:
                 return {"status": "unknown", "reason": "stack_underflow", "offset": start}
