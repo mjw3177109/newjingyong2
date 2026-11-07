@@ -239,6 +239,16 @@ class FirstPredicateTests(unittest.TestCase):
         self.assertEqual(report["status"], "literal_candidate")
         self.assertEqual(report["predicate"], {"type": "boolean", "value": True})
 
+    def test_return_before_if_is_terminal(self):
+        report = inspect_first_branch(bytes.fromhex("96020005013e9d0200000000"))
+        self.assertEqual(report["reason"], "terminal_before_if")
+        self.assertEqual(report["opcode"], 0x3E)
+
+    def test_throw_before_if_is_terminal(self):
+        report = inspect_first_branch(bytes.fromhex("96020005012a9d0200000000"))
+        self.assertEqual(report["reason"], "terminal_before_if")
+        self.assertEqual(report["opcode"], 0x2A)
+
     def test_invalid_branch_rejected(self):
         with self.assertRaisesRegex(ValueError, "invalid branch boundary"):
             inspect_first_branch(bytes.fromhex("96020005019d0200ffff00"))
