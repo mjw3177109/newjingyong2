@@ -1,7 +1,7 @@
 """Conservative linear ActionIf predicate evidence from isolated AVM1 bytes.
 
 Stops at the first branch. Never follows paths or infers story semantics.
-Supports ActionPush, boolean ActionNot, conservative boolean ActionEquals, and branches.
+Supports ActionPush, boolean ActionNot/ActionAnd/ActionOr/ActionEquals, and branches.
 """
 from tools.avm1_action_inventory import inspect_stream
 from tools.avm1_push_literals import decode_push_literals
@@ -34,6 +34,15 @@ def inspect_first_branch(data: bytes):
                 return {"status": "unknown", "reason": "unresolved_not_operand",
                         "offset": start, "operand": operand}
             stack.append({"type": "boolean", "value": not operand["value"]})
+        elif opcode in (0x10, 0x11):  # ActionAnd / ActionOr: known booleans only
+            if len(stack) < 2:
+                return {"status": "unknown", "reason": "stack_underflow", "offset": start}
+            right, left = stack.pop(), stack.pop()
+            if left["type"] != "boolean" or right["type"] != "boolean":
+                return {"status": "unknown", "reason": "unresolved_logical_operands",
+                        "offset": start, "left": left, "right": right}
+            result = (left["value"] and right["value"]) if opcode == 0x10 else (left["value"] or right["value"])
+            stack.append({"type": "boolean", "value": result})
         elif opcode == 0x0E:  # ActionEquals: fold only two known booleans
             if len(stack) < 2:
                 return {"status": "unknown", "reason": "stack_underflow", "offset": start}
