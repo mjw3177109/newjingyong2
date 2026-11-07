@@ -97,7 +97,7 @@ class FirstPredicateTests(unittest.TestCase):
 
     def test_get_variable_is_symbolic_not_verified(self):
         # Push "flag", GetVariable, If (zero relative jump).
-        report = inspect_first_branch(bytes.fromhex("96070000666c6167001c9d0200000000"))
+        report = inspect_first_branch(bytes.fromhex("96060000666c6167001c9d0200000000"))
         self.assertEqual(report["status"], "unknown")
         self.assertEqual(report["reason"], "unresolved_push_reference")
         self.assertEqual(report["predicate"], {"type": "variable_reference", "name": "flag"})
@@ -111,7 +111,7 @@ class FirstPredicateTests(unittest.TestCase):
         self.assertEqual(report["reason"], "unresolved_variable_name")
 
     def test_get_variable_not_is_unresolved(self):
-        report = inspect_first_branch(bytes.fromhex("96070000666c6167001c129d0200000000"))
+        report = inspect_first_branch(bytes.fromhex("96060000666c6167001c129d0200000000"))
         self.assertEqual(report["reason"], "unresolved_not_operand")
 
     def test_invalid_branch_rejected(self):
