@@ -95,6 +95,25 @@ class FirstPredicateTests(unittest.TestCase):
         report = inspect_first_branch(bytes.fromhex("9602000501119d0200000000"))
         self.assertEqual(report["reason"], "stack_underflow")
 
+    def test_get_variable_is_symbolic_not_verified(self):
+        # Push "flag", GetVariable, If (zero relative jump).
+        report = inspect_first_branch(bytes.fromhex("96070000666c6167001c9d0200000000"))
+        self.assertEqual(report["status"], "unknown")
+        self.assertEqual(report["reason"], "unresolved_push_reference")
+        self.assertEqual(report["predicate"], {"type": "variable_reference", "name": "flag"})
+
+    def test_get_variable_stack_underflow(self):
+        report = inspect_first_branch(bytes.fromhex("1c9d0200000000"))
+        self.assertEqual(report["reason"], "stack_underflow")
+
+    def test_get_variable_unknown_name(self):
+        report = inspect_first_branch(bytes.fromhex("96020004011c9d0200000000"))
+        self.assertEqual(report["reason"], "unresolved_variable_name")
+
+    def test_get_variable_not_is_unresolved(self):
+        report = inspect_first_branch(bytes.fromhex("96070000666c6167001c129d0200000000"))
+        self.assertEqual(report["reason"], "unresolved_not_operand")
+
     def test_invalid_branch_rejected(self):
         with self.assertRaisesRegex(ValueError, "invalid branch boundary"):
             inspect_first_branch(bytes.fromhex("96020005019d0200ffff00"))
