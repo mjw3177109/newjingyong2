@@ -34,6 +34,10 @@ def inspect_first_branch(data: bytes):
                 return {"status": "unknown", "reason": "unresolved_variable_name",
                         "offset": start, "operand": name}
             stack.append({"type": "variable_reference", "name": name["value"]})
+        elif opcode == 0x4C:  # ActionPushDuplicate: duplicate top stack entry
+            if not stack:
+                return {"status": "unknown", "reason": "stack_underflow", "offset": start}
+            stack.append(stack[-1].copy())
         elif opcode == 0x12:  # ActionNot: only a known boolean is safe to fold
             if not stack:
                 return {"status": "unknown", "reason": "stack_underflow", "offset": start}
