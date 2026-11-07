@@ -1,7 +1,7 @@
 """Conservative linear ActionIf predicate evidence from isolated AVM1 bytes.
 
 Stops at the first branch. Never follows paths or infers story semantics.
-Supports ActionPush, boolean ActionNot, and ActionIf/ActionJump/ActionEnd before stop.
+Supports ActionPush, boolean ActionNot, conservative boolean ActionEquals, and branches.
 """
 from tools.avm1_action_inventory import inspect_stream
 from tools.avm1_push_literals import decode_push_literals
@@ -34,6 +34,14 @@ def inspect_first_branch(data: bytes):
                 return {"status": "unknown", "reason": "unresolved_not_operand",
                         "offset": start, "operand": operand}
             stack.append({"type": "boolean", "value": not operand["value"]})
+        elif opcode == 0x0E:  # ActionEquals: fold only two known booleans
+            if len(stack) < 2:
+                return {"status": "unknown", "reason": "stack_underflow", "offset": start}
+            right, left = stack.pop(), stack.pop()
+            if left["type"] != "boolean" or right["type"] != "boolean":
+                return {"status": "unknown", "reason": "unresolved_equals_operands",
+                        "offset": start, "left": left, "right": right}
+            stack.append({"type": "boolean", "value": left["value"] == right["value"]})
         elif opcode == 0x9D:
             edge = next(e for e in inventory["edges"] if e["offset"] == start)
             if not edge["branch_on_action_boundary"] or not edge["fallthrough_on_action_boundary"]:
