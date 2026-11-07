@@ -32,6 +32,13 @@ def decode_push_literals(payload: bytes):
                 raise ValueError('truncated ActionPush float')
             values.append({'type': 'float', 'value': struct.unpack_from('<f', payload, pos)[0]})
             pos += 4
+        elif tag == 6:
+            if pos + 8 > len(payload):
+                raise ValueError('truncated ActionPush double')
+            # AVM1 doubles store the two little-endian 32-bit words swapped.
+            raw = payload[pos:pos + 8]
+            values.append({'type': 'double', 'value': struct.unpack('<d', raw[4:8] + raw[:4])[0]})
+            pos += 8
         elif tag == 5:
             if pos >= len(payload):
                 raise ValueError('truncated ActionPush boolean')
