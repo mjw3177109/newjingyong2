@@ -223,6 +223,22 @@ class FirstPredicateTests(unittest.TestCase):
         report = inspect_first_branch(bytes.fromhex("9602000501499d0200000000"))
         self.assertEqual(report["reason"], "stack_underflow")
 
+    def test_trace_discards_top_without_changing_remaining_predicate(self):
+        # Push true, false; trace false; If observes true.
+        report = inspect_first_branch(bytes.fromhex("96040005010500269d0200000000"))
+        self.assertEqual(report["status"], "literal_candidate")
+        self.assertEqual(report["predicate"], {"type": "boolean", "value": True})
+
+    def test_trace_underflow_is_unknown(self):
+        report = inspect_first_branch(bytes.fromhex("269d0200000000"))
+        self.assertEqual(report["reason"], "stack_underflow")
+
+    def test_trace_unknown_reference_is_not_resolved(self):
+        # Trace a register reference; remaining boolean is independently known.
+        report = inspect_first_branch(bytes.fromhex("96040005010401269d0200000000"))
+        self.assertEqual(report["status"], "literal_candidate")
+        self.assertEqual(report["predicate"], {"type": "boolean", "value": True})
+
     def test_invalid_branch_rejected(self):
         with self.assertRaisesRegex(ValueError, "invalid branch boundary"):
             inspect_first_branch(bytes.fromhex("96020005019d0200ffff00"))
