@@ -1,4 +1,5 @@
 import unittest
+import struct
 from tools.avm1_push_literals import decode_push_literals
 
 
@@ -17,6 +18,18 @@ class PushLiteralTests(unittest.TestCase):
 
     def test_truncation_and_unsupported(self):
         for data in (b'\x00abc', b'\x05', b'\x07\x01', b'\x09\x01', b'\x06'):
+            with self.subTest(data=data), self.assertRaises(ValueError):
+                decode_push_literals(data)
+
+    def test_float_and_register(self):
+        payload = b'\x01' + struct.pack('<f', 1.5) + b'\x04\x07'
+        self.assertEqual(decode_push_literals(payload), [
+            {'type': 'float', 'value': 1.5},
+            {'type': 'register', 'value': 7},
+        ])
+
+    def test_float_and_register_truncation(self):
+        for data in (b'\x01', b'\x01\x00\x00\x00', b'\x04'):
             with self.subTest(data=data), self.assertRaises(ValueError):
                 decode_push_literals(data)
 
