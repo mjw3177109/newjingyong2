@@ -188,6 +188,24 @@ class FirstPredicateTests(unittest.TestCase):
         self.assertEqual(report["status"], "literal_candidate")
         self.assertEqual(report["predicate"], {"type": "boolean", "value": True})
 
+    def test_to_boolean_known_boolean_identity(self):
+        report = inspect_first_branch(bytes.fromhex("9602000501449d0200000000"))
+        self.assertEqual(report["status"], "literal_candidate")
+        self.assertEqual(report["predicate"], {"type": "boolean", "value": True})
+
+    def test_to_boolean_integer_requires_coercion(self):
+        report = inspect_first_branch(bytes.fromhex("9605000701000000449d0200000000"))
+        self.assertEqual(report["reason"], "unresolved_to_boolean_operand")
+        self.assertEqual(report["operand"], {"type": "integer", "value": 1})
+
+    def test_to_boolean_register_remains_unknown(self):
+        report = inspect_first_branch(bytes.fromhex("9602000401449d0200000000"))
+        self.assertEqual(report["reason"], "unresolved_to_boolean_operand")
+
+    def test_to_boolean_underflow(self):
+        report = inspect_first_branch(bytes.fromhex("449d0200000000"))
+        self.assertEqual(report["reason"], "stack_underflow")
+
     def test_invalid_branch_rejected(self):
         with self.assertRaisesRegex(ValueError, "invalid branch boundary"):
             inspect_first_branch(bytes.fromhex("96020005019d0200ffff00"))
