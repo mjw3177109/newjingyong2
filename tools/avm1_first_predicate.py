@@ -38,6 +38,10 @@ def inspect_first_branch(data: bytes):
             if not stack:
                 return {"status": "unknown", "reason": "stack_underflow", "offset": start}
             stack.append(stack[-1].copy())
+        elif opcode == 0x4D:  # ActionStackSwap: exchange the top two entries
+            if len(stack) < 2:
+                return {"status": "unknown", "reason": "stack_underflow", "offset": start}
+            stack[-1], stack[-2] = stack[-2], stack[-1]
         elif opcode == 0x12:  # ActionNot: only a known boolean is safe to fold
             if not stack:
                 return {"status": "unknown", "reason": "stack_underflow", "offset": start}
