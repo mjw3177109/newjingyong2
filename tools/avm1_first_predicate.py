@@ -33,6 +33,10 @@ def inspect_first_branch(data: bytes):
             if not stack:
                 return {"status": "unknown", "reason": "stack_underflow", "offset": start}
             predicate = stack.pop()
+            if predicate["type"] in ("register", "constant_index"):
+                return {"status": "unknown", "reason": "unresolved_push_reference",
+                        "offset": start, "predicate": predicate,
+                        "note": "Register/constant-pool value requires runtime context"}
             return {"status": "literal_candidate", "offset": start,
                     "predicate": predicate, "branch": edge["branch"],
                     "fallthrough": edge["fallthrough"],
