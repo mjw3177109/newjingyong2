@@ -66,10 +66,10 @@ def inspect_first_branch(data: bytes):
             if not stack:
                 return {"status": "unknown", "reason": "stack_underflow", "offset": start}
             predicate = stack.pop()
-            if predicate["type"] in ("register", "constant_index", "variable_reference"):
+            if predicate["type"] != "boolean":
                 return {"status": "unknown", "reason": "unresolved_push_reference",
                         "offset": start, "predicate": predicate,
-                        "note": "Variable/register/constant-pool value requires runtime context"}
+                        "note": "Only known boolean literals are folded; other values require AVM1 coercion or runtime context"}
             return {"status": "literal_candidate", "offset": start,
                     "predicate": predicate, "branch": edge["branch"],
                     "fallthrough": edge["fallthrough"],
