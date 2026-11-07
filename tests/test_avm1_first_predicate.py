@@ -22,6 +22,23 @@ class FirstPredicateTests(unittest.TestCase):
         self.assertEqual(report["reason"], "unresolved_push_reference")
         self.assertEqual(report["predicate"], {"type": "constant_index", "width": 8, "value": 2})
 
+    def test_boolean_not_before_if(self):
+        report = inspect_first_branch(bytes.fromhex("9602000501129d0200000000"))
+        self.assertEqual(report["status"], "literal_candidate")
+        self.assertEqual(report["predicate"], {"type": "boolean", "value": False})
+
+    def test_double_not_restores_boolean(self):
+        report = inspect_first_branch(bytes.fromhex("960200050112129d0200000000"))
+        self.assertEqual(report["predicate"], {"type": "boolean", "value": True})
+
+    def test_not_register_is_unknown(self):
+        report = inspect_first_branch(bytes.fromhex("9602000401129d0200000000"))
+        self.assertEqual(report["reason"], "unresolved_not_operand")
+
+    def test_not_underflow(self):
+        report = inspect_first_branch(bytes.fromhex("129d0200000000"))
+        self.assertEqual(report["reason"], "stack_underflow")
+
     def test_underflow(self):
         self.assertEqual(inspect_first_branch(bytes.fromhex("9d0200000000"))["reason"], "stack_underflow")
 
