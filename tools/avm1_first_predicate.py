@@ -98,6 +98,10 @@ def inspect_first_branch(data: bytes):
                     "predicate": predicate, "branch": edge["branch"],
                     "fallthrough": edge["fallthrough"],
                     "note": "Literal stack value only; not a verified event condition"}
+        elif opcode in (0x1D, 0x87):  # SetVariable / StoreRegister mutate runtime state
+            return {"status": "unknown", "reason": "state_mutation_before_if", "offset": start,
+                    "opcode": opcode,
+                    "note": "Cannot infer branch predicates across state changes without runtime context"}
         elif opcode in (0x3E, 0x2A):  # Return / Throw terminate linear execution before any later If
             return {"status": "unknown", "reason": "terminal_before_if", "offset": start,
                     "opcode": opcode}
