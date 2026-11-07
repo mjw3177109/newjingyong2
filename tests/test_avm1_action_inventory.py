@@ -5,10 +5,10 @@ from tools.avm1_action_inventory import inspect_stream
 
 class ActionInventoryTests(unittest.TestCase):
     def test_push_and_branch_offsets(self):
-        data = bytes.fromhex("96040007010000009d0200000000")
+        data = bytes.fromhex("96050007010000009d0200000000")
         result = inspect_stream(data)
         self.assertEqual(result["pushes"], [{"offset": 0, "values": [{"type": "integer", "value": 1}]}])
-        self.assertEqual(result["edges"][0]["offset"], 7)
+        self.assertEqual(result["edges"][0]["offset"], 8)
         self.assertTrue(result["edges"][0]["branch_on_action_boundary"])
 
     def test_invalid_push_reports_offset(self):
