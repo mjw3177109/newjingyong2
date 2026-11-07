@@ -114,6 +114,18 @@ class FirstPredicateTests(unittest.TestCase):
         report = inspect_first_branch(bytes.fromhex("96060000666c6167001c129d0200000000"))
         self.assertEqual(report["reason"], "unresolved_not_operand")
 
+    def test_integer_if_requires_coercion(self):
+        # AVM1 integer 1 is truthy, but this conservative tracer does not model coercion.
+        report = inspect_first_branch(bytes.fromhex("96050007010000009d0200000000"))
+        self.assertEqual(report["status"], "unknown")
+        self.assertEqual(report["reason"], "unresolved_push_reference")
+        self.assertEqual(report["predicate"], {"type": "integer", "value": 1})
+
+    def test_string_if_requires_coercion(self):
+        report = inspect_first_branch(bytes.fromhex("9603000061009d0200000000"))
+        self.assertEqual(report["status"], "unknown")
+        self.assertEqual(report["predicate"], {"type": "string", "value": "a"})
+
     def test_invalid_branch_rejected(self):
         with self.assertRaisesRegex(ValueError, "invalid branch boundary"):
             inspect_first_branch(bytes.fromhex("96020005019d0200ffff00"))
