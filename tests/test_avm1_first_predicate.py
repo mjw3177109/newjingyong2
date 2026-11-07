@@ -172,6 +172,22 @@ class FirstPredicateTests(unittest.TestCase):
         self.assertEqual(report["status"], "unknown")
         self.assertEqual(report["predicate"], {"type": "register", "value": 1})
 
+    def test_pop_discards_top_boolean(self):
+        # Push true, false; Pop false; If observes true.
+        report = inspect_first_branch(bytes.fromhex("96040005010500179d0200000000"))
+        self.assertEqual(report["status"], "literal_candidate")
+        self.assertEqual(report["predicate"], {"type": "boolean", "value": True})
+
+    def test_pop_underflow(self):
+        report = inspect_first_branch(bytes.fromhex("179d0200000000"))
+        self.assertEqual(report["reason"], "stack_underflow")
+
+    def test_pop_unknown_reference_does_not_infer_value(self):
+        # Pop an unresolved register; remaining boolean is still known.
+        report = inspect_first_branch(bytes.fromhex("96040005010401179d0200000000"))
+        self.assertEqual(report["status"], "literal_candidate")
+        self.assertEqual(report["predicate"], {"type": "boolean", "value": True})
+
     def test_invalid_branch_rejected(self):
         with self.assertRaisesRegex(ValueError, "invalid branch boundary"):
             inspect_first_branch(bytes.fromhex("96020005019d0200ffff00"))
