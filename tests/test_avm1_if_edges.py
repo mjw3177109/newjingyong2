@@ -41,7 +41,12 @@ class Avm1IfEdgesTests(unittest.TestCase):
 
     def test_end_marker_does_not_validate_trailing_bytes(self):
         data = bytes([0x9d, 2, 0, 1, 0, 0, 0x04])
-        self.assertFalse(inspect_actions(data)[0]['branch_on_action_boundary'])
+        with self.assertRaisesRegex(ValueError, 'trailing bytes after ActionEnd'):
+            inspect_actions(data)
+
+    def test_trailing_bytes_after_end_are_rejected_even_without_edges(self):
+        with self.assertRaisesRegex(ValueError, 'trailing bytes after ActionEnd'):
+            inspect_actions(bytes([0, 0x04]))
 
     def test_unconditional_jump_forward_and_backward(self):
         forward = bytes([0x99, 2, 0, 1, 0, 0x04, 0])
