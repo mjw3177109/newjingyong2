@@ -26,6 +26,14 @@ def inspect_first_branch(data: bytes):
             raise ValueError("truncated action payload")
         if opcode == 0x96:
             stack.extend(decode_push_literals(data[pos:end]))
+        elif opcode == 0x1C:  # ActionGetVariable: preserve name, never assume runtime value
+            if not stack:
+                return {"status": "unknown", "reason": "stack_underflow", "offset": start}
+            name = stack.pop()
+            if name["type"] != "string":
+                return {"status": "unknown", "reason": "unresolved_variable_name",
+                        "offset": start, "operand": name}
+            stack.append({"type": "variable_reference", "name": name["value"]})
         elif opcode == 0x12:  # ActionNot: only a known boolean is safe to fold
             if not stack:
                 return {"status": "unknown", "reason": "stack_underflow", "offset": start}
@@ -58,10 +66,10 @@ def inspect_first_branch(data: bytes):
             if not stack:
                 return {"status": "unknown", "reason": "stack_underflow", "offset": start}
             predicate = stack.pop()
-            if predicate["type"] in ("register", "constant_index"):
+            if predicate["type"] in ("register", "constant_index", "variable_reference"):
                 return {"status": "unknown", "reason": "unresolved_push_reference",
                         "offset": start, "predicate": predicate,
-                        "note": "Register/constant-pool value requires runtime context"}
+                        "note": "Variable/register/constant-pool value requires runtime context"}
             return {"status": "literal_candidate", "offset": start,
                     "predicate": predicate, "branch": edge["branch"],
                     "fallthrough": edge["fallthrough"],
