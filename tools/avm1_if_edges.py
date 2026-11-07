@@ -36,6 +36,8 @@ def inspect_actions(data: bytes):
             edges.append({"offset": start, "fallthrough": end, "branch": target, "kind": "if" if opcode == 0x9D else "jump"})
         pos = end
         if opcode == 0:
+            if pos != len(data):
+                raise ValueError(f"trailing bytes after ActionEnd at {start}")
             break
     # The byte immediately after the final action is a valid terminal exit.
     # A branch to that offset must not be mislabeled as an invalid instruction.
