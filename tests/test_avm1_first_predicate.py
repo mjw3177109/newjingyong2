@@ -10,6 +10,18 @@ class FirstPredicateTests(unittest.TestCase):
         self.assertEqual(report["predicate"], {"type": "boolean", "value": True})
         self.assertEqual(report["offset"], 5)
 
+    def test_register_reference_is_not_literal(self):
+        report = inspect_first_branch(bytes.fromhex("96020004019d0200000000"))
+        self.assertEqual(report["status"], "unknown")
+        self.assertEqual(report["reason"], "unresolved_push_reference")
+        self.assertEqual(report["predicate"], {"type": "register", "value": 1})
+
+    def test_constant_pool_index_is_not_literal(self):
+        report = inspect_first_branch(bytes.fromhex("96020008029d0200000000"))
+        self.assertEqual(report["status"], "unknown")
+        self.assertEqual(report["reason"], "unresolved_push_reference")
+        self.assertEqual(report["predicate"], {"type": "constant_index", "width": 8, "value": 2})
+
     def test_underflow(self):
         self.assertEqual(inspect_first_branch(bytes.fromhex("9d0200000000"))["reason"], "stack_underflow")
 
