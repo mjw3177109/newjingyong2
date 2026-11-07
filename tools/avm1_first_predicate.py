@@ -98,6 +98,9 @@ def inspect_first_branch(data: bytes):
                     "predicate": predicate, "branch": edge["branch"],
                     "fallthrough": edge["fallthrough"],
                     "note": "Literal stack value only; not a verified event condition"}
+        elif opcode in (0x3E, 0x2A):  # Return / Throw terminate linear execution before any later If
+            return {"status": "unknown", "reason": "terminal_before_if", "offset": start,
+                    "opcode": opcode}
         elif opcode == 0x99:
             return {"status": "unknown", "reason": "jump_before_if", "offset": start}
         elif opcode == 0:
