@@ -22,6 +22,16 @@ def decode_push_literals(payload: bytes):
             values.append({'type': 'null', 'value': None})
         elif tag == 3:
             values.append({'type': 'undefined', 'value': None})
+        elif tag == 4:
+            if pos >= len(payload):
+                raise ValueError('truncated ActionPush register')
+            values.append({'type': 'register', 'value': payload[pos]})
+            pos += 1
+        elif tag == 1:
+            if pos + 4 > len(payload):
+                raise ValueError('truncated ActionPush float')
+            values.append({'type': 'float', 'value': struct.unpack_from('<f', payload, pos)[0]})
+            pos += 4
         elif tag == 5:
             if pos >= len(payload):
                 raise ValueError('truncated ActionPush boolean')
