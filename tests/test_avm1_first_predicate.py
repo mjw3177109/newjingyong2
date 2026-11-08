@@ -3,6 +3,18 @@ from tools.avm1_first_predicate import inspect_first_branch
 
 
 class FirstPredicateTests(unittest.TestCase):
+    def test_trace_runtime_reference_is_unknown(self):
+        # Push register 1; Trace may coerce an object via runtime toString.
+        report = inspect_first_branch(bytes.fromhex("96020004012696020005019d0200000000"))
+        self.assertEqual(report["status"], "unknown")
+        self.assertEqual(report["reason"], "trace_runtime_coercion_before_if")
+        self.assertEqual(report["operand_type"], "register")
+
+    def test_trace_boolean_preserves_later_literal(self):
+        report = inspect_first_branch(bytes.fromhex("96020005012696020005019d0200000000"))
+        self.assertEqual(report["status"], "literal_candidate")
+        self.assertEqual(report["predicate"], {"type": "boolean", "value": True})
+
     def test_get_member_before_if_is_unknown(self):
         report = inspect_first_branch(bytes.fromhex("4e9d0200000000"))
         self.assertEqual(report["status"], "unknown")
