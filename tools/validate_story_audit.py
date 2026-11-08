@@ -74,9 +74,11 @@ def validate(records):
             continue
         pair = row["export_pair_id"]
         swf_digest = row["swf_sha256"]
+        if isinstance(pair, str) and pair != pair.strip():
+            errors.append(f"{prefix}: export_pair_id must not have surrounding whitespace")
         if (isinstance(pair, str) and pair.strip() and isinstance(swf_digest, str)
                 and HEX64.fullmatch(swf_digest)):
-            prior = export_pair_sources.setdefault(pair, swf_digest.lower())
+            prior = export_pair_sources.setdefault(pair.strip(), swf_digest.lower())
             if prior != swf_digest.lower():
                 errors.append(f"{prefix}: export_pair_id refers to conflicting SWF digests")
         for key in ("swf_sha256", "script_sha256"):
