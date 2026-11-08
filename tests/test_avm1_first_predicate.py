@@ -3,6 +3,20 @@ from tools.avm1_first_predicate import inspect_first_branch
 
 
 class FirstPredicateTests(unittest.TestCase):
+    def test_random_number_before_if_is_runtime_unknown(self):
+        report = inspect_first_branch(bytes.fromhex("309d0200000000"))
+        self.assertEqual(report["status"], "unknown")
+        self.assertEqual(report["reason"], "runtime_value_before_if")
+        self.assertEqual(report["opcode"], 0x30)
+        self.assertEqual(report["offset"], 0)
+
+    def test_get_time_before_if_is_runtime_unknown(self):
+        report = inspect_first_branch(bytes.fromhex("349d0200000000"))
+        self.assertEqual(report["status"], "unknown")
+        self.assertEqual(report["reason"], "runtime_value_before_if")
+        self.assertEqual(report["opcode"], 0x34)
+        self.assertEqual(report["offset"], 0)
+
     def test_new_object_before_if_is_unknown(self):
         report = inspect_first_branch(bytes.fromhex("409d0200000000"))
         self.assertEqual(report["status"], "unknown")
