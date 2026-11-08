@@ -47,6 +47,7 @@ def validate(records):
         return ["root: expected JSON array"]
     seen = set()
     published_mappings = set()
+    export_pair_sources = {}
     for i, row in enumerate(records):
         prefix = f"record[{i}]"
         if not isinstance(row, dict):
@@ -71,6 +72,13 @@ def validate(records):
                 or row["rights_status"] not in RIGHTS):
             errors.append(f"{prefix}: invalid status or rights_status")
             continue
+        pair = row["export_pair_id"]
+        swf_digest = row["swf_sha256"]
+        if (isinstance(pair, str) and pair.strip() and isinstance(swf_digest, str)
+                and HEX64.fullmatch(swf_digest)):
+            prior = export_pair_sources.setdefault(pair, swf_digest.lower())
+            if prior != swf_digest.lower():
+                errors.append(f"{prefix}: export_pair_id refers to conflicting SWF digests")
         for key in ("swf_sha256", "script_sha256"):
             if not isinstance(row[key], str) or not HEX64.fullmatch(row[key]):
                 errors.append(f"{prefix}: invalid {key}")
