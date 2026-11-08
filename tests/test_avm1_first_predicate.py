@@ -300,10 +300,12 @@ class FirstPredicateTests(unittest.TestCase):
         self.assertEqual(report["reason"], "stack_underflow")
 
     def test_trace_unknown_reference_is_not_resolved(self):
-        # Trace a register reference; remaining boolean is independently known.
+        # A register may coerce via runtime behavior during Trace; do not fold the later If.
         report = inspect_first_branch(bytes.fromhex("96040005010401269d0200000000"))
-        self.assertEqual(report["status"], "literal_candidate")
-        self.assertEqual(report["predicate"], {"type": "boolean", "value": True})
+        self.assertEqual(report["status"], "unknown")
+        self.assertEqual(report["reason"], "trace_runtime_coercion_before_if")
+        self.assertEqual(report["offset"], 7)
+        self.assertEqual(report["operand_type"], "register")
 
     def test_return_before_if_is_terminal(self):
         report = inspect_first_branch(bytes.fromhex("96020005013e9d0200000000"))
