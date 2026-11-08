@@ -98,7 +98,7 @@ def inspect_first_branch(data: bytes):
                     "predicate": predicate, "branch": edge["branch"],
                     "fallthrough": edge["fallthrough"],
                     "note": "Literal stack value only; not a verified event condition"}
-        elif opcode in (0x3D, 0x52):  # CallFunction / CallMethod: effects and return value require runtime context
+        elif opcode in (0x3D, 0x52, 0x40, 0x53):  # CallFunction / CallMethod / NewObject / NewMethod: runtime effects unknown
             return {"status": "unknown", "reason": "runtime_call_before_if", "offset": start,
                     "opcode": opcode,
                     "note": "Calls may change state; cannot infer subsequent predicates from a linear trace"}
