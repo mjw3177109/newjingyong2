@@ -48,6 +48,20 @@ class PublicationGateRegressionTests(unittest.TestCase):
         errors = validate([item])
         self.assertTrue(any("publication requires verified evidence" in e for e in errors), errors)
 
+    def test_same_export_pair_cannot_mix_different_swf_sources(self):
+        first = record("candidate_1")
+        second = record("candidate_2")
+        second["html5_mapping"] = "syntheticEvent2"
+        second["swf_sha256"] = "c" * 64
+        errors = validate([first, second])
+        self.assertTrue(any("conflicting SWF digests" in e for e in errors), errors)
+
+    def test_same_export_pair_allows_same_swf_source(self):
+        first = record("candidate_1")
+        second = record("candidate_2")
+        second["html5_mapping"] = "syntheticEvent2"
+        self.assertEqual(validate([first, second]), [])
+
     def test_raw_source_field_is_rejected(self):
         item = record()
         item["raw_actionscript"] = "synthetic source placeholder"
