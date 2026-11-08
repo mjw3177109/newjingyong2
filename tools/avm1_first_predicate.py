@@ -98,7 +98,7 @@ def inspect_first_branch(data: bytes):
                     "predicate": predicate, "branch": edge["branch"],
                     "fallthrough": edge["fallthrough"],
                     "note": "Literal stack value only; not a verified event condition"}
-        elif opcode in (0x1D, 0x87):  # SetVariable / StoreRegister mutate runtime state
+        elif opcode in (0x1D, 0x87, 0x3C, 0x41):  # SetVariable / StoreRegister / DefineLocal / DefineLocal2 mutate runtime state
             return {"status": "unknown", "reason": "state_mutation_before_if", "offset": start,
                     "opcode": opcode,
                     "note": "Cannot infer branch predicates across state changes without runtime context"}
