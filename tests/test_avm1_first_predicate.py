@@ -262,6 +262,20 @@ class FirstPredicateTests(unittest.TestCase):
         self.assertEqual(report["reason"], "state_mutation_before_if")
         self.assertEqual(report["opcode"], 0x87)
 
+    def test_define_local_before_if_is_state_mutation(self):
+        # ActionDefineLocal changes the scope; no predicate is inferred across it.
+        report = inspect_first_branch(bytes.fromhex("96020005013c9d0200000000"))
+        self.assertEqual(report["status"], "unknown")
+        self.assertEqual(report["reason"], "state_mutation_before_if")
+        self.assertEqual(report["opcode"], 0x3C)
+
+    def test_define_local2_before_if_is_state_mutation(self):
+        # ActionDefineLocal2 declares an undefined local; runtime state remains unknown.
+        report = inspect_first_branch(bytes.fromhex("9602000501419d0200000000"))
+        self.assertEqual(report["status"], "unknown")
+        self.assertEqual(report["reason"], "state_mutation_before_if")
+        self.assertEqual(report["opcode"], 0x41)
+
     def test_invalid_branch_rejected(self):
         with self.assertRaisesRegex(ValueError, "invalid branch boundary"):
             inspect_first_branch(bytes.fromhex("96020005019d0200ffff00"))
