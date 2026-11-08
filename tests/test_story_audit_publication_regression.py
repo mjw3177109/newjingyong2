@@ -62,6 +62,21 @@ class PublicationGateRegressionTests(unittest.TestCase):
         second["html5_mapping"] = "syntheticEvent2"
         self.assertEqual(validate([first, second]), [])
 
+    def test_padded_export_pair_id_is_rejected(self):
+        item = record()
+        item["export_pair_id"] = " synthetic-pair "
+        errors = validate([item])
+        self.assertTrue(any("surrounding whitespace" in e for e in errors), errors)
+
+    def test_padded_alias_cannot_hide_conflicting_swf(self):
+        first = record("candidate_1")
+        second = record("candidate_2")
+        second["html5_mapping"] = "syntheticEvent2"
+        second["export_pair_id"] = " synthetic-pair "
+        second["swf_sha256"] = "c" * 64
+        errors = validate([first, second])
+        self.assertTrue(any("conflicting SWF digests" in e for e in errors), errors)
+
     def test_raw_source_field_is_rejected(self):
         item = record()
         item["raw_actionscript"] = "synthetic source placeholder"
