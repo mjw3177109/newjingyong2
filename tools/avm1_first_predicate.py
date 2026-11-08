@@ -98,6 +98,10 @@ def inspect_first_branch(data: bytes):
                     "predicate": predicate, "branch": edge["branch"],
                     "fallthrough": edge["fallthrough"],
                     "note": "Literal stack value only; not a verified event condition"}
+        elif opcode in (0x30, 0x34):  # RandomNumber / GetTime depend on runtime state
+            return {"status": "unknown", "reason": "runtime_value_before_if", "offset": start,
+                    "opcode": opcode,
+                    "note": "Random/time values cannot be folded without runtime evidence"}
         elif opcode in (0x3D, 0x52, 0x40, 0x53):  # CallFunction / CallMethod / NewObject / NewMethod: runtime effects unknown
             return {"status": "unknown", "reason": "runtime_call_before_if", "offset": start,
                     "opcode": opcode,
