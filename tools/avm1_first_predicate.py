@@ -98,6 +98,10 @@ def inspect_first_branch(data: bytes):
                     "predicate": predicate, "branch": edge["branch"],
                     "fallthrough": edge["fallthrough"],
                     "note": "Literal stack value only; not a verified event condition"}
+        elif opcode in (0x4E, 0x4F):  # GetMember / SetMember may invoke accessors or mutate objects
+            return {"status": "unknown", "reason": "member_access_before_if", "offset": start,
+                    "opcode": opcode,
+                    "note": "Member access may have runtime side effects; no static predicate inference"}
         elif opcode in (0x30, 0x34):  # RandomNumber / GetTime depend on runtime state
             return {"status": "unknown", "reason": "runtime_value_before_if", "offset": start,
                     "opcode": opcode,
