@@ -29,7 +29,11 @@ def inspect_first_branch(data: bytes):
         elif opcode == 0x26:  # ActionTrace: consumes one value; does not change remaining stack
             if not stack:
                 return {"status": "unknown", "reason": "stack_underflow", "offset": start}
-            stack.pop()
+            traced = stack.pop()
+            if traced["type"] not in ("boolean", "integer", "float", "double", "string", "null", "undefined"):
+                return {"status": "unknown", "reason": "trace_runtime_coercion_before_if",
+                        "offset": start, "operand_type": traced["type"],
+                        "note": "Trace may invoke runtime string conversion; no static predicate inference"}
         elif opcode == 0x17:  # ActionPop: discard top entry without inferring its value
             if not stack:
                 return {"status": "unknown", "reason": "stack_underflow", "offset": start}
