@@ -110,6 +110,10 @@ def inspect_first_branch(data: bytes):
             return {"status": "unknown", "reason": "runtime_call_before_if", "offset": start,
                     "opcode": opcode,
                     "note": "Calls may change state; cannot infer subsequent predicates from a linear trace"}
+        elif opcode in (0x3A, 0x3B):  # Delete / Delete2 alter dynamic object or scope state
+            return {"status": "unknown", "reason": "state_mutation_before_if", "offset": start,
+                    "opcode": opcode,
+                    "note": "Deletion can change runtime property lookup; no static predicate inference"}
         elif opcode in (0x1D, 0x87, 0x3C, 0x41):  # SetVariable / StoreRegister / DefineLocal / DefineLocal2 mutate runtime state
             return {"status": "unknown", "reason": "state_mutation_before_if", "offset": start,
                     "opcode": opcode,
