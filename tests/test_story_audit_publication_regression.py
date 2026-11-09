@@ -84,5 +84,32 @@ class PublicationGateRegressionTests(unittest.TestCase):
         self.assertTrue(any("unexpected fields" in e for e in errors), errors)
 
 
+    def test_export_drift_blocked_candidate_cannot_publish(self):
+        item = record()
+        item["status"] = "blocked_export_drift"
+        errors = validate([item])
+        self.assertTrue(any("publication requires verified evidence" in e for e in errors), errors)
+
+    def test_verified_candidate_requires_negative_branch_evidence(self):
+        item = record()
+        item["negative_path_checked"] = False
+        errors = validate([item])
+        self.assertTrue(any("verified requires negative-path evidence" in e for e in errors), errors)
+
+    def test_unknown_rights_cannot_claim_distribution_scope(self):
+        item = record()
+        item["rights_status"] = "unknown"
+        item["rights_scope"] = "adaptation_and_distribution"
+        item["rights_evidence_ref"] = None
+        errors = validate([item])
+        self.assertTrue(any("unknown rights require scope none" in e for e in errors), errors)
+
+    def test_authorized_publication_requires_nonplaceholder_license_reference(self):
+        item = record()
+        item["rights_evidence_ref"] = "pending"
+        errors = validate([item])
+        self.assertTrue(any("publication requires a concrete rights evidence reference" in e for e in errors), errors)
+
+
 if __name__ == "__main__":
     unittest.main()
