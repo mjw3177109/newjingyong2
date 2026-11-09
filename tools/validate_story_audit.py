@@ -38,7 +38,7 @@ def _usable_text(value):
 
 
 def _is_placeholder(value):
-    return isinstance(value, str) and value.strip().lower() in PLACEHOLDERS
+    return isinstance(value, str) and value.strip().lower().strip(" .:;!?") in PLACEHOLDERS
 
 
 def validate(records):
