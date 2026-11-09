@@ -28,7 +28,7 @@ class PredicateSafetyRegression(unittest.TestCase):
 
     def test_runtime_variable_is_not_treated_as_known_boolean(self):
         # Push string "flag", then GetVariable and If.
-        payload = bytes([0x96, 0x06, 0x00, 0x00]) + b"flag\\x00" + bytes([0x1C]) + action_if()
+        payload = bytes([0x96, 0x06, 0x00, 0x00]) + b"flag\x00" + bytes([0x1C]) + action_if()
         result = inspect_first_branch(payload)
         self.assertEqual(result["status"], "unknown")
         self.assertEqual(result["reason"], "unresolved_push_reference")
