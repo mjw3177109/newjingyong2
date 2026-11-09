@@ -22,6 +22,7 @@ test('winning a rematch never duplicates quest rewards or changes completion', (
   s = battle(s, 'attack');
   assert.ok(s.combat);
   s = battle(s, 'attack');
+  s = battle(s, 'attack');
   assert.equal(s.combat, null);
   assert.equal(s.quest, 'completed');
   assert.equal(s.flags.banditBeaten, true);
@@ -35,6 +36,7 @@ test('repeated rematch victories preserve a single quest weapon', () => {
   for (let i = 0; i < 3; i++) {
     s = startRematch(s);
     assert.ok(s.combat);
+    s = battle(s, 'attack');
     s = battle(s, 'attack');
     s = battle(s, 'attack');
     assert.equal(s.combat, null);
