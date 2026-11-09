@@ -104,6 +104,14 @@ class PublicationGateRegressionTests(unittest.TestCase):
         errors = validate([item])
         self.assertTrue(any("unknown rights require scope none" in e for e in errors), errors)
 
+    def test_punctuated_placeholder_license_reference_is_rejected(self):
+        for placeholder in ("pending.", "TBD:", "todo!", "not verified."):
+            with self.subTest(placeholder=placeholder):
+                item = record()
+                item["rights_evidence_ref"] = placeholder
+                errors = validate([item])
+                self.assertTrue(any("publication requires a concrete rights evidence reference" in e for e in errors), errors)
+
     def test_authorized_publication_requires_nonplaceholder_license_reference(self):
         item = record()
         item["rights_evidence_ref"] = "pending"
