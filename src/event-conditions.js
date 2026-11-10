@@ -21,8 +21,9 @@ function validateConditionNode(node, depth) {
   if (keys.length === 1 && keys[0] === 'not') return validateCondition(node.not, depth + 1);
   if (keys.length !== 3 || !['path', 'op', 'value'].every(k => own(node, k))) return false;
   if (!Array.isArray(node.path) || node.path.length < 1 || node.path.length > 8 ||
-      !node.path.every(k => typeof k === 'string' && /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(k) &&
-        !['__proto__', 'constructor', 'prototype'].includes(k))) return false;
+      !Array.from({length: node.path.length}, (_, i) => own(node.path, i) &&
+        typeof node.path[i] === 'string' && /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(node.path[i]) &&
+        !['__proto__', 'constructor', 'prototype'].includes(node.path[i])).every(Boolean)) return false;
   if (!OPS.has(node.op) || !['string', 'number', 'boolean'].includes(typeof node.value) ||
       ((node.op === 'gte' || node.op === 'lte') && typeof node.value !== 'number') ||
       (typeof node.value === 'number' && !Number.isFinite(node.value))) return false;
