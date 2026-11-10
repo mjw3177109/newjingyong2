@@ -52,6 +52,18 @@ class TestEnvelope(unittest.TestCase):
         data["export_drift_review_sha256"] = int("1" * 64)
         self.assertFalse(validate(data))
 
+    def test_invalid_optional_drift_hash_rejected_when_exports_match(self):
+        for bad in (123, True, "not-a-sha256", ""):
+            with self.subTest(value=bad):
+                data = record()
+                data["export_drift_review_sha256"] = bad
+                self.assertFalse(validate(data))
+
+    def test_valid_optional_drift_hash_accepted_when_exports_match(self):
+        data = record()
+        data["export_drift_review_sha256"] = h("1")
+        self.assertTrue(validate(data))
+
     def test_string_drift_review_hash_accepted_as_envelope_only(self):
         data = record()
         data["export_b_sha256"] = h("a")
