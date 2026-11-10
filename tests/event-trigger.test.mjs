@@ -39,3 +39,30 @@ test('inherited history properties do not block a valid first trigger',()=>{
   assert.equal(Object.prototype.hasOwnProperty.call(result.state.eventHistory,'toString'),true);
   assert.equal(triggerEvent(first,result.state).applied,false);
 });
+
+test('sparse effect lists and property paths fail closed', () => {
+  const sparseEffects = new Array(2);
+  sparseEffects[1] = {path:['quest'], value:'done'};
+  const sparsePath = new Array(2);
+  sparsePath[1] = 'quest';
+  for (const bad of [
+    {...event, effects:sparseEffects},
+    {...event, effects:[{path:sparsePath,value:'done'}]}
+  ]) {
+    assert.equal(validateEvent(bad),false);
+    const before=state();
+    const result=triggerEvent(bad,before);
+    assert.equal(result.applied,false);
+    assert.equal(result.state,before);
+    assert.equal(before.quest,'active');
+  }
+});
+test('hostile event getters and proxies cannot crash validation', () => {
+  const getter={...event,get effects(){throw new Error('bad getter');}};
+  const proxy=new Proxy(event,{ownKeys(){throw new Error('bad proxy');}});
+  for (const bad of [getter,proxy]) {
+    assert.equal(validateEvent(bad),false);
+    assert.equal(triggerEvent(bad,state()).applied,false);
+  }
+  assert.equal(validateEvent(event),true);
+});
