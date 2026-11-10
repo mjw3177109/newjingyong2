@@ -36,5 +36,20 @@ class TestEnvelope(unittest.TestCase):
         data["paths"]["false"]["observed_successor"] = 6623
         self.assertFalse(validate(data))
 
+    def test_boolean_and_float_offsets_rejected(self):
+        for key, bad in (("frame", True), ("frame", 55.0),
+                         ("action_ordinal", 9.0), ("if_offset", 6607.0)):
+            with self.subTest(key=key, value=bad):
+                data = record()
+                data[key] = bad
+                self.assertFalse(validate(data))
+
+    def test_boolean_and_float_successors_rejected(self):
+        for bad in (True, 6623.0):
+            with self.subTest(value=bad):
+                data = record()
+                data["paths"]["true"]["observed_successor"] = bad
+                self.assertFalse(validate(data))
+
 if __name__ == "__main__":
     unittest.main()
