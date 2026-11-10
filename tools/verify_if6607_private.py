@@ -26,9 +26,11 @@ def validate(record):
             return False
     if record['source_swf_sha256'] != EXPECTED_SWF_SHA256:
         return False
-    if (record['export_a_sha256'] != record['export_b_sha256']
-            and (type(record.get('export_drift_review_sha256')) is not str
-                 or not HASH.fullmatch(record['export_drift_review_sha256']))):
+    drift_review = record.get('export_drift_review_sha256')
+    if drift_review is not None and (type(drift_review) is not str
+                                     or not HASH.fullmatch(drift_review)):
+        return False
+    if record['export_a_sha256'] != record['export_b_sha256'] and drift_review is None:
         return False
     if any(type(record.get(k)) is not int or record[k] != expected
            for k, expected in (('frame', 55), ('action_ordinal', 9),
