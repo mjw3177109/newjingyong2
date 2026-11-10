@@ -40,7 +40,7 @@ test('condition validation and evaluation fail closed for hostile condition gett
   const throwingLeaf = {path:['quest'], op:'eq', get value() { throw new Error('condition getter'); }};
   const throwingGroup = {get all() { throw new Error('group getter'); }};
   for (const condition of [throwingLeaf, throwingGroup]) {
-    assert.throws(() => validateCondition(condition), /getter/);
+    assert.equal(validateCondition(condition), false);
     assert.equal(evaluateCondition(condition, state), false);
   }
 });
@@ -51,7 +51,16 @@ test('condition evaluation fails closed for hostile condition proxy traps', () =
     getOwnPropertyDescriptor() { throw new Error('condition descriptor'); }
   });
   for (const condition of [throwingKeys, throwingDescriptor]) {
+    assert.equal(validateCondition(condition), false);
     assert.equal(evaluateCondition(condition, state), false);
   }
   assert.equal(evaluateCondition(eq(['quest'], 'active'), state), true);
+});
+
+test('public validation fails closed for cyclic conditions and preserves valid expressions', () => {
+  const cyclic = {};
+  cyclic.not = cyclic;
+  assert.equal(validateCondition(cyclic), false);
+  assert.equal(evaluateCondition(cyclic, state), false);
+  assert.equal(validateCondition(eq(['quest'], 'active')), true);
 });
