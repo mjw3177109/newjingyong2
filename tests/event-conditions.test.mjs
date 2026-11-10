@@ -64,3 +64,16 @@ test('public validation fails closed for cyclic conditions and preserves valid e
   assert.equal(evaluateCondition(cyclic, state), false);
   assert.equal(validateCondition(eq(['quest'], 'active')), true);
 });
+
+test('public validation rejects invalid depth arguments without bypassing nesting limit', () => {
+  const leaf = eq(['quest'], 'active');
+  let nested = leaf;
+  for (let i = 0; i < 14; i++) nested = {not:nested};
+  assert.equal(validateCondition(nested), false);
+  assert.equal(validateCondition(nested, -100), false);
+  assert.equal(validateCondition(leaf, -1), false);
+  assert.equal(validateCondition(leaf, 1.5), false);
+  assert.equal(validateCondition(leaf, NaN), false);
+  assert.equal(validateCondition(leaf, 0), true);
+  assert.equal(evaluateCondition(nested, state), false);
+});
