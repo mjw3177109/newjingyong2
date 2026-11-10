@@ -38,6 +38,11 @@ def validate(record):
             return False
         if any(not HASH.fullmatch(str(path.get(k, ''))) for k in PATH_HASHES):
             return False
+    # Opposite observed successors cannot be supported by the exact same trace bytes.
+    # This is a consistency check only, not proof that either trace is authentic.
+    if (paths['true']['execution_trace_sha256'] ==
+            paths['false']['execution_trace_sha256']):
+        return False
     return True
 
 
