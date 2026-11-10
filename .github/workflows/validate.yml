@@ -216,7 +216,7 @@ jobs:
           if-no-files-found: error
 
   ffdec-java8-probe:
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && startsWith(github.ref, 'refs/heads/feature/')
+    if: ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && startsWith(github.ref, 'refs/heads/feature/')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'feature/'))
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
