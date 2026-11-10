@@ -2,7 +2,10 @@
 const OPS = new Set(['eq', 'neq', 'gte', 'lte']);
 const own = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
 export function validateCondition(node, depth = 0) {
-  try { return validateConditionNode(node, depth); }
+  try {
+    if (!Number.isInteger(depth) || depth < 0 || depth > 12) return false;
+    return validateConditionNode(node, depth);
+  }
   catch { return false; }
 }
 function validateConditionNode(node, depth) {
