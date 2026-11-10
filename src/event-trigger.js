@@ -2,20 +2,21 @@
 import {validateCondition, evaluateCondition} from './event-conditions.js';
 const own = (o,k) => Object.prototype.hasOwnProperty.call(o,k);
 const safePath = p => Array.isArray(p) && p.length >= 1 && p.length <= 8 &&
-  p.every(k => typeof k === 'string' && /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(k) &&
-    !['__proto__','constructor','prototype'].includes(k));
+  Array.from({length:p.length}, (_,i) => own(p,i) && typeof p[i] === 'string' && /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(k) &&
+    !['__proto__','constructor','prototype'].includes(p[i])).every(Boolean);
 const scalar = v => ['string','boolean','number'].includes(typeof v) &&
   (typeof v !== 'number' || Number.isFinite(v));
 export function validateEvent(e) {
-  return !!e && typeof e === 'object' && !Array.isArray(e) &&
+  try { return !!e && typeof e === 'object' && !Array.isArray(e) &&
     Object.keys(e).sort().join(',') === 'condition,effects,id' &&
     typeof e.id === 'string' && /^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(e.id) &&
     !['__proto__','constructor','prototype'].includes(e.id) &&
     validateCondition(e.condition) && Array.isArray(e.effects) &&
     e.effects.length > 0 && e.effects.length <= 16 &&
-    e.effects.every(x => x && typeof x === 'object' && !Array.isArray(x) &&
+    Array.from({length:e.effects.length}, (_,i) => own(e.effects,i) && (() => { const x=e.effects[i]; return x && typeof x === 'object' && !Array.isArray(x) &&
       Object.keys(x).sort().join(',') === 'path,value' &&
-      safePath(x.path) && x.path[0] !== 'eventHistory' && scalar(x.value));
+      safePath(x.path) && x.path[0] !== 'eventHistory' && scalar(x.value); })()).every(Boolean);
+  } catch { return false; }
 }
 export function triggerEvent(event,state) {
   if (!validateEvent(event) || !state || typeof state !== 'object' || Array.isArray(state))
