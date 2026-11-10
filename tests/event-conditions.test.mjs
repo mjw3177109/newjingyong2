@@ -35,3 +35,23 @@ test('condition evaluation fails closed for throwing imported state access', () 
   assert.equal(evaluateCondition({all:[eq(['quest'],'active')]}, throwingGetter), false);
   assert.equal(evaluateCondition(eq(['quest'],'active'), state), true);
 });
+
+test('condition validation and evaluation fail closed for hostile condition getters', () => {
+  const throwingLeaf = {path:['quest'], op:'eq', get value() { throw new Error('condition getter'); }};
+  const throwingGroup = {get all() { throw new Error('group getter'); }};
+  for (const condition of [throwingLeaf, throwingGroup]) {
+    assert.throws(() => validateCondition(condition), /getter/);
+    assert.equal(evaluateCondition(condition, state), false);
+  }
+});
+
+test('condition evaluation fails closed for hostile condition proxy traps', () => {
+  const throwingKeys = new Proxy({}, {ownKeys() { throw new Error('condition ownKeys'); }});
+  const throwingDescriptor = new Proxy({path:['quest'], op:'eq', value:'active'}, {
+    getOwnPropertyDescriptor() { throw new Error('condition descriptor'); }
+  });
+  for (const condition of [throwingKeys, throwingDescriptor]) {
+    assert.equal(evaluateCondition(condition, state), false);
+  }
+  assert.equal(evaluateCondition(eq(['quest'], 'active'), state), true);
+});
