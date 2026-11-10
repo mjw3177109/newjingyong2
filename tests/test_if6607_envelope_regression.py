@@ -41,6 +41,23 @@ class TestEnvelope(unittest.TestCase):
         data["paths"]["false"]["observed_successor"] = 6623
         self.assertFalse(validate(data))
 
+    def test_numeric_path_hash_rejected(self):
+        data = record()
+        data["paths"]["true"]["before_state_sha256"] = int("1" * 64)
+        self.assertFalse(validate(data))
+
+    def test_numeric_drift_review_hash_rejected(self):
+        data = record()
+        data["export_b_sha256"] = h("a")
+        data["export_drift_review_sha256"] = int("1" * 64)
+        self.assertFalse(validate(data))
+
+    def test_string_drift_review_hash_accepted_as_envelope_only(self):
+        data = record()
+        data["export_b_sha256"] = h("a")
+        data["export_drift_review_sha256"] = h("1")
+        self.assertTrue(validate(data))
+
     def test_boolean_and_float_offsets_rejected(self):
         for key, bad in (("frame", True), ("frame", 55.0),
                          ("action_ordinal", 9.0), ("if_offset", 6607.0)):
