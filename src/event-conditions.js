@@ -14,7 +14,9 @@ function validateConditionNode(node, depth) {
   if (keys.length === 1 && (keys[0] === 'all' || keys[0] === 'any')) {
     const children = node[keys[0]];
     return Array.isArray(children) && children.length > 0 && children.length <= 32 &&
-      children.every(child => validateCondition(child, depth + 1));
+      // Array#every skips holes: sparse groups must not silently satisfy 'all'.
+      Array.from({length: children.length}, (_, i) => own(children, i) &&
+        validateCondition(children[i], depth + 1)).every(Boolean);
   }
   if (keys.length === 1 && keys[0] === 'not') return validateCondition(node.not, depth + 1);
   if (keys.length !== 3 || !['path', 'op', 'value'].every(k => own(node, k))) return false;
