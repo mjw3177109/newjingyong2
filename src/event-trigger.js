@@ -2,7 +2,7 @@
 import {validateCondition, evaluateCondition} from './event-conditions.js';
 const own = (o,k) => Object.prototype.hasOwnProperty.call(o,k);
 const safePath = p => Array.isArray(p) && p.length >= 1 && p.length <= 8 &&
-  Array.from({length:p.length}, (_,i) => own(p,i) && typeof p[i] === 'string' && /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(k) &&
+  Array.from({length:p.length}, (_,i) => own(p,i) && typeof p[i] === 'string' && /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(p[i]) &&
     !['__proto__','constructor','prototype'].includes(p[i])).every(Boolean);
 const scalar = v => ['string','boolean','number'].includes(typeof v) &&
   (typeof v !== 'number' || Number.isFinite(v));
