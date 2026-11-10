@@ -38,5 +38,8 @@ export function evaluateCondition(condition, state) {
       default: return false;
     }
   };
-  return run(condition);
+  // A condition can be evaluated outside triggerEvent (e.g. dialogue/UI).
+  // Imported states may contain throwing getters or proxies; fail closed.
+  try { return run(condition); }
+  catch { return false; }
 }
