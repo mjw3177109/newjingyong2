@@ -26,15 +26,19 @@ def validate(record):
     if (record['export_a_sha256'] != record['export_b_sha256']
             and not HASH.fullmatch(str(record.get('export_drift_review_sha256', '')))):
         return False
-    if (record.get('frame'), record.get('action_ordinal'),
-            record.get('if_offset')) != (55, 9, 6607):
+    # JSON booleans and floats compare equal to integers in Python; reject them.
+    if any(type(record.get(k)) is not int or record[k] != expected
+           for k, expected in (('frame', 55), ('action_ordinal', 9),
+                               ('if_offset', 6607))):
         return False
     paths = record.get('paths')
     if not isinstance(paths, dict) or set(paths) != {'true', 'false'}:
         return False
     for name, successor in (('true', 6623), ('false', 6612)):
         path = paths[name]
-        if not isinstance(path, dict) or path.get('observed_successor') != successor:
+        if (not isinstance(path, dict)
+                or type(path.get('observed_successor')) is not int
+                or path['observed_successor'] != successor):
             return False
         if any(not HASH.fullmatch(str(path.get(k, ''))) for k in PATH_HASHES):
             return False
