@@ -26,3 +26,12 @@ test('numeric comparisons reject mismatched types', () => {
   assert.equal(evaluateCondition({path:['quest'],op:'gte',value:1},state),false);
   assert.equal(evaluateCondition({path:['player','silver'],op:'lte',value:10},state),true);
 });
+
+test('condition evaluation fails closed for throwing imported state access', () => {
+  const throwingGetter = {get quest() { throw new Error('untrusted getter'); }};
+  const throwingProxy = new Proxy({}, {getOwnPropertyDescriptor() { throw new Error('proxy trap'); }});
+  assert.equal(evaluateCondition(eq(['quest'], 'active'), throwingGetter), false);
+  assert.equal(evaluateCondition(eq(['quest'], 'active'), throwingProxy), false);
+  assert.equal(evaluateCondition({all:[eq(['quest'],'active')]}, throwingGetter), false);
+  assert.equal(evaluateCondition(eq(['quest'],'active'), state), true);
+});
