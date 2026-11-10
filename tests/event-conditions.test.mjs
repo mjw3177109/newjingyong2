@@ -88,3 +88,14 @@ test('numeric comparison thresholds must be finite numbers at validation time', 
     assert.equal(validateCondition({path:['player','silver'], op, value:10}), true);
   }
 });
+
+test('sparse condition groups are rejected rather than skipped by Array.every', () => {
+  const sparseAll = new Array(2);
+  sparseAll[1] = eq(['quest'], 'active');
+  const sparseAny = new Array(1);
+  for (const group of [{all:sparseAll}, {any:sparseAny}]) {
+    assert.equal(validateCondition(group), false);
+    assert.equal(evaluateCondition(group, state), false);
+  }
+  assert.equal(validateCondition({all:[eq(['quest'], 'active')]}), true);
+});
