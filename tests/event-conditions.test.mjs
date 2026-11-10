@@ -99,3 +99,14 @@ test('sparse condition groups are rejected rather than skipped by Array.every', 
   }
   assert.equal(validateCondition({all:[eq(['quest'], 'active')]}), true);
 });
+
+
+test('sparse property paths cannot pass validation or trigger state lookups', () => {
+  const sparse = new Array(2);
+  sparse[1] = 'quest';
+  const condition = {path:sparse, op:'eq', value:'active'};
+  assert.equal(validateCondition(condition), false);
+  assert.equal(evaluateCondition(condition, state), false);
+  assert.equal(validateCondition(eq(['quest'], 'active')), true);
+  assert.equal(evaluateCondition(eq(['quest'], 'active'), state), true);
+});
