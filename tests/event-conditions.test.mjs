@@ -77,3 +77,14 @@ test('public validation rejects invalid depth arguments without bypassing nestin
   assert.equal(validateCondition(leaf, 0), true);
   assert.equal(evaluateCondition(nested, state), false);
 });
+
+test('numeric comparison thresholds must be finite numbers at validation time', () => {
+  for (const op of ['gte', 'lte']) {
+    for (const value of ['10', true, false, '0']) {
+      const condition = {path:['player','silver'], op, value};
+      assert.equal(validateCondition(condition), false);
+      assert.equal(evaluateCondition(condition, state), false);
+    }
+    assert.equal(validateCondition({path:['player','silver'], op, value:10}), true);
+  }
+});
