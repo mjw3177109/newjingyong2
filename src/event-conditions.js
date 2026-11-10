@@ -2,6 +2,10 @@
 const OPS = new Set(['eq', 'neq', 'gte', 'lte']);
 const own = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
 export function validateCondition(node, depth = 0) {
+  try { return validateConditionNode(node, depth); }
+  catch { return false; }
+}
+function validateConditionNode(node, depth) {
   if (depth > 12 || !node || typeof node !== 'object' || Array.isArray(node)) return false;
   const keys = Object.keys(node);
   if (keys.length === 1 && (keys[0] === 'all' || keys[0] === 'any')) {
