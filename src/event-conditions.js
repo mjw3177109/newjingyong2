@@ -22,6 +22,7 @@ function validateConditionNode(node, depth) {
       !node.path.every(k => typeof k === 'string' && /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(k) &&
         !['__proto__', 'constructor', 'prototype'].includes(k))) return false;
   if (!OPS.has(node.op) || !['string', 'number', 'boolean'].includes(typeof node.value) ||
+      ((node.op === 'gte' || node.op === 'lte') && typeof node.value !== 'number') ||
       (typeof node.value === 'number' && !Number.isFinite(node.value))) return false;
   return true;
 }
