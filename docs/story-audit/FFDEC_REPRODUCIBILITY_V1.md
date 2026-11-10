@@ -56,3 +56,12 @@ Artifact： [三次导出 triage](https://github.com/mjw3177109/newjingyong2/act
 - 本轮 A/B 完整匿名映射为 `stable`；100 个入选候选全部稳定、排除 0；字面帧跳转 83、简单守卫 3。因为 A/B 稳定，按工作流规则没有第三次导出，故本轮不应有 three-run triage 或 third-export quarantine Artifact。
 - 与较早的 [#41906141313](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313) 同日样本对照：前一轮 A/B divergent、A/C equal、B outlier；本轮 A/B stable。**这说明间歇性差异仍未定位根因**，不能把单次 stable 当作永久可复现保证。
 - 原作剧情语义核实仍为 **0 条**；稳定索引/跳转统计不构成剧情、地图或战斗数值证据。
+
+## 2026-11-10 PR Actions #42775116332：双导出稳定性复核
+
+- [Actions #42775116332](https://github.com/mjw3177109/newjingyong2/actions/runs/42775116332) 的 `ffdec-java8-probe` 作业为 `completed/success`，本次核对了该作业原始日志，而不只依赖工作流总状态。
+- 日志记录两次 FFDec 导出的脱敏比较结果 `stable`，候选跳转计数差异 0、守卫计数差异 0、候选成员仅在 A/B 的数量均为 0；字节级诊断 `stable`，同路径内容变化 0。
+- 日志中脚本索引为 **4,560** 个文件、审查队列从 **2,323** 个启发式候选中选取 **100** 个；可复现语法候选 **100**、排除 **0**、稳定字面跳转 **83**。SWF SHA-256 为 `d762a8f95d22b87916ae375968d425b4d4d34390bbc5d234338bfb58f85d4a30`。
+- 因本次 A/B 稳定，条件性的第三次导出隔离文件没有产生；日志显示相关可选 Artifact `No files were found`，不应误报为 FFDec 作业失败。
+- **限制：** 本次同轮稳定不消除历史间歇性漂移；匿名语法候选不代表剧情事件，IF 6607 的真实条件栈、双路径轨迹和状态副作用仍未得到独立语义核实。已核实原作剧情事件继续为 **0 条**。
+- 下一步：优先获取 IF 6607 的私有运行时语义证据及独立复核，不再把重复的稳定导出统计当作剧情复刻进度。
