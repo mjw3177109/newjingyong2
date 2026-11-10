@@ -19,7 +19,6 @@ export function validateCondition(node, depth = 0) {
   return true;
 }
 export function evaluateCondition(condition, state) {
-  if (!validateCondition(condition)) return false;
   const run = node => {
     if (own(node, 'all')) return node.all.every(run);
     if (own(node, 'any')) return node.any.some(run);
@@ -40,6 +39,6 @@ export function evaluateCondition(condition, state) {
   };
   // A condition can be evaluated outside triggerEvent (e.g. dialogue/UI).
   // Imported states may contain throwing getters or proxies; fail closed.
-  try { return run(condition); }
+  try { return validateCondition(condition) && run(condition); }
   catch { return false; }
 }
