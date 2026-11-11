@@ -15,7 +15,11 @@ export function validateEvent(e) {
     e.effects.length > 0 && e.effects.length <= 16 &&
     Array.from({length:e.effects.length}, (_,i) => own(e.effects,i) && (() => { const x=e.effects[i]; return x && typeof x === 'object' && !Array.isArray(x) &&
       Object.keys(x).sort().join(',') === 'path,value' &&
-      safePath(x.path) && x.path[0] !== 'eventHistory' && scalar(x.value); })()).every(Boolean);
+      safePath(x.path) && x.path[0] !== 'eventHistory' && scalar(x.value); })()).every(Boolean) &&
+    e.effects.every((effect,i) => e.effects.slice(i+1).every(other => {
+      const n=Math.min(effect.path.length,other.path.length);
+      return !effect.path.slice(0,n).every((key,k) => key===other.path[k]);
+    }));
   } catch { return false; }
 }
 export function triggerEvent(event,state) {
