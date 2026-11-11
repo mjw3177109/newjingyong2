@@ -73,7 +73,7 @@ test('overlapping effect targets are rejected atomically', () => {
     {path:['flags'],value:'replaced'},
     {path:['flags','rewarded'],value:true}
   ]};
-  assert.equal(validateEvent(overlapping),true);
+  assert.equal(validateEvent(overlapping),false);
   const result=triggerEvent(overlapping,before);
   assert.equal(result.applied,false);
   assert.equal(result.state,before);
@@ -100,4 +100,20 @@ test('non-record intermediate effect targets are rejected without mutation', () 
     assert.equal(before.quest,'active');
     assert.equal(Object.hasOwn(before,'eventHistory'),false);
   }
+});
+
+test('event definitions reject duplicate and reversed overlapping writes', () => {
+  for (const effects of [
+    [{path:['quest'],value:'done'},{path:['quest'],value:'other'}],
+    [{path:['flags','rewarded'],value:true},{path:['flags'],value:'replaced'}]
+  ]) {
+    const candidate={...event,effects};
+    assert.equal(validateEvent(candidate),false);
+    const before=state();
+    const result=triggerEvent(candidate,before);
+    assert.equal(result.applied,false);
+    assert.equal(result.state,before);
+    assert.equal(before.quest,'active');
+  }
+  assert.equal(validateEvent(event),true);
 });
