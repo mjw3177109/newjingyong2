@@ -42,7 +42,8 @@ export function triggerEvent(event,state) {
     for (const key of effect.path.slice(0,-1)) {
       if (!cursor || typeof cursor !== 'object' || Array.isArray(cursor) ||
           !own(cursor,key) || !cursor[key] || typeof cursor[key] !== 'object' ||
-          Array.isArray(cursor[key])) return {applied:false,state};
+          Array.isArray(cursor[key]) ||
+          ![Object.prototype,null].includes(Object.getPrototypeOf(cursor[key]))) return {applied:false,state};
       cursor=cursor[key];
     }
     // Do not silently create arbitrary state fields from malformed event data.
