@@ -66,3 +66,27 @@ test('hostile event getters and proxies cannot crash validation', () => {
   }
   assert.equal(validateEvent(event),true);
 });
+
+test('overlapping effect targets are rejected atomically', () => {
+  const before=state();
+  const overlapping={...event,effects:[
+    {path:['flags'],value:'replaced'},
+    {path:['flags','rewarded'],value:true}
+  ]};
+  assert.equal(validateEvent(overlapping),true);
+  const result=triggerEvent(overlapping,before);
+  assert.equal(result.applied,false);
+  assert.equal(result.state,before);
+  assert.deepEqual(before.flags,{rewarded:false});
+  assert.equal(Object.hasOwn(before,'eventHistory'),false);
+});
+
+test('uncloneable imported state fails without partial event application', () => {
+  const before={...state(),foreignCallback:()=>{}};
+  const result=triggerEvent(event,before);
+  assert.equal(result.applied,false);
+  assert.equal(result.state,before);
+  assert.equal(before.quest,'active');
+  assert.equal(before.flags.rewarded,false);
+  assert.equal(Object.hasOwn(before,'eventHistory'),false);
+});
