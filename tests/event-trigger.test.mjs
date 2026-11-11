@@ -90,3 +90,14 @@ test('uncloneable imported state fails without partial event application', () =>
   assert.equal(before.flags.rewarded,false);
   assert.equal(Object.hasOwn(before,'eventHistory'),false);
 });
+
+test('non-record intermediate effect targets are rejected without mutation', () => {
+  for (const value of [new Date('2020-01-01T00:00:00Z'), new Map(), new Set()]) {
+    const before={...state(),flags:value};
+    const result=triggerEvent(event,before);
+    assert.equal(result.applied,false);
+    assert.equal(result.state,before);
+    assert.equal(before.quest,'active');
+    assert.equal(Object.hasOwn(before,'eventHistory'),false);
+  }
+});
