@@ -1,24 +1,30 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {initialState, parseSave} from '../src/engine.js';
-import {ACTORS} from '../src/demo-data.js';
+import {initialState, interact, parseSave} from '../src/engine.js';
+import {pathToObjective, stepTowardObjective} from '../src/objectives.js';
+import {WIDTH, HEIGHT} from '../src/demo-data.js';
 
 // Original HTML5 demo save integrity tests; not recovered SWF story evidence.
 const parse = state => parseSave(JSON.stringify(state));
 const trial = () => {
-  const s = initialState();
-  s.quest = 'active';
-  s.player.x = ACTORS.bandit.x - 1;
-  s.player.y = ACTORS.bandit.y;
-  s.combat = {enemyHp:28, enemyMaxHp:28, guard:false};
+  let s = initialState();
+  for (let stage = 0; stage < 3; stage++) {
+    for (let i = 0; i < WIDTH * HEIGHT; i++) {
+      const route = pathToObjective(s);
+      assert.notEqual(route, null);
+      if (!route.length) break;
+      s = stepTowardObjective(s);
+    }
+    s = interact(s);
+    if (stage < 2) s = interact(s); // dismiss dialogue
+  }
+  assert.ok(s.combat, 'expected real trial checkpoint');
+  assert.deepEqual(parse(s), s);
   return s;
 };
 
 test('first trial checkpoint requires quest acceptance and valid adjacent location', () => {
   const s = trial();
-  // The exact coordinates may be blocked by map terrain: do not assume an
-  // arbitrary neighboring tile is a valid player position.
-  if (parse(s) === null) return;
   assert.deepEqual(parse(s), s);
   const notAccepted = structuredClone(s);
   notAccepted.quest = 'unstarted';
