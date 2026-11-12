@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {initialState, sellPotion, MAX_SILVER} from '../src/engine.js';
+import {initialState, sellPotion, parseSave, MAX_SILVER} from '../src/engine.js';
 import {ACTORS} from '../src/demo-data.js';
 
 test('merchant buys one potion for two silver only when adjacent', () => {
@@ -19,4 +19,26 @@ test('buy-back refuses distant, dialog, combat, missing stock and silver overflo
  base.combat={enemyHp:28,enemyMaxHp:28,guard:false};assert.deepEqual(sellPotion(base),base);base.combat=null;
  base.inventory=[];assert.deepEqual(sellPotion(base),base);
  base.inventory=['回春散'];base.player.silver=MAX_SILVER-1;assert.deepEqual(sellPotion(base),base);
+});
+
+test('buy-back at the exact silver cap remains saveable and cannot overpay',()=>{
+ const s=initialState();s.player.x=ACTORS.merchant.x-1;s.player.y=ACTORS.merchant.y;
+ s.player.silver=MAX_SILVER-2;s.inventory=['回春散','回春散'];
+ const sold=sellPotion(s);
+ assert.equal(sold.player.silver,MAX_SILVER);
+ assert.deepEqual(sold.inventory,['回春散']);
+ assert.deepEqual(parseSave(JSON.stringify(sold)),sold);
+ assert.deepEqual(sellPotion(sold),sold);
+});
+
+test('repeated merchant sales consume exactly one potion each and keep a valid save',()=>{
+ let s=initialState();s.player.x=ACTORS.merchant.x-1;s.player.y=ACTORS.merchant.y;
+ s.inventory=['回春散','回春散','回春散'];
+ for(let n=1;n<=3;n++){
+  s=sellPotion(s);
+  assert.equal(s.player.silver,10+n*2);
+  assert.equal(s.inventory.length,3-n);
+  assert.deepEqual(parseSave(JSON.stringify(s)),s);
+ }
+ assert.deepEqual(sellPotion(s),s);
 });
