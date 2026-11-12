@@ -126,6 +126,16 @@ export function restAtVillage(state){
   addLog(s,`竹下调息，恢复 ${healed} 点气血。`);
   return s;
 }
+// Original demo merchant buy-back: trade one potion for 2 silver, never exceeding the cap.
+export function sellPotion(state){
+  const s=copy(state);
+  if(s.combat||s.dialog||dist(s.player,ACTORS.merchant)>1||
+     !s.inventory.includes('回春散')||s.player.silver>MAX_SILVER-2)return s;
+  s.inventory.splice(s.inventory.indexOf('回春散'),1);
+  s.player.silver+=2;
+  addLog(s,'向行脚商人售出一包回春散，获得 2 银两。');
+  return s;
+}
 export function discardPotion(state){
   const s=copy(state);
   if(s.combat||s.dialog)return s;
