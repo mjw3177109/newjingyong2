@@ -14,3 +14,11 @@ test('region rejects an unreachable exit and an isolated NPC',()=>{
  assert.equal(validateRegion({...BAMBOO_PASS,blocks:[...BAMBOO_PASS.blocks,'9,4','10,3','10,5','11,4']}),false);
  assert.equal(validateRegion({...BAMBOO_PASS,blocks:[...BAMBOO_PASS.blocks,'5,3','6,2','6,4','7,3']}),false);
 });
+
+test('region rejects missing metadata before UI uses region and NPC labels',()=>{
+ assert.equal(validateRegion({...BAMBOO_PASS,id:''}),false);
+ assert.equal(validateRegion({...BAMBOO_PASS,name:null}),false);
+ assert.equal(validateRegion({...BAMBOO_PASS,npc:{...BAMBOO_PASS.npc,dialog:''}}),false);
+ assert.equal(validateRegion({...BAMBOO_PASS,npc:{...BAMBOO_PASS.npc,id:null}}),false);
+ assert.equal(validateRegion({...BAMBOO_PASS,npc:{...BAMBOO_PASS.npc,name:'  '}}),false);
+});
