@@ -1,7 +1,8 @@
 // Map pointer coordinates using the same centered, square-cell geometry as the Canvas renderer.
 import {BAMBOO_PASS} from './bamboo-pass.js';
 export function bambooTileFromPointer(clientX,clientY,rect,canvasWidth,canvasHeight){
- if(!rect || !(rect.width>0&&rect.height>0&&canvasWidth>0&&canvasHeight>0))return null;
+ if(!rect || ![rect.left,rect.top,rect.width,rect.height,canvasWidth,canvasHeight].every(Number.isFinite))return null;
+ if(rect.width<=0||rect.height<=0||canvasWidth<=0||canvasHeight<=0)return null;
  if(!Number.isFinite(clientX)||!Number.isFinite(clientY))return null;
  const cell=Math.min(canvasWidth/BAMBOO_PASS.width,canvasHeight/BAMBOO_PASS.height);
  const ox=(canvasWidth-cell*BAMBOO_PASS.width)/2;
