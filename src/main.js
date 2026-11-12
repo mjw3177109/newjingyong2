@@ -8,6 +8,7 @@ import {nextObjective,pathToObjective,stepTowardObjective} from './objectives.js
 import {pathToTile} from './tile-path.js';
 import {enterBambooPass,moveBambooSession,talkBambooSession,leaveBambooPass,VILLAGE_GATE} from './region-travel.js';
 import {drawBambooPass} from './bamboo-canvas.js';
+import {bambooTileFromPointer} from './bamboo-pointer.js';
 let bambooSession=null;
 let state=initialState();
 let eventHistory={};
@@ -97,9 +98,9 @@ canvas.addEventListener('click', event => {
   const rect=canvas.getBoundingClientRect();
   if(rect.width<=0||rect.height<=0)return;
   // Canvas tap in the independent region moves at most one adjacent tile.
-  const tx=Math.floor((event.clientX-rect.left)*canvas.width/rect.width/ (canvas.width/12));
-  const ty=Math.floor((event.clientY-rect.top)*canvas.height/rect.height/ (canvas.height/9));
-  const dx=tx-bambooSession.position.x,dy=ty-bambooSession.position.y;
+  const tile=bambooTileFromPointer(event.clientX,event.clientY,rect,canvas.width,canvas.height);
+  if(!tile)return;
+  const dx=tile.x-bambooSession.position.x,dy=tile.y-bambooSession.position.y;
   if(Math.abs(dx)+Math.abs(dy)===1)doMove(dx,dy);
   return;
  }
