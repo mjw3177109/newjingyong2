@@ -20,7 +20,7 @@ for(const id of ['hero','elder','merchant','herb','bandit']){
 const keyName = 'jianghu-q-save-v1';
 function toast(txt){const t=$('toast');t.textContent=txt;t.classList.remove('hidden');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.add('hidden'),1800);}
 function update(next){state=next;paint();}
-function save(){try{const raw=encodeCheckpoint(state,eventHistory);if(!raw || new TextEncoder().encode(raw).byteLength>MAX_SAVE_FILE_BYTES)throw new Error('invalid checkpoint');localStorage.setItem(keyName,raw);toast('进度已存入本机浏览器');}catch{toast('存档无效或浏览器存储不可用');}}
+function save(){if(bambooSession){toast('请先返回青竹村再保存；山径探索暂不支持存档');return;}try{const raw=encodeCheckpoint(state,eventHistory);if(!raw || new TextEncoder().encode(raw).byteLength>MAX_SAVE_FILE_BYTES)throw new Error('invalid checkpoint');localStorage.setItem(keyName,raw);toast('进度已存入本机浏览器');}catch{toast('存档无效或浏览器存储不可用');}}
 function load(){let raw;try{raw=localStorage.getItem(keyName);}catch{toast('浏览器存储不可用');return;}
  // Apply the same UTF-8 byte cap as portable JSON imports before parsing local data.
  if(raw && new TextEncoder().encode(raw).byteLength>MAX_SAVE_FILE_BYTES){toast('本机存档超过 64 KB，已拒绝读取');return;}
@@ -130,6 +130,7 @@ document.addEventListener('keydown',e=>{
  else if(command.kind==='quest')toast(questStatus(state).progress);
 });
 function exportSave() {
+ if(bambooSession){toast('请先返回青竹村再导出；山径探索暂不支持存档');return;}
  try {
   const raw=encodeCheckpoint(state,eventHistory);
   if(!raw || new TextEncoder().encode(raw).byteLength>MAX_SAVE_FILE_BYTES)throw new Error('invalid checkpoint');
