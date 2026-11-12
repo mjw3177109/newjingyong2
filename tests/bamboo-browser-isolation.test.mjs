@@ -6,7 +6,7 @@ import {readFileSync} from 'node:fs';
 // by shortcuts or button callbacks while an independent region is active.
 const source=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
 test('region keyboard shortcuts are limited to region-safe commands',()=>{
- assert.match(source,/if\(bambooSession && !\['move','interact','dismiss-dialog','inventory','quest'\]\.includes\(command\.kind\)\)return;/);
+ assert.match(source,/if\(bambooSession && !\['move','interact','dismiss-dialog'\]\.includes\(command\.kind\)\)return;/);
  assert.match(source,/function combatAction\(command\)\{\s*if\(bambooSession\)return;/);
 });
 test('village action buttons are guarded while exploring bamboo pass',()=>{
