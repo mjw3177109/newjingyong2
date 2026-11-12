@@ -81,6 +81,7 @@ const DEMO_FIRST_VICTORY_MARKER={
  effects:[{path:['flags','banditBeaten'],value:true}]
 };
 function combatAction(command){
+ if(bambooSession)return;
  const previous=state;
  const next=battle(previous,command);
  if(previous.combat && !previous.flags.banditBeaten && next.flags.banditBeaten && !next.combat){
@@ -104,6 +105,8 @@ canvas.addEventListener('click', event => {
 document.addEventListener('keydown',e=>{
  const command=commandForKey(e,!!state.combat,!!state.dialog);
  if(!command)return;
+ // The independent region must not mutate the village state through shortcuts.
+ if(bambooSession && !['move','interact','dismiss-dialog','inventory','quest'].includes(command.kind))return;
  e.preventDefault();
  if(command.kind==='move')doMove(command.dx,command.dy);
  else if(command.kind==='interact')action();
@@ -147,13 +150,13 @@ $('import-save-file').onchange=async e=>{
   toast('已导入当前游戏，请点击保存进度以持久化');
  } catch { toast('读取存档文件失败'); }
 };
-$('step-route').onclick=()=>update(stepTowardObjective(state));
-$('rematch').onclick=()=>update(startRematch(state));
-$('rest-village').onclick=()=>update(restAtVillage(state));
-$('equip-weapon').onclick=()=>update(equipWeapon(state));
-$('discard-potion').onclick=()=>update(discardPotion(state));
-$('sell-potion').onclick=()=>update(sellPotion(state));
-$('use-potion').onclick=()=>update(usePotion(state));
+$('step-route').onclick=()=>{if(!bambooSession)update(stepTowardObjective(state));};
+$('rematch').onclick=()=>{if(!bambooSession)update(startRematch(state));};
+$('rest-village').onclick=()=>{if(!bambooSession)update(restAtVillage(state));};
+$('equip-weapon').onclick=()=>{if(!bambooSession)update(equipWeapon(state));};
+$('discard-potion').onclick=()=>{if(!bambooSession)update(discardPotion(state));};
+$('sell-potion').onclick=()=>{if(!bambooSession)update(sellPotion(state));};
+$('use-potion').onclick=()=>{if(!bambooSession)update(usePotion(state));};
 for(const a of ['attack','guard','drink','flee'])$(a).onclick=()=>combatAction(a);
 for(const b of document.querySelectorAll('[data-direction]')) b.onclick=()=>{const d={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[b.dataset.direction];doMove(...d);};
 function poly(points,fill){ctx.beginPath();ctx.moveTo(...points[0]);for(const p of points.slice(1))ctx.lineTo(...p);ctx.closePath();ctx.fillStyle=fill;ctx.fill();}
@@ -185,9 +188,12 @@ function paint(){
  if(bambooSession){
   drawBambooPass(ctx,bambooSession,canvas.width,canvas.height);
   $('dialog').classList.add('hidden');$('combat').classList.add('hidden');
+  // Village controls otherwise retain stale enabled state while this scene is shown.
+  for(const id of ['step-route','rematch','rest-village','equip-weapon','discard-potion','sell-potion','use-potion','attack','guard','drink','flee'])$(id).disabled=true;
   $('quest-desc').textContent='竹风山径：方向键移动，靠近守径人按 E 交谈，到东侧金色出口按 E 返回。此区域探索不写入 V2 存档。';
   return;
  }
+ for(const id of ['attack','guard','flee'])$(id).disabled=false;
  ctx.clearRect(0,0,900,540);
  for(let y=0;y<HEIGHT;y++)for(let x=0;x<WIDTH;x++)tile(x,y);
  // Hand-authored scene geography; original visual geometry, not Flash-exported tiles.
