@@ -202,9 +202,11 @@ function paint(){
   $('dialog').classList.add('hidden');$('combat').classList.add('hidden');
   // Village controls otherwise retain stale enabled state while this scene is shown.
   for(const id of ['step-route','rematch','rest-village','equip-weapon','discard-potion','sell-potion','use-potion','attack','guard','drink','flee'])$(id).disabled=true;
+  $('save').disabled=true;$('export-save').disabled=true;
   $('quest-desc').textContent='竹风山径：方向键移动，靠近守径人按 E 交谈，到东侧金色出口按 E 返回。此区域探索不写入 V2 存档。';
   return;
  }
+ $('save').disabled=false;$('export-save').disabled=false;
  for(const id of ['attack','guard','flee'])$(id).disabled=false;
  ctx.clearRect(0,0,900,540);
  for(let y=0;y<HEIGHT;y++)for(let x=0;x<WIDTH;x++)tile(x,y);
