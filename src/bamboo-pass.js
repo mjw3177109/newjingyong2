@@ -16,7 +16,7 @@ export function validateRegion(region) {
   const inside=p=>p && Number.isInteger(p.x) && Number.isInteger(p.y) && p.x>=0 && p.y>=0 && p.x<region.width && p.y<region.height;
   if(!inside(region.entry)||!inside(region.exit)||!inside(region.npc)||!Array.isArray(region.blocks))return false;
   const blocked=new Set(region.blocks);
-  if(blocked.size!==region.blocks.length || [...blocked].some(v=>typeof v!=='string'||!/^(0|[1-9]\\d*),(0|[1-9]\\d*)$/.test(v)))return false;
+  if(blocked.size!==region.blocks.length || [...blocked].some(v=>typeof v!=='string'||!/^(0|[1-9]\d*),(0|[1-9]\d*)$/.test(v)))return false;
   if([...blocked].some(v=>{const [x,y]=v.split(',').map(Number);return !inside({x,y});}))return false;
   const key=p=>p.x+','+p.y;
   if([region.entry,region.exit,region.npc].some(p=>blocked.has(key(p))))return false;
