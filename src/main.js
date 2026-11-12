@@ -92,7 +92,17 @@ function combatAction(command){
 }
 // Mouse and touch taps move only one legal tile; they never auto-trigger dialogue or combat.
 canvas.addEventListener('click', event => {
- if(bambooSession||state.dialog || state.combat)return;
+ if(state.dialog || state.combat)return;
+ if(bambooSession){
+  const rect=canvas.getBoundingClientRect();
+  if(rect.width<=0||rect.height<=0)return;
+  // Canvas tap in the independent region moves at most one adjacent tile.
+  const tx=Math.floor((event.clientX-rect.left)*canvas.width/rect.width/ (canvas.width/12));
+  const ty=Math.floor((event.clientY-rect.top)*canvas.height/rect.height/ (canvas.height/9));
+  const dx=tx-bambooSession.position.x,dy=ty-bambooSession.position.y;
+  if(Math.abs(dx)+Math.abs(dy)===1)doMove(dx,dy);
+  return;
+ }
  const rect=canvas.getBoundingClientRect();
  if(rect.width<=0 || rect.height<=0)return;
  const tx=Math.floor((event.clientX-rect.left)*WIDTH/rect.width);
