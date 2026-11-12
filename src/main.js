@@ -1,4 +1,4 @@
-import {initialState,move,interact,battle,questStatus,equipWeapon,attackDamage,attackName,DEMO_SWORD,discardPotion,usePotion,canRematch,startRematch,canDrinkPotion,canRestAtVillage,restAtVillage} from './engine.js';
+import {initialState,move,interact,battle,questStatus,equipWeapon,attackDamage,attackName,DEMO_SWORD,discardPotion,sellPotion,usePotion,canRematch,startRematch,canDrinkPotion,canRestAtVillage,restAtVillage} from './engine.js';
 import {ACTORS,WIDTH,HEIGHT,TILE,BLOCKS} from './demo-data.js';
 import {commandForKey} from './controls.js';
 import {MAX_SAVE_FILE_BYTES} from './save-transfer.js';
@@ -138,6 +138,7 @@ $('rematch').onclick=()=>update(startRematch(state));
 $('rest-village').onclick=()=>update(restAtVillage(state));
 $('equip-weapon').onclick=()=>update(equipWeapon(state));
 $('discard-potion').onclick=()=>update(discardPotion(state));
+$('sell-potion').onclick=()=>update(sellPotion(state));
 $('use-potion').onclick=()=>update(usePotion(state));
 for(const a of ['attack','guard','drink','flee'])$(a).onclick=()=>combatAction(a);
 for(const b of document.querySelectorAll('[data-direction]')) b.onclick=()=>{const d={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[b.dataset.direction];doMove(...d);};
@@ -211,6 +212,7 @@ function paint(){
  const combatPotionCount=state.inventory.filter(item=>item==='回春散').length;
  combatPotion.disabled=!canDrinkPotion(state);
  combatPotion.textContent=`服药（3） · ${combatPotionCount} 包`;
+ $('sell-potion').disabled=!!state.combat||!!state.dialog||!state.inventory.includes('回春散')||state.player.silver>999999998||Math.abs(state.player.x-ACTORS.merchant.x)+Math.abs(state.player.y-ACTORS.merchant.y)>1;
  $('discard-potion').disabled=!state.inventory.includes('回春散')||!!state.combat||!!state.dialog;
  $('use-potion').disabled=!state.inventory.includes('回春散')||state.player.hp>=state.player.maxHp||!!state.combat||!!state.dialog;
  const equip=$('equip-weapon');equip.disabled=!state.inventory.includes(DEMO_SWORD)||!!state.combat||!!state.dialog;
