@@ -117,7 +117,7 @@ document.addEventListener('keydown',e=>{
  const command=commandForKey(e,!!state.combat,!!state.dialog);
  if(!command)return;
  // The independent region must not mutate the village state through shortcuts.
- if(bambooSession && !['move','interact','dismiss-dialog','inventory','quest'].includes(command.kind))return;
+ if(bambooSession && !['move','interact','dismiss-dialog'].includes(command.kind))return;
  e.preventDefault();
  if(command.kind==='move')doMove(command.dx,command.dy);
  else if(command.kind==='interact')action();
