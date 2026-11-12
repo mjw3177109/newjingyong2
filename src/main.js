@@ -6,6 +6,9 @@ import {encodeCheckpoint,decodeCheckpoint} from './browser-checkpoint.js';
 import {applySavedEvent} from './event-save-adapter.js';
 import {nextObjective,pathToObjective,stepTowardObjective} from './objectives.js';
 import {pathToTile} from './tile-path.js';
+import {enterBambooPass,moveBambooSession,talkBambooSession,leaveBambooPass,VILLAGE_GATE} from './region-travel.js';
+import {drawBambooPass} from './bamboo-canvas.js';
+let bambooSession=null;
 let state=initialState();
 let eventHistory={};
 const $=id=>document.getElementById(id), canvas=$('game'),ctx=canvas.getContext('2d');
@@ -26,15 +29,18 @@ function load(){let raw;try{raw=localStorage.getItem(keyName);}catch{toast('浏�
  const questLabel={unstarted:'未开始',active:'进行中',completed:'已完成'}[parsed.quest];
  const preview=`即将读取本机存档：任务${questLabel}，气血 ${parsed.player.hp}，银两 ${parsed.player.silver}。\n这会替换当前未保存的游戏进度，但不会删除或修改本机存档。确定继续？`;
  if(!window.confirm(preview)){toast('已取消读取，当前进度未变');return;}
- eventHistory=checkpoint.eventHistory;update(parsed);toast('进度读取成功');}
+ bambooSession=null;eventHistory=checkpoint.eventHistory;update(parsed);toast('进度读取成功');}
 // Reset both in-memory progress and this browser's saved checkpoint only after consent.
 // If storage is blocked, keep the current run rather than leaving a stale save.
 function newGame(){
  if(!window.confirm('确定重新开始原创试玩并清除本机存档？此操作无法撤销。'))return;
  try{localStorage.removeItem(keyName);}catch{toast('无法清除本机存档，未重新开始');return;}
- eventHistory={};update(initialState());toast('已重新开始原创试玩');
+ bambooSession=null;eventHistory={};update(initialState());toast('已重新开始原创试玩');
 }
-function doMove(dx,dy){update(move(state,dx,dy));}
+function doMove(dx,dy){
+ if(bambooSession){const next=moveBambooSession(bambooSession,dx,dy);if(next){bambooSession=next;paint();}return;}
+ update(move(state,dx,dy));
+}
 // Original-demo milestone only; this is not a recovered jin.swf story event.
 // The replay marker is committed only after a real quest acceptance transition.
 const DEMO_ACCEPT_MARKER={
@@ -48,6 +54,14 @@ const DEMO_COMPLETION_MARKER={
  effects:[{path:['quest'],value:'completed'}]
 };
 function action(){
+ if(bambooSession){
+  const returned=leaveBambooPass(bambooSession,state);
+  if(returned){bambooSession=null;update(returned);toast('已返回青竹村');return;}
+  const talk=talkBambooSession(bambooSession);
+  toast(talk?.dialog||'山径中暂无可交互目标；到达东侧出口按 E 返回');return;
+ }
+ const entered=enterBambooPass(state);
+ if(entered){bambooSession=entered;paint();toast('进入竹风山径（本次探索不写入存档）');return;}
  const previous=state;
  const next=interact(previous);
  if(previous.quest==='active' && next.quest==='completed'){
@@ -77,7 +91,7 @@ function combatAction(command){
 }
 // Mouse and touch taps move only one legal tile; they never auto-trigger dialogue or combat.
 canvas.addEventListener('click', event => {
- if(state.dialog || state.combat)return;
+ if(bambooSession||state.dialog || state.combat)return;
  const rect=canvas.getBoundingClientRect();
  if(rect.width<=0 || rect.height<=0)return;
  const tx=Math.floor((event.clientX-rect.left)*WIDTH/rect.width);
@@ -129,7 +143,7 @@ $('import-save-file').onchange=async e=>{
   const questLabel={unstarted:'未开始',active:'进行中',completed:'已完成'}[imported.quest];
   const preview=`即将导入存档：任务${questLabel}，气血 ${imported.player.hp}，银两 ${imported.player.silver}。\n这会替换当前未保存的游戏进度，但不会自动覆盖本机存档。确定继续？`;
   if(!window.confirm(preview)){toast('已取消导入，当前进度未变');return;}
-  eventHistory=checkpoint.eventHistory;update(imported);
+  bambooSession=null;eventHistory=checkpoint.eventHistory;update(imported);
   toast('已导入当前游戏，请点击保存进度以持久化');
  } catch { toast('读取存档文件失败'); }
 };
@@ -168,6 +182,12 @@ function actor(id,x,y,size=55){const im=images[id],X=x*TILE+TILE/2,Y=y*TILE+TILE
  else {ctx.fillStyle='#ffedc1';ctx.beginPath();ctx.arc(X,Y-9,13,0,Math.PI*2);ctx.fill();}
 }
 function paint(){
+ if(bambooSession){
+  drawBambooPass(ctx,bambooSession,canvas.width,canvas.height);
+  $('dialog').classList.add('hidden');$('combat').classList.add('hidden');
+  $('quest-desc').textContent='竹风山径：方向键移动，靠近守径人按 E 交谈，到东侧金色出口按 E 返回。此区域探索不写入 V2 存档。';
+  return;
+ }
  ctx.clearRect(0,0,900,540);
  for(let y=0;y<HEIGHT;y++)for(let x=0;x<WIDTH;x++)tile(x,y);
  // Hand-authored scene geography; original visual geometry, not Flash-exported tiles.
