@@ -14,7 +14,9 @@ export const BAMBOO_PASS = Object.freeze({
 export function validateRegion(region) {
   if(!region || !Number.isInteger(region.width) || !Number.isInteger(region.height) || region.width<3 || region.height<3)return false;
   const inside=p=>p && Number.isInteger(p.x) && Number.isInteger(p.y) && p.x>=0 && p.y>=0 && p.x<region.width && p.y<region.height;
+  if(typeof region.id!=='string'||!region.id.trim()||typeof region.name!=='string'||!region.name.trim())return false;
   if(!inside(region.entry)||!inside(region.exit)||!inside(region.npc)||!Array.isArray(region.blocks))return false;
+  if(typeof region.npc.id!=='string'||!region.npc.id.trim()||typeof region.npc.name!=='string'||!region.npc.name.trim()||typeof region.npc.dialog!=='string'||!region.npc.dialog.trim())return false;
   const blocked=new Set(region.blocks);
   if(blocked.size!==region.blocks.length || [...blocked].some(v=>typeof v!=='string'||!/^(0|[1-9]\d*),(0|[1-9]\d*)$/.test(v)))return false;
   if([...blocked].some(v=>{const [x,y]=v.split(',').map(Number);return !inside({x,y});}))return false;
