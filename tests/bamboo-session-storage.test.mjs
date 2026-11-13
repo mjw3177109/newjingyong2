@@ -63,3 +63,30 @@ test('silent, altered, or unreadable deletes cannot claim a cleared checkpoint',
   assert.equal(clearBambooSession(storage), true);
   assert.equal(storage.getItem(key), null);
 });
+
+test('readback exceptions after a write or delete fail closed', () => {
+  const valid = {regionId:'bamboo-pass',position:{x:2,y:4}};
+  let written = false;
+  const writeUnreadable = {
+    setItem() { written = true; },
+    getItem() { throw Error('read access revoked'); },
+  };
+  assert.equal(saveBambooSession(writeUnreadable, valid), false);
+  assert.equal(written, true);
+  let deleted = false;
+  const deleteUnreadable = {
+    removeItem() { deleted = true; },
+    getItem() { throw Error('read access revoked'); },
+  };
+  assert.equal(clearBambooSession(deleteUnreadable), false);
+  assert.equal(deleted, true);
+});
+
+test('region operations do not touch an unrelated V2 save key', () => {
+  const storage = memoryStorage();
+  storage.setItem('newjingyong2:save:v2', 'opaque-v2-save');
+  const valid = {regionId:'bamboo-pass',position:{x:2,y:4}};
+  assert.equal(saveBambooSession(storage, valid), true);
+  assert.equal(clearBambooSession(storage), true);
+  assert.equal(storage.getItem('newjingyong2:save:v2'), 'opaque-v2-save');
+});
