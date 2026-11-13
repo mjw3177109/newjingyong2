@@ -88,6 +88,37 @@ def main():
             assert upgraded['format'] == 'demo-event-envelope'
             assert upgraded['game']['player']['x'] == 6
             assert upgraded['eventHistory'] == {}
+            # Exercise the independent bamboo scene in real Chromium, not merely
+            # its source-level wiring. This is original demo content, not SWF fidelity.
+            bamboo_context = browser.new_context()
+            bamboo_page = bamboo_context.new_page()
+            bamboo_page.on('pageerror', lambda error: errors.append(str(error)))
+            bamboo_page.goto(url, wait_until='networkidle')
+            gate_save = json.loads(json.dumps(upgraded))
+            gate_save['game']['player']['x'] = 24
+            gate_save['game']['player']['y'] = 7
+            bamboo_page.evaluate(
+                "(raw) => localStorage.setItem('jianghu-q-save-v1', raw)",
+                json.dumps(gate_save),
+            )
+            bamboo_page.once('dialog', lambda dialog: dialog.accept())
+            bamboo_page.locator('#load').click()
+            bamboo_page.locator('#interact').click()
+            assert '竹风山径' in bamboo_page.locator('#quest-desc').inner_text()
+            assert bamboo_page.locator('#save').is_disabled()
+            assert bamboo_page.locator('#export-save').is_disabled()
+            for _ in range(9):
+                bamboo_page.keyboard.press('ArrowRight')
+            bamboo_page.keyboard.press('e')
+            assert '竹风山径' not in bamboo_page.locator('#quest-desc').inner_text()
+            assert bamboo_page.locator('#save').is_enabled()
+            assert bamboo_page.locator('#export-save').is_enabled()
+            bamboo_page.locator('#save').click()
+            returned = bamboo_page.evaluate(
+                "JSON.parse(localStorage.getItem('jianghu-q-save-v1'))"
+            )
+            assert (returned['game']['player']['x'], returned['game']['player']['y']) == (23, 7)
+            bamboo_context.close()
             # Non-empty replay metadata must survive the actual browser load/save path.
             # This is adapter persistence coverage, not an original-SWF event mapping.
             with_history = {**upgraded, 'eventHistory': {'demo_event_1': True}}
