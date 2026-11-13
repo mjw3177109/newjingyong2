@@ -1,0 +1,35 @@
+// Optional original-demo checkpoint storage, separate from V2 game saves.
+// Callers explicitly provide a Storage-like object; no implicit browser writes.
+import {encodeBambooSession, decodeBambooSession} from './bamboo-session-codec.js';
+
+export const BAMBOO_SESSION_STORAGE_KEY = 'newjingyong2:bamboo-session:v1';
+
+export function saveBambooSession(storage, session) {
+  const encoded = encodeBambooSession(session);
+  if (encoded === null || !storage || typeof storage.setItem !== 'function') return false;
+  try {
+    storage.setItem(BAMBOO_SESSION_STORAGE_KEY, encoded);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function loadBambooSession(storage) {
+  if (!storage || typeof storage.getItem !== 'function') return null;
+  try {
+    return decodeBambooSession(storage.getItem(BAMBOO_SESSION_STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+export function clearBambooSession(storage) {
+  if (!storage || typeof storage.removeItem !== 'function') return false;
+  try {
+    storage.removeItem(BAMBOO_SESSION_STORAGE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
