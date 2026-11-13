@@ -9,7 +9,9 @@ import {pathToTile} from './tile-path.js';
 import {enterBambooPass,moveBambooSession,talkBambooSession,leaveBambooPass,VILLAGE_GATE} from './region-travel.js';
 import {drawBambooPass} from './bamboo-canvas.js';
 import {bambooTileFromPointer} from './bamboo-pointer.js';
-let bambooSession=null;
+import {saveBambooSession,loadBambooSession,clearBambooSession} from './bamboo-session-storage.js';
+// Optional original-demo region recovery; never changes the V2 save schema.
+let bambooSession=loadBambooSession(typeof localStorage==='undefined'?null:localStorage);
 let state=initialState();
 let eventHistory={};
 const $=id=>document.getElementById(id), canvas=$('game'),ctx=canvas.getContext('2d');
@@ -30,16 +32,16 @@ function load(){let raw;try{raw=localStorage.getItem(keyName);}catch{toast('浏�
  const questLabel={unstarted:'未开始',active:'进行中',completed:'已完成'}[parsed.quest];
  const preview=`即将读取本机存档：任务${questLabel}，气血 ${parsed.player.hp}，银两 ${parsed.player.silver}。\n这会替换当前未保存的游戏进度，但不会删除或修改本机存档。确定继续？`;
  if(!window.confirm(preview)){toast('已取消读取，当前进度未变');return;}
- bambooSession=null;eventHistory=checkpoint.eventHistory;update(parsed);toast('进度读取成功');}
+ bambooSession=null;clearBambooSession(localStorage);eventHistory=checkpoint.eventHistory;update(parsed);toast('进度读取成功');}
 // Reset both in-memory progress and this browser's saved checkpoint only after consent.
 // If storage is blocked, keep the current run rather than leaving a stale save.
 function newGame(){
  if(!window.confirm('确定重新开始原创试玩并清除本机存档？此操作无法撤销。'))return;
  try{localStorage.removeItem(keyName);}catch{toast('无法清除本机存档，未重新开始');return;}
- bambooSession=null;eventHistory={};update(initialState());toast('已重新开始原创试玩');
+ bambooSession=null;clearBambooSession(localStorage);eventHistory={};update(initialState());toast('已重新开始原创试玩');
 }
 function doMove(dx,dy){
- if(bambooSession){const next=moveBambooSession(bambooSession,dx,dy);if(next){bambooSession=next;paint();}return;}
+ if(bambooSession){const next=moveBambooSession(bambooSession,dx,dy);if(next){bambooSession=next;saveBambooSession(localStorage,next);paint();}return;}
  update(move(state,dx,dy));
 }
 // Original-demo milestone only; this is not a recovered jin.swf story event.
@@ -57,12 +59,12 @@ const DEMO_COMPLETION_MARKER={
 function action(){
  if(bambooSession){
   const returned=leaveBambooPass(bambooSession,state);
-  if(returned){bambooSession=null;update(returned);toast('已返回青竹村');return;}
+  if(returned){bambooSession=null;clearBambooSession(localStorage);update(returned);toast('已返回青竹村');return;}
   const talk=talkBambooSession(bambooSession);
   toast(talk?.dialog||'山径中暂无可交互目标；到达东侧出口按 E 返回');return;
  }
  const entered=enterBambooPass(state);
- if(entered){bambooSession=entered;paint();toast('进入竹风山径（本次探索不写入存档）');return;}
+ if(entered){bambooSession=entered;saveBambooSession(localStorage,entered);paint();toast('进入竹风山径（独立记录位置，不写入 V2 存档）');return;}
  const previous=state;
  const next=interact(previous);
  if(previous.quest==='active' && next.quest==='completed'){
@@ -158,7 +160,7 @@ $('import-save-file').onchange=async e=>{
   const questLabel={unstarted:'未开始',active:'进行中',completed:'已完成'}[imported.quest];
   const preview=`即将导入存档：任务${questLabel}，气血 ${imported.player.hp}，银两 ${imported.player.silver}。\n这会替换当前未保存的游戏进度，但不会自动覆盖本机存档。确定继续？`;
   if(!window.confirm(preview)){toast('已取消导入，当前进度未变');return;}
-  bambooSession=null;eventHistory=checkpoint.eventHistory;update(imported);
+  bambooSession=null;clearBambooSession(localStorage);eventHistory=checkpoint.eventHistory;update(imported);
   toast('已导入当前游戏，请点击保存进度以持久化');
  } catch { toast('读取存档文件失败'); }
 };
@@ -203,7 +205,7 @@ function paint(){
   // Village controls otherwise retain stale enabled state while this scene is shown.
   for(const id of ['step-route','rematch','rest-village','equip-weapon','discard-potion','sell-potion','use-potion','attack','guard','drink','flee'])$(id).disabled=true;
   $('save').disabled=true;$('export-save').disabled=true;
-  $('quest-desc').textContent='竹风山径：方向键移动，靠近守径人按 E 交谈，到东侧金色出口按 E 返回。此区域探索不写入 V2 存档。';
+  $('quest-desc').textContent='竹风山径：方向键移动，靠近守径人按 E 交谈，到东侧金色出口按 E 返回。区域位置独立保存于本机；不写入 V2 存档。';
   return;
  }
  $('save').disabled=false;$('export-save').disabled=false;
