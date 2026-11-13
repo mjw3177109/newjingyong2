@@ -118,6 +118,28 @@ def main():
             assert '竹风山径' in bamboo_page.locator('#quest-desc').inner_text()
             for _ in range(7):
                 bamboo_page.keyboard.press('ArrowRight')
+            # A silent storage deletion failure must not exit the live region.
+            bamboo_page.evaluate("""
+                () => {
+                    const original = Storage.prototype.removeItem;
+                    window.__restoreExitRemove = () => { Storage.prototype.removeItem = original; };
+                    Storage.prototype.removeItem = function(key) {
+                        if (key === 'newjingyong2:bamboo-session:v1') return;
+                        return original.call(this, key);
+                    };
+                }
+            """)
+            before_failed_exit = bamboo_page.evaluate(
+                "localStorage.getItem('newjingyong2:bamboo-session:v1')"
+            )
+            bamboo_page.keyboard.press('e')
+            assert '无法清除山径记录' in bamboo_page.locator('#toast').inner_text()
+            assert '竹风山径' in bamboo_page.locator('#quest-desc').inner_text()
+            assert bamboo_page.locator('#save').is_disabled()
+            assert bamboo_page.evaluate(
+                "localStorage.getItem('newjingyong2:bamboo-session:v1')"
+            ) == before_failed_exit
+            bamboo_page.evaluate("window.__restoreExitRemove()")
             bamboo_page.keyboard.press('e')
             assert bamboo_page.evaluate(
                 "localStorage.getItem('newjingyong2:bamboo-session:v1')"
