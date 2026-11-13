@@ -183,6 +183,29 @@ def main():
             assert bamboo_page.evaluate(
                 "localStorage.getItem('jianghu-q-save-v1')"
             ) == village_before_failed_reset
+            # Loading/importing V2 while region cleanup is blocked must preserve
+            # the live region and avoid reporting a successful replacement.
+            bamboo_page.once('dialog', lambda dialog: dialog.accept())
+            bamboo_page.locator('#load').click()
+            assert '竹风山径' in bamboo_page.locator('#quest-desc').inner_text()
+            assert '无法清除山径记录' in bamboo_page.locator('#toast').inner_text()
+            assert bamboo_page.evaluate(
+                "localStorage.getItem('newjingyong2:bamboo-session:v1')"
+            ) == before_cancel
+            bamboo_page.once('dialog', lambda dialog: dialog.accept())
+            bamboo_page.locator('#import-save-file').set_input_files({
+                'name': 'demo-v2.json',
+                'mimeType': 'application/json',
+                'buffer': json.dumps(gate_save).encode('utf-8'),
+            })
+            # File reading is asynchronous; the confirmation may occur later.
+            bamboo_page.wait_for_function(
+                "() => document.querySelector('#toast').textContent.includes('无法清除山径记录')"
+            )
+            assert '竹风山径' in bamboo_page.locator('#quest-desc').inner_text()
+            assert bamboo_page.evaluate(
+                "localStorage.getItem('newjingyong2:bamboo-session:v1')"
+            ) == before_cancel
             bamboo_page.evaluate("window.__restoreRegionRemove()")
             bamboo_page.once('dialog', lambda dialog: dialog.accept())
             bamboo_page.locator('#new-game').click()
