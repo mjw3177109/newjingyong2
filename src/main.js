@@ -44,7 +44,7 @@ function newGame(){
  bambooSession=null;eventHistory={};update(initialState());toast('已重新开始原创试玩');
 }
 function doMove(dx,dy){
- if(bambooSession){const next=moveBambooSession(bambooSession,dx,dy);if(next){bambooSession=next;saveBambooSession(localStorage,next);paint();}return;}
+ if(bambooSession){const next=moveBambooSession(bambooSession,dx,dy);if(next){if(!saveBambooSession(localStorage,next)){toast('山径位置保存失败，移动已取消');return;}bambooSession=next;paint();}return;}
  update(move(state,dx,dy));
 }
 // Original-demo milestone only; this is not a recovered jin.swf story event.
@@ -71,7 +71,7 @@ function action(){
   toast(talk?.dialog||'山径中暂无可交互目标；到达东侧出口按 E 返回');return;
  }
  const entered=enterBambooPass(state);
- if(entered){bambooSession=entered;saveBambooSession(localStorage,entered);paint();toast('进入竹风山径（独立记录位置，不写入 V2 存档）');return;}
+ if(entered){if(!saveBambooSession(localStorage,entered)){toast('山径位置保存失败，未进入山径');return;}bambooSession=entered;paint();toast('进入竹风山径（独立记录位置，不写入 V2 存档）');return;}
  const previous=state;
  const next=interact(previous);
  if(previous.quest==='active' && next.quest==='completed'){
