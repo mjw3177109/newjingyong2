@@ -112,3 +112,22 @@ test('storage method failures preserve an existing checkpoint and unrelated save
   assert.equal(storage.getItem(key), before);
   assert.equal(storage.getItem('newjingyong2:save:v2'), 'untouched');
 });
+
+test('missing storage methods and throwing property getters fail closed', () => {
+  const valid = {regionId:'bamboo-pass',position:{x:2,y:4}};
+  assert.equal(saveBambooSession(null, valid), false);
+  assert.equal(loadBambooSession(null), null);
+  assert.equal(clearBambooSession(null), false);
+  assert.equal(saveBambooSession({}, valid), false);
+  assert.equal(loadBambooSession({}), null);
+  assert.equal(clearBambooSession({}), false);
+  const throwingGetters = {};
+  for (const method of ['getItem', 'setItem', 'removeItem']) {
+    Object.defineProperty(throwingGetters, method, {
+      get() { throw Error('storage API blocked'); },
+    });
+  }
+  assert.equal(saveBambooSession(throwingGetters, valid), false);
+  assert.equal(loadBambooSession(throwingGetters), null);
+  assert.equal(clearBambooSession(throwingGetters), false);
+});
