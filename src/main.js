@@ -37,8 +37,10 @@ function load(){let raw;try{raw=localStorage.getItem(keyName);}catch{toast('浏�
 // If storage is blocked, keep the current run rather than leaving a stale save.
 function newGame(){
  if(!window.confirm('确定重新开始原创试玩并清除本机存档？此操作无法撤销。'))return;
+ // Do not reset the live game if the independent region checkpoint remains.
+ if(!clearBambooSession(localStorage)){toast('无法清除山径记录，未重新开始');return;}
  try{localStorage.removeItem(keyName);}catch{toast('无法清除本机存档，未重新开始');return;}
- bambooSession=null;clearBambooSession(localStorage);eventHistory={};update(initialState());toast('已重新开始原创试玩');
+ bambooSession=null;eventHistory={};update(initialState());toast('已重新开始原创试玩');
 }
 function doMove(dx,dy){
  if(bambooSession){const next=moveBambooSession(bambooSession,dx,dy);if(next){bambooSession=next;saveBambooSession(localStorage,next);paint();}return;}
