@@ -30,3 +30,21 @@ test('exit returns to a walkable village tile without mutating the source',()=>{
  assert.equal(leaveBambooPass({...session,regionId:'unknown'},game),null);
  assert.equal(leaveBambooPass(session,{...game,dialog:'busy'}),null);
 });
+
+test('rejects malformed bamboo sessions across movement, dialogue and exit',()=>{
+ const game=initialState();
+ const bad=[
+  {regionId:BAMBOO_PASS.id,position:{x:4,y:1}},
+  {regionId:BAMBOO_PASS.id,position:{x:6,y:3}},
+  {regionId:BAMBOO_PASS.id,position:{x:Infinity,y:4}},
+  {regionId:BAMBOO_PASS.id,position:{x:10,y:4},extra:true},
+  {regionId:BAMBOO_PASS.id,position:{x:10,y:4,z:0}},
+  {regionId:'unknown',position:{...BAMBOO_PASS.exit}},
+ ];
+ for(const session of bad){
+  assert.equal(moveBambooSession(session,1,0),null);
+  assert.equal(talkBambooSession(session),null);
+  assert.equal(leaveBambooPass(session,game),null);
+ }
+ assert.deepEqual(game,initialState());
+});
