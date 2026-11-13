@@ -130,6 +130,26 @@ def main():
                 "JSON.parse(localStorage.getItem('jianghu-q-save-v1'))"
             )
             assert (returned['game']['player']['x'], returned['game']['player']['y']) == (23, 7)
+            # Corrupted independent region data must never block boot or be
+            # treated as a valid player position after a browser refresh.
+            bamboo_page.evaluate(
+                "() => localStorage.setItem('newjingyong2:bamboo-session:v1', '{broken-json')"
+            )
+            bamboo_page.reload(wait_until='networkidle')
+            assert '竹风山径' not in bamboo_page.locator('#quest-desc').inner_text()
+            assert bamboo_page.locator('#save').is_enabled()
+            assert bamboo_page.locator('#export-save').is_enabled()
+            # Starting over must remove a valid region checkpoint as well as
+            # the V2 game save; a subsequent refresh must not revive the region.
+            bamboo_page.locator('#interact').click()
+            assert '竹风山径' in bamboo_page.locator('#quest-desc').inner_text()
+            bamboo_page.once('dialog', lambda dialog: dialog.accept())
+            bamboo_page.locator('#new-game').click()
+            assert bamboo_page.evaluate(
+                "localStorage.getItem('newjingyong2:bamboo-session:v1')"
+            ) is None
+            bamboo_page.reload(wait_until='networkidle')
+            assert '竹风山径' not in bamboo_page.locator('#quest-desc').inner_text()
             bamboo_context.close()
             # Non-empty replay metadata must survive the actual browser load/save path.
             # This is adapter persistence coverage, not an original-SWF event mapping.
