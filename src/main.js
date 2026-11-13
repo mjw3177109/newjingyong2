@@ -32,7 +32,8 @@ function load(){let raw;try{raw=localStorage.getItem(keyName);}catch{toast('浏�
  const questLabel={unstarted:'未开始',active:'进行中',completed:'已完成'}[parsed.quest];
  const preview=`即将读取本机存档：任务${questLabel}，气血 ${parsed.player.hp}，银两 ${parsed.player.silver}。\n这会替换当前未保存的游戏进度，但不会删除或修改本机存档。确定继续？`;
  if(!window.confirm(preview)){toast('已取消读取，当前进度未变');return;}
- bambooSession=null;clearBambooSession(localStorage);eventHistory=checkpoint.eventHistory;update(parsed);toast('进度读取成功');}
+ if(!clearBambooSession(localStorage)){toast('无法清除山径记录，未读取存档');return;}
+ bambooSession=null;eventHistory=checkpoint.eventHistory;update(parsed);toast('进度读取成功');}
 // Reset both in-memory progress and this browser's saved checkpoint only after consent.
 // If storage is blocked, keep the current run rather than leaving a stale save.
 function newGame(){
@@ -162,7 +163,8 @@ $('import-save-file').onchange=async e=>{
   const questLabel={unstarted:'未开始',active:'进行中',completed:'已完成'}[imported.quest];
   const preview=`即将导入存档：任务${questLabel}，气血 ${imported.player.hp}，银两 ${imported.player.silver}。\n这会替换当前未保存的游戏进度，但不会自动覆盖本机存档。确定继续？`;
   if(!window.confirm(preview)){toast('已取消导入，当前进度未变');return;}
-  bambooSession=null;clearBambooSession(localStorage);eventHistory=checkpoint.eventHistory;update(imported);
+  if(!clearBambooSession(localStorage)){toast('无法清除山径记录，未导入存档');return;}
+  bambooSession=null;eventHistory=checkpoint.eventHistory;update(imported);
   toast('已导入当前游戏，请点击保存进度以持久化');
  } catch { toast('读取存档文件失败'); }
 };
