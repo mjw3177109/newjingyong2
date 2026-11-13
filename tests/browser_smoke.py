@@ -159,6 +159,31 @@ def main():
             ) == before_cancel, 'cancelled reset must preserve the region checkpoint'
             bamboo_page.reload(wait_until='networkidle')
             assert '竹风山径' in bamboo_page.locator('#quest-desc').inner_text()
+            # A storage adapter that silently ignores region deletion must not
+            # reset the live game or discard its village save.
+            bamboo_page.evaluate("""
+                () => {
+                    const original = Storage.prototype.removeItem;
+                    window.__restoreRegionRemove = () => { Storage.prototype.removeItem = original; };
+                    Storage.prototype.removeItem = function(key) {
+                        if (key === 'newjingyong2:bamboo-session:v1') return;
+                        return original.call(this, key);
+                    };
+                }
+            """)
+            village_before_failed_reset = bamboo_page.evaluate(
+                "localStorage.getItem('jianghu-q-save-v1')"
+            )
+            bamboo_page.once('dialog', lambda dialog: dialog.accept())
+            bamboo_page.locator('#new-game').click()
+            assert '竹风山径' in bamboo_page.locator('#quest-desc').inner_text()
+            assert bamboo_page.evaluate(
+                "localStorage.getItem('newjingyong2:bamboo-session:v1')"
+            ) == before_cancel
+            assert bamboo_page.evaluate(
+                "localStorage.getItem('jianghu-q-save-v1')"
+            ) == village_before_failed_reset
+            bamboo_page.evaluate("window.__restoreRegionRemove()")
             bamboo_page.once('dialog', lambda dialog: dialog.accept())
             bamboo_page.locator('#new-game').click()
             assert bamboo_page.evaluate(
