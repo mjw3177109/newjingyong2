@@ -90,3 +90,25 @@ test('region operations do not touch an unrelated V2 save key', () => {
   assert.equal(clearBambooSession(storage), true);
   assert.equal(storage.getItem('newjingyong2:save:v2'), 'opaque-v2-save');
 });
+
+
+test('storage method failures preserve an existing checkpoint and unrelated save', () => {
+  const key = BAMBOO_SESSION_STORAGE_KEY;
+  const storage = memoryStorage();
+  const valid = {regionId:'bamboo-pass',position:{x:2,y:4}};
+  assert.equal(saveBambooSession(storage, valid), true);
+  storage.setItem('newjingyong2:save:v2', 'untouched');
+  const before = storage.getItem(key);
+  const failingWrite = {
+    getItem: k => storage.getItem(k),
+    setItem() { throw Error('quota exceeded'); },
+  };
+  assert.equal(saveBambooSession(failingWrite, valid), false);
+  const failingDelete = {
+    getItem: k => storage.getItem(k),
+    removeItem() { throw Error('permission denied'); },
+  };
+  assert.equal(clearBambooSession(failingDelete), false);
+  assert.equal(storage.getItem(key), before);
+  assert.equal(storage.getItem('newjingyong2:save:v2'), 'untouched');
+});
