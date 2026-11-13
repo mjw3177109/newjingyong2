@@ -29,7 +29,9 @@ export function clearBambooSession(storage) {
   if (!storage || typeof storage.removeItem !== 'function') return false;
   try {
     storage.removeItem(BAMBOO_SESSION_STORAGE_KEY);
-    return true;
+    // Some Storage-like adapters silently ignore deletes. Verify removal before
+    // allowing callers to reset game state and assume the checkpoint is gone.
+    return typeof storage.getItem === 'function' && storage.getItem(BAMBOO_SESSION_STORAGE_KEY) === null;
   } catch {
     return false;
   }
