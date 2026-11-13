@@ -103,8 +103,43 @@ def main():
             )
             bamboo_page.once('dialog', lambda dialog: dialog.accept())
             bamboo_page.locator('#load').click()
+            # Reject entry when localStorage silently discards the region checkpoint.
+            bamboo_page.evaluate("""
+                () => {
+                    const original = Storage.prototype.setItem;
+                    window.__restoreBambooSet = () => { Storage.prototype.setItem = original; };
+                    Storage.prototype.setItem = function(key, value) {
+                        if (key === 'newjingyong2:bamboo-session:v1') return;
+                        return original.call(this, key, value);
+                    };
+                }
+            """)
+            bamboo_page.locator('#interact').click()
+            assert '山径位置保存失败' in bamboo_page.locator('#toast').inner_text()
+            assert '竹风山径' not in bamboo_page.locator('#quest-desc').inner_text()
+            assert bamboo_page.evaluate(
+                "localStorage.getItem('newjingyong2:bamboo-session:v1')"
+            ) is None
+            bamboo_page.evaluate("window.__restoreBambooSet()")
             bamboo_page.locator('#interact').click()
             assert '竹风山径' in bamboo_page.locator('#quest-desc').inner_text()
+            # Failed movement writes must preserve the previous persisted position.
+            bamboo_page.evaluate("""
+                () => {
+                    const original = Storage.prototype.setItem;
+                    window.__restoreBambooSet = () => { Storage.prototype.setItem = original; };
+                    Storage.prototype.setItem = function(key, value) {
+                        if (key === 'newjingyong2:bamboo-session:v1') return;
+                        return original.call(this, key, value);
+                    };
+                }
+            """)
+            bamboo_page.keyboard.press('ArrowRight')
+            assert '山径位置保存失败' in bamboo_page.locator('#toast').inner_text()
+            assert bamboo_page.evaluate(
+                "JSON.parse(localStorage.getItem('newjingyong2:bamboo-session:v1')).position"
+            ) == {'x': 1, 'y': 4}
+            bamboo_page.evaluate("window.__restoreBambooSet()")
             assert bamboo_page.locator('#save').is_disabled()
             assert bamboo_page.locator('#export-save').is_disabled()
             for _ in range(2):
