@@ -47,3 +47,19 @@ test('silent or altered writes must not be reported as successful', () => {
   const noReadback = {setItem(){}};
   assert.equal(saveBambooSession(noReadback, valid), false);
 });
+
+test('silent, altered, or unreadable deletes cannot claim a cleared checkpoint', () => {
+  const key = BAMBOO_SESSION_STORAGE_KEY;
+  const retained = {getItem: () => '{"still":"present"}', removeItem() {}};
+  assert.equal(clearBambooSession(retained), false);
+  const unreadable = {removeItem() {}};
+  assert.equal(clearBambooSession(unreadable), false);
+  const altered = {getItem: () => '{}', removeItem() {}};
+  assert.equal(clearBambooSession(altered), false);
+  const empty = {getItem: () => null, removeItem() {}};
+  assert.equal(clearBambooSession(empty), true);
+  const storage = memoryStorage();
+  storage.setItem(key, 'checkpoint');
+  assert.equal(clearBambooSession(storage), true);
+  assert.equal(storage.getItem(key), null);
+});
