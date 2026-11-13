@@ -107,9 +107,21 @@ def main():
             assert '竹风山径' in bamboo_page.locator('#quest-desc').inner_text()
             assert bamboo_page.locator('#save').is_disabled()
             assert bamboo_page.locator('#export-save').is_disabled()
-            for _ in range(9):
+            for _ in range(2):
+                bamboo_page.keyboard.press('ArrowRight')
+            stored_region = bamboo_page.evaluate(
+                "JSON.parse(localStorage.getItem('newjingyong2:bamboo-session:v1'))"
+            )
+            assert stored_region['position'] == {'x': 3, 'y': 4}
+            bamboo_page.reload(wait_until='networkidle')
+            assert bamboo_page.locator('#save').is_disabled(), 'region did not restore after refresh'
+            assert '竹风山径' in bamboo_page.locator('#quest-desc').inner_text()
+            for _ in range(7):
                 bamboo_page.keyboard.press('ArrowRight')
             bamboo_page.keyboard.press('e')
+            assert bamboo_page.evaluate(
+                "localStorage.getItem('newjingyong2:bamboo-session:v1')"
+            ) is None, 'exiting region must clear the independent checkpoint'
             assert '竹风山径' not in bamboo_page.locator('#quest-desc').inner_text()
             assert bamboo_page.locator('#save').is_enabled()
             assert bamboo_page.locator('#export-save').is_enabled()
