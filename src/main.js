@@ -62,7 +62,11 @@ const DEMO_COMPLETION_MARKER={
 function action(){
  if(bambooSession){
   const returned=leaveBambooPass(bambooSession,state);
-  if(returned){bambooSession=null;clearBambooSession(localStorage);update(returned);toast('已返回青竹村');return;}
+  if(returned){
+   // Do not leave the region while its persisted checkpoint still exists.
+   if(!clearBambooSession(localStorage)){toast('无法清除山径记录，未离开山径');return;}
+   bambooSession=null;update(returned);toast('已返回青竹村');return;
+  }
   const talk=talkBambooSession(bambooSession);
   toast(talk?.dialog||'山径中暂无可交互目标；到达东侧出口按 E 返回');return;
  }
