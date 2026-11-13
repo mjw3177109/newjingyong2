@@ -37,3 +37,13 @@ test('corrupt storage and storage exceptions fail closed', () => {
   assert.equal(saveBambooSession(broken, {regionId:'bamboo-pass',position:{x:2,y:4}}), false);
   assert.equal(clearBambooSession(broken), false);
 });
+
+test('silent or altered writes must not be reported as successful', () => {
+  const valid = {regionId:'bamboo-pass',position:{x:2,y:4}};
+  const dropped = {setItem(){},getItem(){return null;}};
+  assert.equal(saveBambooSession(dropped, valid), false);
+  const altered = {setItem(){},getItem(){return '{}';}};
+  assert.equal(saveBambooSession(altered, valid), false);
+  const noReadback = {setItem(){}};
+  assert.equal(saveBambooSession(noReadback, valid), false);
+});
