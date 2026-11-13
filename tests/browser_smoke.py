@@ -146,6 +146,19 @@ def main():
             bamboo_page.keyboard.press('ArrowRight')  # approach gate x=24
             bamboo_page.locator('#interact').click()
             assert '竹风山径' in bamboo_page.locator('#quest-desc').inner_text()
+            # Cancelling a reset must preserve the live region and its checkpoint.
+            before_cancel = bamboo_page.evaluate(
+                "localStorage.getItem('newjingyong2:bamboo-session:v1')"
+            )
+            assert before_cancel is not None
+            bamboo_page.once('dialog', lambda dialog: dialog.dismiss())
+            bamboo_page.locator('#new-game').click()
+            assert '竹风山径' in bamboo_page.locator('#quest-desc').inner_text()
+            assert bamboo_page.evaluate(
+                "localStorage.getItem('newjingyong2:bamboo-session:v1')"
+            ) == before_cancel, 'cancelled reset must preserve the region checkpoint'
+            bamboo_page.reload(wait_until='networkidle')
+            assert '竹风山径' in bamboo_page.locator('#quest-desc').inner_text()
             bamboo_page.once('dialog', lambda dialog: dialog.accept())
             bamboo_page.locator('#new-game').click()
             assert bamboo_page.evaluate(
