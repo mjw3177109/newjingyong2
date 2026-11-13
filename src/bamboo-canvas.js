@@ -2,7 +2,11 @@
 import {BAMBOO_PASS} from './bamboo-pass.js';
 export function drawBambooPass(ctx,session,canvasWidth=900,canvasHeight=540){
  if(!ctx||session?.regionId!==BAMBOO_PASS.id||!Number.isFinite(canvasWidth)||!Number.isFinite(canvasHeight)||canvasWidth<=0||canvasHeight<=0||!Number.isInteger(session?.position?.x)||!Number.isInteger(session?.position?.y)||session.position.x<0||session.position.y<0||session.position.x>=BAMBOO_PASS.width||session.position.y>=BAMBOO_PASS.height)return false;
- const r=BAMBOO_PASS,cell=Math.min(canvasWidth/r.width,canvasHeight/r.height);
+ const r=BAMBOO_PASS;
+ // Reject impossible session locations before drawing any pixels.
+ if(r.blocks.includes(session.position.x+','+session.position.y) ||
+    (session.position.x===r.npc.x && session.position.y===r.npc.y))return false;
+ const cell=Math.min(canvasWidth/r.width,canvasHeight/r.height);
  if(!Number.isFinite(cell)||cell<=0)return false;
  const ox=(canvasWidth-cell*r.width)/2,oy=(canvasHeight-cell*r.height)/2;
  if(!Number.isFinite(ox)||!Number.isFinite(oy))return false;
