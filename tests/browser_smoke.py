@@ -141,6 +141,7 @@ def main():
             assert bamboo_page.locator('#export-save').is_enabled()
             # Starting over must remove a valid region checkpoint as well as
             # the V2 game save; a subsequent refresh must not revive the region.
+            bamboo_page.keyboard.press('ArrowRight')  # village return x=23 -> gate x=24
             bamboo_page.locator('#interact').click()
             assert '竹风山径' in bamboo_page.locator('#quest-desc').inner_text()
             bamboo_page.once('dialog', lambda dialog: dialog.accept())
