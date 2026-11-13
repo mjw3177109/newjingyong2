@@ -8,8 +8,8 @@ export function bambooTileFromPointer(clientX,clientY,rect,canvasWidth,canvasHei
  if(!Number.isFinite(cell)||cell<=0)return null;
  const ox=(canvasWidth-cell*BAMBOO_PASS.width)/2;
  const oy=(canvasHeight-cell*BAMBOO_PASS.height)/2;
- const px=(clientX-rect.left)*canvasWidth/rect.width;
- const py=(clientY-rect.top)*canvasHeight/rect.height;
+ const px=((clientX-rect.left)/rect.width)*canvasWidth;
+ const py=((clientY-rect.top)/rect.height)*canvasHeight;
  if(![ox,oy,px,py].every(Number.isFinite))return null;
  const x=Math.floor((px-ox)/cell),y=Math.floor((py-oy)/cell);
  if(!Number.isSafeInteger(x)||!Number.isSafeInteger(y))return null;
