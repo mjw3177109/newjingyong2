@@ -9,7 +9,8 @@ export function saveBambooSession(storage, session) {
   if (encoded === null || !storage || typeof storage.setItem !== 'function') return false;
   try {
     storage.setItem(BAMBOO_SESSION_STORAGE_KEY, encoded);
-    return true;
+    // A Storage-like adapter may silently drop writes; only report success on readback.
+    return typeof storage.getItem === 'function' && storage.getItem(BAMBOO_SESSION_STORAGE_KEY) === encoded;
   } catch {
     return false;
   }
