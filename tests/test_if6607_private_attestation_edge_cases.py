@@ -40,6 +40,13 @@ class IF6607PrivateEvidenceEdgeCases(unittest.TestCase):
         record["status"] = "published"
         self.assertIn("invalid status", validate(record))
 
+    def test_rights_reference_traversal_rejected(self):
+        for ref in ("../../private", "private/../secret", "private/./secret", "private//secret"):
+            with self.subTest(ref=ref):
+                record = sample()
+                record["rights_evidence_ref"] = ref
+                self.assertIn("rights evidence reference missing or unsafe", validate(record))
+
     def test_unsafe_rights_reference_rejected(self):
         record = sample()
         record["rights_evidence_ref"] = "../../private rights\nsource"
