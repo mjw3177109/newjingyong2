@@ -110,6 +110,30 @@ def main():
             no_save_page.wait_for_function(
                 "() => document.querySelector('#toast').textContent.includes('已导入当前游戏')"
             )
+            # A silently dropped entry snapshot must block travel, even if
+            # the independent bamboo-session storage would otherwise succeed.
+            no_save_page.evaluate("""
+                () => {
+                    const original = Storage.prototype.setItem;
+                    window.__restoreEntrySet = () => {
+                        Storage.prototype.setItem = original;
+                    };
+                    Storage.prototype.setItem = function(key, value) {
+                        if (key === 'newjingyong2:bamboo-entry:v1') return;
+                        return original.call(this, key, value);
+                    };
+                }
+            """)
+            no_save_page.locator('#interact').click()
+            assert '村庄入口快照保存失败' in no_save_page.locator('#toast').inner_text()
+            assert '竹风山径' not in no_save_page.locator('#quest-desc').inner_text()
+            assert no_save_page.evaluate(
+                "localStorage.getItem('newjingyong2:bamboo-session:v1')"
+            ) is None
+            assert no_save_page.evaluate(
+                "localStorage.getItem('jianghu-q-save-v1')"
+            ) is None
+            no_save_page.evaluate("window.__restoreEntrySet()")
             no_save_page.locator('#interact').click()
             assert '竹风山径' in no_save_page.locator('#quest-desc').inner_text()
             assert no_save_page.evaluate(
