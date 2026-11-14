@@ -88,6 +88,49 @@ def main():
             assert upgraded['format'] == 'demo-event-envelope'
             assert upgraded['game']['player']['x'] == 6
             assert upgraded['eventHistory'] == {}
+            # A fresh browser without a manual V2 save must survive bamboo refresh.
+            # Importing a gate checkpoint changes live state only; it must not
+            # silently create or overwrite the user's manual checkpoint.
+            no_save_context = browser.new_context()
+            no_save_page = no_save_context.new_page()
+            no_save_page.on('pageerror', lambda error: errors.append(str(error)))
+            no_save_page.goto(url, wait_until='networkidle')
+            unsaved_gate = json.loads(json.dumps(upgraded))
+            unsaved_gate['game']['player']['x'] = 24
+            unsaved_gate['game']['player']['y'] = 7
+            assert no_save_page.evaluate(
+                "localStorage.getItem('jianghu-q-save-v1')"
+            ) is None
+            no_save_page.once('dialog', lambda dialog: dialog.accept())
+            no_save_page.locator('#import-save-file').set_input_files({
+                'name': 'unsaved-gate.json',
+                'mimeType': 'application/json',
+                'buffer': json.dumps(unsaved_gate).encode('utf-8'),
+            })
+            no_save_page.wait_for_function(
+                "() => document.querySelector('#toast').textContent.includes('已导入当前游戏')"
+            )
+            no_save_page.locator('#interact').click()
+            assert '竹风山径' in no_save_page.locator('#quest-desc').inner_text()
+            assert no_save_page.evaluate(
+                "localStorage.getItem('newjingyong2:bamboo-entry:v1')"
+            ) is not None
+            assert no_save_page.evaluate(
+                "localStorage.getItem('jianghu-q-save-v1')"
+            ) is None
+            no_save_page.reload(wait_until='networkidle')
+            assert '竹风山径' in no_save_page.locator('#quest-desc').inner_text()
+            for _ in range(9):
+                no_save_page.keyboard.press('ArrowRight')
+            no_save_page.keyboard.press('e')
+            assert '竹风山径' not in no_save_page.locator('#quest-desc').inner_text()
+            assert no_save_page.evaluate(
+                "localStorage.getItem('newjingyong2:bamboo-entry:v1')"
+            ) is None
+            assert no_save_page.evaluate(
+                "localStorage.getItem('jianghu-q-save-v1')"
+            ) is None, 'region recovery must not create a manual V2 save'
+            no_save_context.close()
             # Exercise the independent bamboo scene in real Chromium, not merely
             # its source-level wiring. This is original demo content, not SWF fidelity.
             bamboo_context = browser.new_context()
