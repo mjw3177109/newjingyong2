@@ -131,6 +131,9 @@ def main():
                 "localStorage.getItem('newjingyong2:bamboo-session:v1')"
             ) is None
             assert no_save_page.evaluate(
+                "localStorage.getItem('newjingyong2:bamboo-entry:v1')"
+            ) is None, 'rejected entry snapshot must not leave an orphan checkpoint'
+            assert no_save_page.evaluate(
                 "localStorage.getItem('jianghu-q-save-v1')"
             ) is None
             no_save_page.evaluate("window.__restoreEntrySet()")
