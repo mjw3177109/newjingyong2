@@ -26,7 +26,7 @@ export function talkBambooSession(session){
 }
 export function leaveBambooPass(session,game){
  if(!normalizeBambooCheckpoint(session)||!reachedRegionExit(BAMBOO_PASS,session.position)||
-    !game||game.combat||game.dialog||!villageWalkable(VILLAGE_RETURN))return null;
+    !game||game.combat||game.dialog||!villageWalkable(game.player)||!same(game.player,VILLAGE_GATE)||!villageWalkable(VILLAGE_RETURN))return null;
  // Caller must replace the game state only on successful exit; no save-schema changes.
  return {...game,player:{...game.player,...VILLAGE_RETURN}};
 }
