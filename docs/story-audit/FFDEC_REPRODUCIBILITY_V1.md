@@ -1,0 +1,67 @@
+# FFDec 两次独立导出一致性核验（2026-10-30）
+
+## 已观察到的问题
+
+同一原始 SWF 的不同 GitHub Actions 运行曾出现前 100 个审查候选的整数字面帧跳转统计 **474/3** 与 **469/2**（前者为跳转数，后者为严格简单 if 守卫数）。尚未证明差异源于 FFDec、导出文件内容、候选排序还是脚本扫描器。不能把任意一次数字当作稳定的原作事件计数。
+
+## 本轮最小实现
+
+- 在 \`ffdec-java8-probe\` 同一作业里用 Java 8 + 仓库 FFDec，对同一个 \`jin.swf\` 分别导出两次到不同的临时目录。
+- 两份导出分别生成匿名索引、前 100 个候选队列、帧跳转证据；用 \`tools/compare_ffdec_exports.py\` 做逐层比较。
+- 输出仅含 SWF 哈希、两份导出的匿名清单指纹、脚本/候选/跳转/守卫计数，以及新增/缺失路径数、同路径内容变化数、共同候选跳转数变化数。
+- 临时脚本、路径、对话、音频、图像及 FFDec 原始日志不公开上传。报告中的 \`stable\` 只表示本次同环境两次导出相同，不代表跨运行稳定或剧情语义已核实。
+- 不同 SWF 哈希、队列成员被篡改、候选 ID 不一致、帧跳转总数不匹配时直接报错；对真实差异生成 \`divergent\` 报告，保留证据而不是伪装成功。
+
+## 验收与下一步
+
+使用 \`python -m unittest discover -s tests -p 'test_*.py'\` 验证合成输入；真实数据以 GitHub Actions 的 \`ffdec-source-free-reproducibility\` Artifact 为准。后续若同轮稳定而跨轮仍不稳定，比较不同 Actions 的匿名指纹和候选重叠；若同轮不稳定，先定位 FFDec 导出或排序问题。**已核实原作剧情事件仍为 0 条**，不把语法统计接入正式剧情。
+
+## 真实线上双导出验收（2026-10-30 13:25 UTC）
+
+- 功能提交：[aa963cb](https://github.com/mjw3177109/newjingyong2/commit/aa963cb03a5998fc7d15f78e53d57fcc9ec5fc0b)。
+- [GitHub Actions #41062957723](https://github.com/mjw3177109/newjingyong2/actions/runs/41062957723)：三个作业均 success；Python 19/19、Node 13/13。FFDec Java 8 两次退出码均为 0。
+- 同一 CI 作业内，两次独立导出各 **4,560** 个脚本文件、各 **2,323** 个控制流候选，前 100 个候选各检测到 **474** 个字面跳转与 **3** 个简单 if 守卫；匿名索引和逐候选语法统计对比结果 **stable**，同路径脚本内容变化数 **0**。
+- 对照 [早前 Actions #41054786935](https://github.com/mjw3177109/newjingyong2/actions/runs/41054786935) 的 **469/2**，说明 **跨运行仍有未解释差异**。同轮 stable 不能证明跨机器或跨时间稳定，也不能直接认定 FFDec 存在缺陷。
+- 下一步：对比两个 Actions 的 `ffdec-source-free-script-index`、`ffdec-source-free-review-queue` 和 `ffdec-source-free-frame-jumps` 归档，先区分导出内容差异、排序差异还是扫描器差异；必要时增加跨运行指纹基线。当前原作剧情语义核实仍为 **0 条**。
+
+## 同一作业内出现真实差异（2026-10-30 13:27 UTC）
+
+- [GitHub Actions #41063299964](https://github.com/mjw3177109/newjingyong2/actions/runs/41063299964) 在相同 Java 8、FFDec JAR 和 `jin.swf` 下，**第一次 474/3、第二次 469/2**，两次各导出 4,560 个脚本文件、筛选 2,323 个控制流候选。
+- 脱敏比较结果为 **divergent**：**至少 1 个相同匿名路径的导出脚本内容发生变化**；共同入选候选的跳转/守卫计数没有差异。具体候选集合是否变化应继续查 `ffdec-source-free-reproducibility` Artifact，不能仅凭总数推断。
+- 这证明同环境连续导出也可能不一致。上一轮双导出稳定是单次观察，不能概括为 FFDec 全局稳定。后续需固定/复核该匿名脚本，并对剧情审计只采纳经复核的稳定证据。
+- 本次 CI 的 20 项 Python 测试、13 项 Node 测试均通过；FFDec 可执行性成功，但**导出可复现性不通过**。诊断工作流保留成功并发出警告，PR 继续 Draft。
+
+## 2026-11-01 三次导出按匿名脚本定位漂移模式
+
+- 发现：原有三次导出报告只提供整个导出集合的 `a_c_equal` 等模式。即使三个完整清单彼此不同，仍可能有多个脚本分别出现 `a_b_equal`、`a_c_equal` 等局部重复模式；只看整体模式无法定位不稳定候选。
+- 最小补强：`tools/triage_ffdec_three_exports.py` 对每个发生差异的匿名路径分别统计 `a_b_equal`、`a_c_equal`、`b_c_equal`、`all_distinct`，再区分 **内容差异** 和 **路径成员差异**。新增 `changed_path_variation_examples`（仅 SHA-256、模式和差异类别），保留旧字段兼容已有消费者；样例仍受 `--limit` 限制，汇总计数不截断。
+- 证据边界：这些字段只说明同一哈希路径在三次独立导出中的一致性；不包含原始路径、反编译脚本、字符串或素材，也不判定哪一次是权威结果。只有出现前两次不一致时 CI 才会触发第三次导出。原作语义已核实事件仍为 **0**。
+- 合成回归覆盖：整体三份各异但各脚本存在不同重复对、内容变化与成员变化混合、样例截断不影响计数。执行 `python -m unittest discover -s tests -p 'test_*.py'`；真实 FFDec 漂移需等待相应 GitHub Actions 触发才有新样本。
+
+
+## 2026-11-04 Push Actions #41906141313：三次 FFDec 导出实测
+
+- [Push Actions #41906141313](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313) 的 `ffdec-java8-probe` 最终 **success**；Java 8 + 仓库 FFDec CLI 三次独立导出均完成，A/B/C 各索引 **4,560** 个脚本。
+- A/B 为 `divergent`：路径成员变化 0，同一路径内容变化 1；A/C 完整匿名映射相等，B 为本次观察到的 outlier（不是错误版本判定）。本轮 A/B 前 100 候选字面跳转/简单守卫分别为 **83/3** 与 **69/2**。
+- A/B 稳定候选集 99、排除 2；第三次 C 与 99 个保留候选全部一致，第三次隔离数 0。稳定候选集合计 69 个字面跳转、2 个简单守卫。
+- FFDec 日志指纹模式为 `all_distinct`，只代表原始日志字节不完全相同；日志内容未上传，标记计数不等于报错或剧情证据。
+- 这说明三次导出仍存在单脚本间歇差异，但本轮 99 个保留候选均通过 C 的内容哈希复核。不能指定 B 为错误或把 A/C 一致推广为跨运行确定性。**原作已语义核实剧情事件仍为 0。**
+
+Artifact： [三次导出 triage](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313/artifacts/13360271955)、[双导出可复现性](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313/artifacts/13360526585)、[稳定候选集](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313/artifacts/13360376898)、[第三次隔离](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313/artifacts/13360406824)。
+
+
+## 2026-11-04 Push Actions #41906667212：本轮双导出稳定
+
+- 最新 head `583de49` 的 [Push Actions #41906667212](https://github.com/mjw3177109/newjingyong2/actions/runs/41906667212) 四个作业全部 success。Java 8 + FFDec 两次独立导出均成功，各 4,560 个脚本。
+- 本轮 A/B 完整匿名映射为 `stable`；100 个入选候选全部稳定、排除 0；字面帧跳转 83、简单守卫 3。因为 A/B 稳定，按工作流规则没有第三次导出，故本轮不应有 three-run triage 或 third-export quarantine Artifact。
+- 与较早的 [#41906141313](https://github.com/mjw3177109/newjingyong2/actions/runs/41906141313) 同日样本对照：前一轮 A/B divergent、A/C equal、B outlier；本轮 A/B stable。**这说明间歇性差异仍未定位根因**，不能把单次 stable 当作永久可复现保证。
+- 原作剧情语义核实仍为 **0 条**；稳定索引/跳转统计不构成剧情、地图或战斗数值证据。
+
+## 2026-11-10 PR Actions #42775116332：双导出稳定性复核
+
+- [Actions #42775116332](https://github.com/mjw3177109/newjingyong2/actions/runs/42775116332) 的 `ffdec-java8-probe` 作业为 `completed/success`，本次核对了该作业原始日志，而不只依赖工作流总状态。
+- 日志记录两次 FFDec 导出的脱敏比较结果 `stable`，候选跳转计数差异 0、守卫计数差异 0、候选成员仅在 A/B 的数量均为 0；字节级诊断 `stable`，同路径内容变化 0。
+- 日志中脚本索引为 **4,560** 个文件、审查队列从 **2,323** 个启发式候选中选取 **100** 个；可复现语法候选 **100**、排除 **0**、稳定字面跳转 **83**。SWF SHA-256 为 `d762a8f95d22b87916ae375968d425b4d4d34390bbc5d234338bfb58f85d4a30`。
+- 因本次 A/B 稳定，条件性的第三次导出隔离文件没有产生；日志显示相关可选 Artifact `No files were found`，不应误报为 FFDec 作业失败。
+- **限制：** 本次同轮稳定不消除历史间歇性漂移；匿名语法候选不代表剧情事件，IF 6607 的真实条件栈、双路径轨迹和状态副作用仍未得到独立语义核实。已核实原作剧情事件继续为 **0 条**。
+- 下一步：优先获取 IF 6607 的私有运行时语义证据及独立复核，不再把重复的稳定导出统计当作剧情复刻进度。
