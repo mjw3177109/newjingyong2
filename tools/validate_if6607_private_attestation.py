@@ -37,7 +37,7 @@ def validate(record):
         if record.get(key) is not True:
             errors.append("not verified: " + key)
     ref = record.get("rights_evidence_ref")
-    if (not isinstance(ref, str) or not re.fullmatch(r"[A-Za-z0-9_.:/-]{4,120}", ref)
+    if (not isinstance(ref, str) or len(ref) > 120 or not re.fullmatch(r"[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*", ref)
             or any(part in ("", ".", "..") for part in ref.split("/"))):
         errors.append("rights evidence reference missing or unsafe")
     if record.get("status") not in (None, "private_review_complete"):
