@@ -47,6 +47,18 @@ class IF6607PrivateEvidenceEdgeCases(unittest.TestCase):
                 record["rights_evidence_ref"] = ref
                 self.assertIn("rights evidence reference missing or unsafe", validate(record))
 
+    def test_absolute_and_url_rights_references_rejected(self):
+        for ref in ("/private/review", "https://example.com/proof", "C:/private/review", "private\\\\review", "private/review?token=abc"):
+            with self.subTest(ref=ref):
+                record = sample()
+                record["rights_evidence_ref"] = ref
+                self.assertIn("rights evidence reference missing or unsafe", validate(record))
+
+    def test_relative_rights_reference_remains_valid(self):
+        record = sample()
+        record["rights_evidence_ref"] = "private/review-001"
+        self.assertEqual([], validate(record))
+
     def test_unsafe_rights_reference_rejected(self):
         record = sample()
         record["rights_evidence_ref"] = "../../private rights\nsource"
