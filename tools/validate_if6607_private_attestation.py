@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Validate a PRIVATE IF6607 review attestation; never publish source excerpts."""
 import argparse
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -52,12 +53,25 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("manifest", type=Path)
     parser.add_argument("--expected-source-sha256", help="SHA-256 independently measured from the private source SWF")
+    parser.add_argument("--source-swf", type=Path, help="Independently hash the local private SWF; do not upload it")
     args = parser.parse_args()
+    if args.source_swf is not None and args.expected_source_sha256 is not None:
+        parser.error("use either --source-swf or --expected-source-sha256")
+    measured_sha = args.expected_source_sha256
+    if args.source_swf is not None:
+        try:
+            digest = hashlib.sha256()
+            with args.source_swf.open("rb") as source:
+                for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            measured_sha = digest.hexdigest()
+        except OSError as exc:
+            parser.exit(2, "cannot hash private source SWF: " + str(exc) + "\n")
     try:
         record = json.loads(args.manifest.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         parser.exit(2, "cannot read JSON manifest: " + str(exc) + "\n")
-    errors = validate(record, expected_source_sha256=args.expected_source_sha256)
+    errors = validate(record, expected_source_sha256=measured_sha)
     if errors:
         for error in errors:
             print("BLOCKED:", error)
