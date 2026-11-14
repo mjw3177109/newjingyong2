@@ -20,11 +20,23 @@ for(const id of ['hero','elder','merchant','herb','bandit']){
  const img=new Image();img.src=`./assets/${id}.svg`;img.onload=()=>paint();images[id]=img;
 }
 const keyName = 'jianghu-q-save-v1';
+// Private region entry snapshot: independent of the user's manually saved V2 checkpoint.
+const bambooEntryKey = 'newjingyong2:bamboo-entry:v1';
+function clearBambooEntry(){try{localStorage.removeItem(bambooEntryKey);return localStorage.getItem(bambooEntryKey)===null;}catch{return false;}}
+function persistBambooEntry(){
+ try{
+  const raw=encodeCheckpoint(state,eventHistory);
+  if(!raw||new TextEncoder().encode(raw).byteLength>MAX_SAVE_FILE_BYTES)return false;
+  localStorage.setItem(bambooEntryKey,raw);
+  return localStorage.getItem(bambooEntryKey)===raw;
+ }catch{return false;}
+}
+
 // A restored bamboo session must retain its matching village gate checkpoint.
 // Never trust arbitrary localStorage state or bypass the normal save validator.
 if(bambooSession){
  try{
-  const raw=localStorage.getItem(keyName);
+  const raw=localStorage.getItem(bambooEntryKey);
   if(raw && new TextEncoder().encode(raw).byteLength<=MAX_SAVE_FILE_BYTES){
    const checkpoint=decodeCheckpoint(raw);
    if(checkpoint && !checkpoint.game.combat && !checkpoint.game.dialog &&
@@ -48,6 +60,7 @@ function load(){let raw;try{raw=localStorage.getItem(keyName);}catch{toast('浏�
  const preview=`即将读取本机存档：任务${questLabel}，气血 ${parsed.player.hp}，银两 ${parsed.player.silver}。\n这会替换当前未保存的游戏进度，但不会删除或修改本机存档。确定继续？`;
  if(!window.confirm(preview)){toast('已取消读取，当前进度未变');return;}
  if(!clearBambooSession(localStorage)){toast('无法清除山径记录，未读取存档');return;}
+ clearBambooEntry();
  bambooSession=null;eventHistory=checkpoint.eventHistory;update(parsed);toast('进度读取成功');}
 // Reset both in-memory progress and this browser's saved checkpoint only after consent.
 // If storage is blocked, keep the current run rather than leaving a stale save.
@@ -55,6 +68,7 @@ function newGame(){
  if(!window.confirm('确定重新开始原创试玩并清除本机存档？此操作无法撤销。'))return;
  // Do not reset the live game if the independent region checkpoint remains.
  if(!clearBambooSession(localStorage)){toast('无法清除山径记录，未重新开始');return;}
+ clearBambooEntry();
  try{localStorage.removeItem(keyName);}catch{toast('无法清除本机存档，未重新开始');return;}
  bambooSession=null;eventHistory={};update(initialState());toast('已重新开始原创试玩');
 }
@@ -80,13 +94,14 @@ function action(){
   if(returned){
    // Do not leave the region while its persisted checkpoint still exists.
    if(!clearBambooSession(localStorage)){toast('无法清除山径记录，未离开山径');return;}
-   bambooSession=null;update(returned);toast('已返回青竹村');return;
+   clearBambooEntry();bambooSession=null;update(returned);toast('已返回青竹村');return;
   }
   const talk=talkBambooSession(bambooSession);
   toast(talk?.dialog||'山径中暂无可交互目标；到达东侧出口按 E 返回');return;
  }
  const entered=enterBambooPass(state);
- if(entered){if(!saveBambooSession(localStorage,entered)){toast('山径位置保存失败，未进入山径');return;}bambooSession=entered;paint();toast('进入竹风山径（独立记录位置，不写入 V2 存档）');return;}
+ if(entered){if(!persistBambooEntry()){toast('村庄入口快照保存失败，未进入山径');return;}
+ if(!saveBambooSession(localStorage,entered)){clearBambooEntry();toast('山径位置保存失败，未进入山径');return;}bambooSession=entered;paint();toast('进入竹风山径（独立记录位置，不写入 V2 存档）');return;}
  const previous=state;
  const next=interact(previous);
  if(previous.quest==='active' && next.quest==='completed'){
@@ -183,6 +198,7 @@ $('import-save-file').onchange=async e=>{
   const preview=`即将导入存档：任务${questLabel}，气血 ${imported.player.hp}，银两 ${imported.player.silver}。\n这会替换当前未保存的游戏进度，但不会自动覆盖本机存档。确定继续？`;
   if(!window.confirm(preview)){toast('已取消导入，当前进度未变');return;}
   if(!clearBambooSession(localStorage)){toast('无法清除山径记录，未导入存档');return;}
+  clearBambooEntry();
   bambooSession=null;eventHistory=checkpoint.eventHistory;update(imported);
   toast('已导入当前游戏，请点击保存进度以持久化');
  } catch { toast('读取存档文件失败'); }
