@@ -187,6 +187,11 @@ def main():
             assert bamboo_page.evaluate(
                 "localStorage.getItem('newjingyong2:bamboo-session:v1')"
             ) is None
+            # Failed region entry must also roll back its private village snapshot.
+            # Otherwise a stale snapshot can outlive a rejected travel attempt.
+            assert bamboo_page.evaluate(
+                "localStorage.getItem('newjingyong2:bamboo-entry:v1')"
+            ) is None, 'failed region entry left an orphan village snapshot'
             bamboo_page.evaluate("window.__restoreBambooSet()")
             bamboo_page.locator('#interact').click()
             assert '竹风山径' in bamboo_page.locator('#quest-desc').inner_text()
