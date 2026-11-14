@@ -22,11 +22,12 @@ test('travel respects collision and keeps the original game untouched',()=>{
  assert.deepEqual(game.player,{...initialState().player,...VILLAGE_GATE});
 });
 test('exit returns to a walkable village tile without mutating the source',()=>{
- const game=initialState();
+ const original=initialState();
+ const game={...original,player:{...original.player,...VILLAGE_GATE}};
  const session={regionId:BAMBOO_PASS.id,position:{...BAMBOO_PASS.exit}};
  const returned=leaveBambooPass(session,game);
  assert.deepEqual({x:returned.player.x,y:returned.player.y},VILLAGE_RETURN);
- assert.deepEqual(game,initialState());
+ assert.deepEqual(game,{...original,player:{...original.player,...VILLAGE_GATE}});
  assert.equal(leaveBambooPass({...session,regionId:'unknown'},game),null);
  assert.equal(leaveBambooPass(session,{...game,dialog:'busy'}),null);
 });
