@@ -49,6 +49,14 @@ def validate(record, expected_source_sha256=None):
         errors.append("invalid status")
     return errors
 
+def reject_duplicate_keys(pairs):
+    record = {}
+    for key, value in pairs:
+        if key in record:
+            raise ValueError("duplicate JSON key: " + key)
+        record[key] = value
+    return record
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("manifest", type=Path)
@@ -68,7 +76,7 @@ def main():
         except OSError as exc:
             parser.exit(2, "cannot hash private source SWF: " + str(exc) + "\n")
     try:
-        record = json.loads(args.manifest.read_text(encoding="utf-8"))
+        record = json.loads(args.manifest.read_text(encoding="utf-8"), object_pairs_hook=reject_duplicate_keys)
     except (OSError, ValueError) as exc:
         parser.exit(2, "cannot read JSON manifest: " + str(exc) + "\n")
     errors = validate(record, expected_source_sha256=measured_sha)
