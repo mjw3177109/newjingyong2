@@ -20,6 +20,21 @@ for(const id of ['hero','elder','merchant','herb','bandit']){
  const img=new Image();img.src=`./assets/${id}.svg`;img.onload=()=>paint();images[id]=img;
 }
 const keyName = 'jianghu-q-save-v1';
+// A restored bamboo session must retain its matching village gate checkpoint.
+// Never trust arbitrary localStorage state or bypass the normal save validator.
+if(bambooSession){
+ try{
+  const raw=localStorage.getItem(keyName);
+  if(raw && new TextEncoder().encode(raw).byteLength<=MAX_SAVE_FILE_BYTES){
+   const checkpoint=decodeCheckpoint(raw);
+   if(checkpoint && !checkpoint.game.combat && !checkpoint.game.dialog &&
+      checkpoint.game.player.x===VILLAGE_GATE.x && checkpoint.game.player.y===VILLAGE_GATE.y){
+    state=checkpoint.game;
+    eventHistory=checkpoint.eventHistory;
+   }
+  }
+ }catch{/* Keep the region active; do not synthesize a village checkpoint. */}
+}
 function toast(txt){const t=$('toast');t.textContent=txt;t.classList.remove('hidden');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.add('hidden'),1800);}
 function update(next){state=next;paint();}
 function save(){if(bambooSession){toast('请先返回青竹村再保存；山径探索暂不支持存档');return;}try{const raw=encodeCheckpoint(state,eventHistory);if(!raw || new TextEncoder().encode(raw).byteLength>MAX_SAVE_FILE_BYTES)throw new Error('invalid checkpoint');localStorage.setItem(keyName,raw);toast('进度已存入本机浏览器');}catch{toast('存档无效或浏览器存储不可用');}}
