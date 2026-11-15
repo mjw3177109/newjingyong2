@@ -70,7 +70,10 @@ function newGame(){
  // Do not reset the live game if the independent region checkpoint remains.
  if(!clearBambooSession(localStorage)){toast('无法清除山径记录，未重新开始');return;}
  clearBambooEntry();
- try{localStorage.removeItem(keyName);}catch{toast('无法清除本机存档，未重新开始');return;}
+ try{
+  localStorage.removeItem(keyName);
+  if(localStorage.getItem(keyName)!==null){toast('本机存档未能清除，未重新开始');return;}
+ }catch{toast('无法清除本机存档，未重新开始');return;}
  bambooSession=null;eventHistory={};update(initialState());toast('已重新开始原创试玩');
 }
 function doMove(dx,dy){
