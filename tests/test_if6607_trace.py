@@ -149,7 +149,7 @@ class TraceMetadataTests(unittest.TestCase):
         doc["branches"]["true"].update(status="reproduced", trace_sha256=H)
         doc["independent_reviewer"]["status"] = "verified"
         self.assertTrue(validator.validate(doc))
-        doc["branches"]["false"].update(status="reproduced", trace_sha256=H, state_delta_summary="synthetic: flag 0 to 1")
+        doc["branches"]["false"].update(status="reproduced", trace_sha256="b" * 64, state_delta_summary="synthetic: flag 0 to 1")
         doc["branches"]["true"]["state_delta_summary"] = "synthetic: flag 0 to 2"
         self.assertEqual(validator.validate(doc), [])
 
