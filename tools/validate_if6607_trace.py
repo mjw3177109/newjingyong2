@@ -56,6 +56,8 @@ def validate(doc):
                     or (b.get("status") == "unresolved" and b.get("trace_sha256") not in (None, ""))
                     or not isinstance(b.get("state_delta_summary"), str)
                     or not b["state_delta_summary"].strip()
+                    or len(b["state_delta_summary"]) > 160
+                    or any(ord(ch) < 32 or ord(ch) == 127 for ch in b["state_delta_summary"])
                     or (b.get("status") == "reproduced" and b["state_delta_summary"].strip().lower() in ("not examined", "unresolved", "unknown", "pending"))):
                 errors.append(f"branches.{name} requires status, trace_sha256, state_delta_summary")
     # Two distinct branch executions must not reuse one trace artifact as proof.
