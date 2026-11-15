@@ -158,6 +158,40 @@ def main():
                 "localStorage.getItem('jianghu-q-save-v1')"
             ) is None, 'region recovery must not create a manual V2 save'
             no_save_context.close()
+            # A Storage adapter may silently ignore removal of the manual save.
+            # Reset must not discard the live run while the old save remains.
+            reset_context = browser.new_context()
+            reset_page = reset_context.new_page()
+            reset_page.goto(url, wait_until='networkidle')
+            reset_page.locator('#save').click()
+            reset_page.keyboard.press('ArrowRight')
+            reset_page.evaluate("""
+                () => {
+                    const original = Storage.prototype.removeItem;
+                    window.__restoreResetRemove = () => { Storage.prototype.removeItem = original; };
+                    Storage.prototype.removeItem = function(key) {
+                        if (key === 'jianghu-q-save-v1') return;
+                        return original.call(this, key);
+                    };
+                }
+            """)
+            reset_page.once('dialog', lambda dialog: dialog.accept())
+            reset_page.locator('#new-game').click()
+            assert '本机存档未能清除' in reset_page.locator('#toast').inner_text()
+            assert reset_page.evaluate(
+                "JSON.parse(localStorage.getItem('jianghu-q-save-v1')).game.player.x"
+            ) == 5
+            reset_page.locator('#save').click()
+            assert reset_page.evaluate(
+                "JSON.parse(localStorage.getItem('jianghu-q-save-v1')).game.player.x"
+            ) == 6, 'failed reset discarded live progress'
+            reset_page.evaluate("window.__restoreResetRemove()")
+            reset_page.once('dialog', lambda dialog: dialog.accept())
+            reset_page.locator('#new-game').click()
+            assert reset_page.evaluate(
+                "localStorage.getItem('jianghu-q-save-v1')"
+            ) is None
+            reset_context.close()
             # Exercise the independent bamboo scene in real Chromium, not merely
             # its source-level wiring. This is original demo content, not SWF fidelity.
             bamboo_context = browser.new_context()
