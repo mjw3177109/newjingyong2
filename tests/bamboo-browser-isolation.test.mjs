@@ -10,9 +10,9 @@ test('region keyboard shortcuts are limited to region-safe commands',()=>{
  assert.match(source,/function combatAction\(command\)\{\s*if\(bambooSession\)return;/);
 });
 test('village action buttons are guarded while exploring bamboo pass',()=>{
- for(const id of ['step-route','rematch','rest-village','equip-weapon','discard-potion','sell-potion','use-potion']){
+ for(const id of ['rematch','rest-village','equip-weapon','discard-potion','sell-potion','use-potion']){
   assert.ok(source.includes("$('"+id+"').onclick=()=>{if(!bambooSession)"),id);
   assert.ok(source.includes("'"+id+"'"),id);
  }
- assert.match(source,/if\(bambooSession\)\{\s*drawBambooPass/);
+ // The shared route button is intentionally repurposed for the region, not disabled.\n assert.match(source,/\$\('step-route'\)\.onclick=\(\)=>\{\s*if\(!bambooSession\)\{update\(stepTowardObjective\(state\)\);return;\}/);\n assert.match(source,/const route=pathToBambooExit\(bambooSession\);/);\n assert.match(source,/doMove\(first\.x-bambooSession\.position\.x,first\.y-bambooSession\.position\.y\);/);\n assert.match(source,/if\(bambooSession\)\{\s*drawBambooPass/);
 });
