@@ -157,14 +157,14 @@ document.addEventListener('keydown',e=>{
  const command=commandForKey(e,!!state.combat,!!state.dialog);
  if(!command)return;
  // The independent region must not mutate the village state through shortcuts.
- if(bambooSession && !['move','interact','dismiss-dialog'].includes(command.kind))return;
+ if(bambooSession && !['move','interact','dismiss-dialog','route-step'].includes(command.kind))return;
  e.preventDefault();
  if(command.kind==='move')doMove(command.dx,command.dy);
  else if(command.kind==='interact')action();
  else if(command.kind==='dismiss-dialog')action();
  else if(command.kind==='potion')update(usePotion(state));
  else if(command.kind==='rest')update(restAtVillage(state));
- else if(command.kind==='route-step')update(stepTowardObjective(state));
+ else if(command.kind==='route-step')stepRoute();
  else if(command.kind==='combat' && (command.action!=='drink' || canDrinkPotion(state))) combatAction(command.action);
  else if(command.kind==='inventory')toast(`背包：${state.inventory.join('、')||'空空如也'}`);
  else if(command.kind==='quest')toast(questStatus(state).progress);
@@ -204,13 +204,14 @@ $('import-save-file').onchange=async e=>{
   toast('已导入当前游戏，请点击保存进度以持久化');
  } catch { toast('读取存档文件失败'); }
 };
-$('step-route').onclick=()=>{
+function stepRoute(){
  if(!bambooSession){update(stepTowardObjective(state));return;}
  const route=pathToBambooExit(bambooSession);
  if(!route?.length){toast(route?'已到达山径出口，按 E 返回':'当前无法找到出口路线');return;}
  const first=route[0];
  doMove(first.x-bambooSession.position.x,first.y-bambooSession.position.y);
-};
+}
+$('step-route').onclick=stepRoute;
 $('rematch').onclick=()=>{if(!bambooSession)update(startRematch(state));};
 $('rest-village').onclick=()=>{if(!bambooSession)update(restAtVillage(state));};
 $('equip-weapon').onclick=()=>{if(!bambooSession)update(equipWeapon(state));};
