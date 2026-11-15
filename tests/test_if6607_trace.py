@@ -8,6 +8,7 @@ import copy
 import importlib.util
 import contextlib
 import io
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -114,6 +115,20 @@ class TraceMetadataTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertNotIn(private_path, stderr.getvalue())
         self.assertIn("invalid input", stderr.getvalue())
+
+    def test_private_path_is_not_leaked_on_malformed_json(self):
+        with tempfile.TemporaryDirectory(prefix="private-case-6607-") as directory:
+            private_path = Path(directory) / "secret-trace.json"
+            private_path.write_text('{"private_event": ', encoding="utf-8")
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                code = validator.main(["validator", str(private_path)])
+            self.assertEqual(code, 2)
+            self.assertNotIn(str(private_path), stderr.getvalue())
+            self.assertNotIn(str(private_path), stdout.getvalue())
+            self.assertNotIn("private_event", stderr.getvalue())
+            self.assertIn("invalid input", stderr.getvalue())
 
     def test_input_is_not_mutated(self):
         doc = fixture()
