@@ -67,6 +67,14 @@ class TraceMetadataTests(unittest.TestCase):
         doc["branches"]["false"]["status"] = "reproduced"
         self.assertTrue(validator.validate(doc))
         doc["branches"]["false"]["trace_sha256"] = H
+        doc["branches"]["false"]["state_delta_summary"] = "synthetic: hp 10 to 9"
+        self.assertEqual(validator.validate(doc), [])
+
+    def test_reproduced_branch_rejects_unexamined_delta(self):
+        doc = fixture()
+        doc["branches"]["true"].update(status="reproduced", trace_sha256=H)
+        self.assertTrue(validator.validate(doc))
+        doc["branches"]["true"]["state_delta_summary"] = "synthetic: inventory 0 to 1"
         self.assertEqual(validator.validate(doc), [])
 
     def test_non_object_root(self):
@@ -141,7 +149,8 @@ class TraceMetadataTests(unittest.TestCase):
         doc["branches"]["true"].update(status="reproduced", trace_sha256=H)
         doc["independent_reviewer"]["status"] = "verified"
         self.assertTrue(validator.validate(doc))
-        doc["branches"]["false"].update(status="reproduced", trace_sha256=H)
+        doc["branches"]["false"].update(status="reproduced", trace_sha256=H, state_delta_summary="synthetic: flag 0 to 1")
+        doc["branches"]["true"]["state_delta_summary"] = "synthetic: flag 0 to 2"
         self.assertEqual(validator.validate(doc), [])
 
     def test_input_is_not_mutated(self):
