@@ -51,6 +51,15 @@ def validate(doc):
                     or not b["state_delta_summary"].strip()
                     or (b.get("status") == "reproduced" and b["state_delta_summary"].strip().lower() in ("not examined", "unresolved", "unknown", "pending"))):
                 errors.append(f"branches.{name} requires status, trace_sha256, state_delta_summary")
+    # Two distinct branch executions must not reuse one trace artifact as proof.
+    if isinstance(branches, dict) and all(
+        isinstance(branches.get(name), dict) and branches[name].get("status") == "reproduced"
+        for name in ("true", "false")
+    ):
+        true_hash = branches["true"].get("trace_sha256")
+        false_hash = branches["false"].get("trace_sha256")
+        if isinstance(true_hash, str) and SHA256.fullmatch(true_hash) and true_hash == false_hash:
+            errors.append("true and false branches must have distinct trace_sha256")
     for field in ("independent_reviewer", "rights_review"):
         v = doc.get(field)
         if not isinstance(v, dict) or v.get("status") not in ("pending", "verified"):
