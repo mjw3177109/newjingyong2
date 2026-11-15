@@ -48,7 +48,8 @@ def validate(doc):
                     or (b.get("status") == "reproduced" and not SHA256.fullmatch(str(b.get("trace_sha256", ""))))
                     or (b.get("status") == "unresolved" and b.get("trace_sha256") not in (None, ""))
                     or not isinstance(b.get("state_delta_summary"), str)
-                    or not b["state_delta_summary"].strip()):
+                    or not b["state_delta_summary"].strip()
+                    or (b.get("status") == "reproduced" and b["state_delta_summary"].strip().lower() in ("not examined", "unresolved", "unknown", "pending"))):
                 errors.append(f"branches.{name} requires status, trace_sha256, state_delta_summary")
     for field in ("independent_reviewer", "rights_review"):
         v = doc.get(field)
