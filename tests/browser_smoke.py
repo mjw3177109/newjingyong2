@@ -192,6 +192,60 @@ def main():
                 "localStorage.getItem('jianghu-q-save-v1')"
             ) is None
             reset_context.close()
+            # End-to-end exit route: button and G must share one-step movement,
+            # survive a reload, and restore village navigation after E.
+            route_context = browser.new_context()
+            route_page = route_context.new_page()
+            route_page.on('pageerror', lambda error: errors.append(str(error)))
+            route_page.goto(url, wait_until='networkidle')
+            route_gate = json.loads(json.dumps(upgraded))
+            route_gate['game']['player']['x'] = 24
+            route_gate['game']['player']['y'] = 7
+            route_page.evaluate(
+                "(raw) => localStorage.setItem('jianghu-q-save-v1', raw)",
+                json.dumps(route_gate),
+            )
+            route_page.once('dialog', lambda dialog: dialog.accept())
+            route_page.locator('#load').click()
+            route_page.locator('#interact').click()
+            assert '竹风山径' in route_page.locator('#quest-desc').inner_text()
+            assert route_page.locator('#step-route').inner_text() == '向山径出口走一步'
+            last = route_page.evaluate(
+                "JSON.parse(localStorage.getItem('newjingyong2:bamboo-session:v1')).position"
+            )
+            steps = 0
+            for step in range(100):
+                if route_page.locator('#step-route').is_disabled():
+                    break
+                if step % 2:
+                    route_page.keyboard.press('g')
+                else:
+                    route_page.locator('#step-route').click()
+                current = route_page.evaluate(
+                    "JSON.parse(localStorage.getItem('newjingyong2:bamboo-session:v1')).position"
+                )
+                assert abs(current['x'] - last['x']) + abs(current['y'] - last['y']) == 1, (
+                    'exit navigation must persist exactly one orthogonal step'
+                )
+                last = current
+                steps += 1
+                if steps == 2:
+                    route_page.reload(wait_until='networkidle')
+                    assert '竹风山径' in route_page.locator('#quest-desc').inner_text()
+                    assert route_page.evaluate(
+                        "JSON.parse(localStorage.getItem('newjingyong2:bamboo-session:v1')).position"
+                    ) == last, 'refresh lost the persisted route position'
+            else:
+                raise AssertionError('exit navigation exceeded 100 steps')
+            assert steps > 2, 'route ended before reload coverage'
+            assert route_page.locator('#step-route').is_disabled()
+            route_page.keyboard.press('e')
+            assert '竹风山径' not in route_page.locator('#quest-desc').inner_text()
+            assert route_page.locator('#step-route').inner_text() == '沿任务路标走一步'
+            assert route_page.evaluate(
+                "localStorage.getItem('newjingyong2:bamboo-session:v1')"
+            ) is None
+            route_context.close()
             # Exercise the independent bamboo scene in real Chromium, not merely
             # its source-level wiring. This is original demo content, not SWF fidelity.
             bamboo_context = browser.new_context()
