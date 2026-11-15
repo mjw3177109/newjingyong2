@@ -54,6 +54,10 @@ def validate(doc):
         v = doc.get(field)
         if not isinstance(v, dict) or v.get("status") not in ("pending", "verified"):
             errors.append(f"{field} requires status pending/verified")
+    reviewer = doc.get("independent_reviewer")
+    if isinstance(reviewer, dict) and reviewer.get("status") == "verified":
+        if not isinstance(stack, dict) or stack.get("status") != "resolved" or not isinstance(branches, dict) or any(not isinstance(branches.get(name), dict) or branches[name].get("status") != "reproduced" for name in ("true", "false")):
+            errors.append("independent review cannot be verified while condition or branches are unresolved")
     return errors
 
 def main(argv):
