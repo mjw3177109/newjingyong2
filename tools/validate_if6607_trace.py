@@ -63,7 +63,8 @@ def main(argv):
     try:
         doc = json.loads(Path(argv[1]).read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
-        print(f"invalid input: {exc}", file=sys.stderr)
+        # Never echo private trace paths or parser excerpts into CI logs.
+        print("invalid input: cannot read or parse private trace JSON", file=sys.stderr)
         return 2
     errors = validate(doc)
     if errors:
