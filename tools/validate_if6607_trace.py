@@ -19,6 +19,9 @@ def validate(doc):
     errors = []
     if not isinstance(doc, dict):
         return ["root must be object"]
+    unknown = doc.keys() - REQUIRED
+    if unknown:
+        errors.append("unexpected top-level fields")
     missing = REQUIRED - doc.keys()
     if missing:
         errors.append("missing fields: " + ", ".join(sorted(missing)))
@@ -33,6 +36,8 @@ def validate(doc):
         if not isinstance(doc.get(field), str) or not doc[field].strip():
             errors.append(f"{field} must be nonempty")
     stack = doc.get("condition_stack")
+    if isinstance(stack, dict) and set(stack) != {"status", "evidence_sha256"}:
+        errors.append("condition_stack has unexpected fields")
     if (not isinstance(stack, dict) or stack.get("status") not in ("resolved", "unresolved")
             or (stack.get("status") == "resolved" and not SHA256.fullmatch(str(stack.get("evidence_sha256", ""))))
             or (stack.get("status") == "unresolved" and stack.get("evidence_sha256") not in (None, ""))):
@@ -43,6 +48,8 @@ def validate(doc):
     else:
         for name in ("true", "false"):
             b = branches[name]
+            if isinstance(b, dict) and set(b) != {"status", "trace_sha256", "state_delta_summary"}:
+                errors.append(f"branches.{name} has unexpected fields")
             if (not isinstance(b, dict)
                     or b.get("status") not in ("reproduced", "unresolved")
                     or (b.get("status") == "reproduced" and not SHA256.fullmatch(str(b.get("trace_sha256", ""))))
@@ -62,6 +69,8 @@ def validate(doc):
             errors.append("true and false branches must have distinct trace_sha256")
     for field in ("independent_reviewer", "rights_review"):
         v = doc.get(field)
+        if isinstance(v, dict) and set(v) != {"status"}:
+            errors.append(f"{field} has unexpected fields")
         if not isinstance(v, dict) or v.get("status") not in ("pending", "verified"):
             errors.append(f"{field} requires status pending/verified")
     reviewer = doc.get("independent_reviewer")
