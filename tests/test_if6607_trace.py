@@ -6,6 +6,8 @@ Run: python -m unittest discover -s tests -p 'test_if6607_trace.py'
 """
 import copy
 import importlib.util
+import contextlib
+import io
 import unittest
 from pathlib import Path
 
@@ -103,6 +105,15 @@ class TraceMetadataTests(unittest.TestCase):
         doc = fixture()
         doc["independent_reviewer"]["status"] = "approved"
         self.assertTrue(validator.validate(doc))
+
+    def test_private_path_is_not_leaked_on_read_error(self):
+        private_path = "/private/secret-case-6607-trace.json"
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            code = validator.main(["validator", private_path])
+        self.assertEqual(code, 2)
+        self.assertNotIn(private_path, stderr.getvalue())
+        self.assertIn("invalid input", stderr.getvalue())
 
     def test_input_is_not_mutated(self):
         doc = fixture()
