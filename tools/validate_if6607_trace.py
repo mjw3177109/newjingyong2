@@ -34,7 +34,8 @@ def validate(doc):
             errors.append(f"{field} must be nonempty")
     stack = doc.get("condition_stack")
     if (not isinstance(stack, dict) or stack.get("status") not in ("resolved", "unresolved")
-            or not SHA256.fullmatch(str(stack.get("evidence_sha256", "")))):
+            or (stack.get("status") == "resolved" and not SHA256.fullmatch(str(stack.get("evidence_sha256", ""))))
+            or (stack.get("status") == "unresolved" and stack.get("evidence_sha256") not in (None, ""))):
         errors.append("condition_stack requires status and evidence_sha256")
     branches = doc.get("branches")
     if not isinstance(branches, dict) or set(branches) != {"true", "false"}:
@@ -44,7 +45,8 @@ def validate(doc):
             b = branches[name]
             if (not isinstance(b, dict)
                     or b.get("status") not in ("reproduced", "unresolved")
-                    or not SHA256.fullmatch(str(b.get("trace_sha256", "")))
+                    or (b.get("status") == "reproduced" and not SHA256.fullmatch(str(b.get("trace_sha256", ""))))
+                    or (b.get("status") == "unresolved" and b.get("trace_sha256") not in (None, ""))
                     or not isinstance(b.get("state_delta_summary"), str)
                     or not b["state_delta_summary"].strip()):
                 errors.append(f"branches.{name} requires status, trace_sha256, state_delta_summary")
