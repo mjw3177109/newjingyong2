@@ -14,5 +14,9 @@ test('village action buttons are guarded while exploring bamboo pass',()=>{
   assert.ok(source.includes("$('"+id+"').onclick=()=>{if(!bambooSession)"),id);
   assert.ok(source.includes("'"+id+"'"),id);
  }
- // The shared route button is intentionally repurposed for the region, not disabled.\n assert.match(source,/\$\('step-route'\)\.onclick=\(\)=>\{\s*if\(!bambooSession\)\{update\(stepTowardObjective\(state\)\);return;\}/);\n assert.match(source,/const route=pathToBambooExit\(bambooSession\);/);\n assert.match(source,/doMove\(first\.x-bambooSession\.position\.x,first\.y-bambooSession\.position\.y\);/);\n assert.match(source,/if\(bambooSession\)\{\s*drawBambooPass/);
+ // The shared route button is intentionally repurposed for the region, not disabled.
+ assert.match(source,/\$\('step-route'\)\.onclick=\(\)=>\{\s*if\(!bambooSession\)\{update\(stepTowardObjective\(state\)\);return;\}/);
+ assert.match(source,/const route=pathToBambooExit\(bambooSession\);/);
+ assert.match(source,/doMove\(first\.x-bambooSession\.position\.x,first\.y-bambooSession\.position\.y\);/);
+ assert.match(source,/if\(bambooSession\)\{\s*drawBambooPass/);
 });
