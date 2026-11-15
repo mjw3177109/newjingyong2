@@ -9,6 +9,7 @@ import {pathToTile} from './tile-path.js';
 import {enterBambooPass,moveBambooSession,talkBambooSession,leaveBambooPass,VILLAGE_GATE} from './region-travel.js';
 import {drawBambooPass} from './bamboo-canvas.js';
 import {bambooTileFromPointer} from './bamboo-pointer.js';
+import {pathToBambooExit} from './bamboo-exit-path.js';
 import {saveBambooSession,loadBambooSession,clearBambooSession} from './bamboo-session-storage.js';
 // Optional original-demo region recovery; never changes the V2 save schema.
 let bambooSession=loadBambooSession(typeof localStorage==='undefined'?null:localStorage);
@@ -203,7 +204,13 @@ $('import-save-file').onchange=async e=>{
   toast('已导入当前游戏，请点击保存进度以持久化');
  } catch { toast('读取存档文件失败'); }
 };
-$('step-route').onclick=()=>{if(!bambooSession)update(stepTowardObjective(state));};
+$('step-route').onclick=()=>{
+ if(!bambooSession){update(stepTowardObjective(state));return;}
+ const route=pathToBambooExit(bambooSession);
+ if(!route?.length){toast(route?'已到达山径出口，按 E 返回':'当前无法找到出口路线');return;}
+ const first=route[0];
+ doMove(first.x-bambooSession.position.x,first.y-bambooSession.position.y);
+};
 $('rematch').onclick=()=>{if(!bambooSession)update(startRematch(state));};
 $('rest-village').onclick=()=>{if(!bambooSession)update(restAtVillage(state));};
 $('equip-weapon').onclick=()=>{if(!bambooSession)update(equipWeapon(state));};
@@ -242,12 +249,16 @@ function paint(){
   drawBambooPass(ctx,bambooSession,canvas.width,canvas.height);
   $('dialog').classList.add('hidden');$('combat').classList.add('hidden');
   // Village controls otherwise retain stale enabled state while this scene is shown.
-  for(const id of ['step-route','rematch','rest-village','equip-weapon','discard-potion','sell-potion','use-potion','attack','guard','drink','flee'])$(id).disabled=true;
+  for(const id of ['rematch','rest-village','equip-weapon','discard-potion','sell-potion','use-potion','attack','guard','drink','flee'])$(id).disabled=true;
+  const exitRoute=pathToBambooExit(bambooSession);
+  $('step-route').disabled=!exitRoute?.length;
+  $('step-route').textContent='向山径出口走一步';
   $('save').disabled=true;$('export-save').disabled=true;
   $('quest-desc').textContent='竹风山径：方向键移动，靠近守径人按 E 交谈，到东侧金色出口按 E 返回。区域位置独立保存于本机；不写入 V2 存档。';
   return;
  }
  $('save').disabled=false;$('export-save').disabled=false;
+ $('step-route').textContent='沿任务路标走一步';
  for(const id of ['attack','guard','flee'])$(id).disabled=false;
  ctx.clearRect(0,0,900,540);
  for(let y=0;y<HEIGHT;y++)for(let x=0;x<WIDTH;x++)tile(x,y);
