@@ -182,6 +182,20 @@ class TraceMetadataTests(unittest.TestCase):
                 target[field] = "sensitive private content"
                 self.assertTrue(validator.validate(doc))
 
+    def test_branch_summary_rejects_multiline_and_control_characters(self):
+        for summary in ("synthetic: flag changed\nraw private trace", "synthetic:\tflag changed", "synthetic:\x7f"):
+            with self.subTest(summary=repr(summary)):
+                doc = fixture()
+                doc["branches"]["true"]["state_delta_summary"] = summary
+                self.assertTrue(validator.validate(doc))
+
+    def test_branch_summary_rejects_oversized_payload(self):
+        doc = fixture()
+        doc["branches"]["false"]["state_delta_summary"] = "x" * 161
+        self.assertTrue(validator.validate(doc))
+        doc["branches"]["false"]["state_delta_summary"] = "synthetic: flag 0 to 1"
+        self.assertEqual(validator.validate(doc), [])
+
     def test_input_is_not_mutated(self):
         doc = fixture()
         original = copy.deepcopy(doc)
