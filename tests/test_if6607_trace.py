@@ -130,6 +130,20 @@ class TraceMetadataTests(unittest.TestCase):
             self.assertNotIn("private_event", stderr.getvalue())
             self.assertIn("invalid input", stderr.getvalue())
 
+    def test_verified_reviewer_rejects_unresolved_evidence(self):
+        doc = fixture()
+        doc["independent_reviewer"]["status"] = "verified"
+        self.assertIn("independent review cannot be verified", " ".join(validator.validate(doc)))
+
+    def test_verified_reviewer_requires_both_branches(self):
+        doc = fixture()
+        doc["condition_stack"] = {"status": "resolved", "evidence_sha256": H}
+        doc["branches"]["true"].update(status="reproduced", trace_sha256=H)
+        doc["independent_reviewer"]["status"] = "verified"
+        self.assertTrue(validator.validate(doc))
+        doc["branches"]["false"].update(status="reproduced", trace_sha256=H)
+        self.assertEqual(validator.validate(doc), [])
+
     def test_input_is_not_mutated(self):
         doc = fixture()
         original = copy.deepcopy(doc)
