@@ -153,6 +153,18 @@ class TraceMetadataTests(unittest.TestCase):
         doc["branches"]["true"]["state_delta_summary"] = "synthetic: flag 0 to 2"
         self.assertEqual(validator.validate(doc), [])
 
+    def test_two_reproduced_branches_require_distinct_trace_artifacts(self):
+        doc = fixture()
+        doc["condition_stack"] = {"status": "resolved", "evidence_sha256": H}
+        for name in ("true", "false"):
+            doc["branches"][name].update(
+                status="reproduced", trace_sha256=H,
+                state_delta_summary="synthetic: flag changed"
+            )
+        self.assertIn("distinct trace_sha256", " ".join(validator.validate(doc)))
+        doc["branches"]["false"]["trace_sha256"] = "b" * 64
+        self.assertEqual(validator.validate(doc), [])
+
     def test_input_is_not_mutated(self):
         doc = fixture()
         original = copy.deepcopy(doc)
