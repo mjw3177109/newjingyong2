@@ -165,6 +165,23 @@ class TraceMetadataTests(unittest.TestCase):
         doc["branches"]["false"]["trace_sha256"] = "b" * 64
         self.assertEqual(validator.validate(doc), [])
 
+    def test_private_source_fields_rejected_at_every_level(self):
+        additions = [
+            ((), "raw_actionscript"),
+            (("condition_stack",), "stack_source"),
+            (("branches", "true"), "raw_trace"),
+            (("independent_reviewer",), "private_reviewer_name"),
+            (("rights_review",), "private_contract_path"),
+        ]
+        for path, field in additions:
+            with self.subTest(path=path, field=field):
+                doc = fixture()
+                target = doc
+                for key in path:
+                    target = target[key]
+                target[field] = "sensitive private content"
+                self.assertTrue(validator.validate(doc))
+
     def test_input_is_not_mutated(self):
         doc = fixture()
         original = copy.deepcopy(doc)
