@@ -31,7 +31,7 @@ def fixture():
         "condition_stack": {"status": "unresolved", "evidence_sha256": None},
         "branches": {
             "true": {"status": "unresolved", "trace_sha256": None, "state_delta_summary": "not examined"},
-            "false": {"status": "unresolved", "trace_sha256": H, "state_delta_summary": "not examined"},
+            "false": {"status": "unresolved", "trace_sha256": None, "state_delta_summary": "not examined"},
         },
         "independent_reviewer": {"status": "pending"},
         "rights_review": {"status": "pending"},
@@ -45,6 +45,11 @@ class TraceMetadataTests(unittest.TestCase):
     def test_unresolved_cannot_claim_trace_hash(self):
         doc = fixture()
         doc["branches"]["true"]["trace_sha256"] = H
+        self.assertTrue(validator.validate(doc))
+
+    def test_unresolved_false_branch_rejects_hash(self):
+        doc = fixture()
+        doc["branches"]["false"]["trace_sha256"] = H
         self.assertTrue(validator.validate(doc))
 
     def test_resolved_requires_evidence_hash(self):
