@@ -28,9 +28,9 @@ def fixture():
         "if_offset": 6607,
         "fallthrough_offset": 6612,
         "jump_offset": 6623,
-        "condition_stack": {"status": "unresolved", "evidence_sha256": H},
+        "condition_stack": {"status": "unresolved", "evidence_sha256": None},
         "branches": {
-            "true": {"status": "unresolved", "trace_sha256": H, "state_delta_summary": "not examined"},
+            "true": {"status": "unresolved", "trace_sha256": None, "state_delta_summary": "not examined"},
             "false": {"status": "unresolved", "trace_sha256": H, "state_delta_summary": "not examined"},
         },
         "independent_reviewer": {"status": "pending"},
@@ -41,6 +41,25 @@ def fixture():
 class TraceMetadataTests(unittest.TestCase):
     def test_synthetic_unresolved_metadata_is_valid_shape_only(self):
         self.assertEqual(validator.validate(fixture()), [])
+
+    def test_unresolved_cannot_claim_trace_hash(self):
+        doc = fixture()
+        doc["branches"]["true"]["trace_sha256"] = H
+        self.assertTrue(validator.validate(doc))
+
+    def test_resolved_requires_evidence_hash(self):
+        doc = fixture()
+        doc["condition_stack"]["status"] = "resolved"
+        self.assertTrue(validator.validate(doc))
+        doc["condition_stack"]["evidence_sha256"] = H
+        self.assertEqual(validator.validate(doc), [])
+
+    def test_reproduced_requires_trace_hash(self):
+        doc = fixture()
+        doc["branches"]["false"]["status"] = "reproduced"
+        self.assertTrue(validator.validate(doc))
+        doc["branches"]["false"]["trace_sha256"] = H
+        self.assertEqual(validator.validate(doc), [])
 
     def test_non_object_root(self):
         self.assertTrue(validator.validate([]))
