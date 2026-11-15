@@ -8,6 +8,9 @@ const inside = (x, y) => Number.isInteger(x) && Number.isInteger(y) &&
 // Returns the shortest walkable route, [] when already there, null when invalid/unreachable.
 // Tapping a live actor stops beside it rather than stepping onto its occupied tile.
 export function pathToTile(state, tx, ty) {
+  // External UI/session state may expose throwing accessors or proxies.
+  // A failed route must never crash the browser input handler.
+  try {
   const p = state?.player;
   if (!p || !inside(p.x, p.y) || !inside(tx, ty)) return null;
   const occupied = new Set(BLOCKS);
@@ -44,4 +47,7 @@ export function pathToTile(state, tx, ty) {
     }
   }
   return null;
+  } catch {
+    return null;
+  }
 }
