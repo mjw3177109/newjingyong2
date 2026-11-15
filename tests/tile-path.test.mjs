@@ -44,3 +44,12 @@ test('tap routes are deterministic and do not mutate player or quest state', () 
   assert.deepEqual(pathToTile(s,19,7),pathToTile(s,19,7));
   assert.deepEqual(s,before);
 });
+
+test('malformed route state fails closed instead of crashing input handling', () => {
+  const throwingPlayer = {get player() { throw new Error('bad session'); }};
+  assert.equal(pathToTile(throwingPlayer, 7, 8), null);
+  const throwingFlags = {player:{x:5,y:8}, get flags() { throw new Error('bad flags'); }};
+  assert.equal(pathToTile(throwingFlags, ACTORS.herb.x, ACTORS.herb.y), null);
+  const proxy = new Proxy(fresh(), {get() { throw new Error('untrusted state'); }});
+  assert.equal(pathToTile(proxy, 7, 8), null);
+});
