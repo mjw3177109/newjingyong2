@@ -121,6 +121,14 @@ class EvidenceGateTests(unittest.TestCase):
                     record[key] = ref
                     self.assertFalse(gate.validate(record)[0])
 
+    def test_distinct_evidence_references_required(self):
+        keys = ('true_branch_ref', 'false_branch_ref', 'independent_review_ref', 'rights_evidence_ref')
+        for key in keys:
+            with self.subTest(key=key):
+                record = fixture()
+                record[key] = record['predicate_trace_ref']
+                self.assertFalse(gate.validate(record)[0])
+
     def test_private_file_presence_check(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
