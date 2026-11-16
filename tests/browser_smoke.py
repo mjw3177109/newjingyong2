@@ -350,7 +350,34 @@ def main():
             bamboo_page.reload(wait_until='networkidle')
             assert bamboo_page.locator('#save').is_disabled(), 'region did not restore after refresh'
             assert '竹风山径' in bamboo_page.locator('#quest-desc').inner_text()
-            for _ in range(7):
+            # Actual Chromium click-to-route: a distant tile advances exactly
+            # one legal step, while an obstacle click never changes the save.
+            def click_bamboo_tile(x, y):
+                geometry = bamboo_page.locator('#game').evaluate("""canvas => {
+                    const rect = canvas.getBoundingClientRect();
+                    const cell = Math.min(canvas.width / 12, canvas.height / 9);
+                    const ox = (canvas.width - cell * 12) / 2;
+                    const oy = (canvas.height - cell * 9) / 2;
+                    return {
+                        x: (ox + (x + .5) * cell) * rect.width / canvas.width,
+                        y: (oy + (y + .5) * cell) * rect.height / canvas.height,
+                    };
+                }""")
+                bamboo_page.locator('#game').click(position=geometry)
+
+            click_bamboo_tile(4, 3)  # blocked bamboo tile
+            assert bamboo_page.evaluate(
+                "JSON.parse(localStorage.getItem('newjingyong2:bamboo-session:v1')).position"
+            ) == {'x': 3, 'y': 4}, 'blocked canvas click moved the player'
+            click_bamboo_tile(10, 4)  # distant exit: plan path, take one step
+            assert bamboo_page.evaluate(
+                "JSON.parse(localStorage.getItem('newjingyong2:bamboo-session:v1')).position"
+            ) == {'x': 4, 'y': 4}, 'distant canvas click must persist exactly one step'
+            bamboo_page.reload(wait_until='networkidle')
+            assert bamboo_page.evaluate(
+                "JSON.parse(localStorage.getItem('newjingyong2:bamboo-session:v1')).position"
+            ) == {'x': 4, 'y': 4}, 'canvas route step was lost on reload'
+            for _ in range(6):
                 bamboo_page.keyboard.press('ArrowRight')
             # A silent storage deletion failure must not exit the live region.
             bamboo_page.evaluate("""
