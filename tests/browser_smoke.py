@@ -353,7 +353,8 @@ def main():
             # Actual Chromium click-to-route: a distant tile advances exactly
             # one legal step, while an obstacle click never changes the save.
             def click_bamboo_tile(x, y):
-                geometry = bamboo_page.locator('#game').evaluate("""canvas => {
+                geometry = bamboo_page.locator('#game').evaluate("""(canvas, tile) => {
+                    const {x, y} = tile;
                     const rect = canvas.getBoundingClientRect();
                     const cell = Math.min(canvas.width / 12, canvas.height / 9);
                     const ox = (canvas.width - cell * 12) / 2;
@@ -362,7 +363,7 @@ def main():
                         x: (ox + (x + .5) * cell) * rect.width / canvas.width,
                         y: (oy + (y + .5) * cell) * rect.height / canvas.height,
                     };
-                }""")
+                }""", {"x": x, "y": y})
                 bamboo_page.locator('#game').click(position=geometry)
 
             click_bamboo_tile(4, 3)  # blocked bamboo tile
