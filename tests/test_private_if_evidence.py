@@ -83,6 +83,18 @@ class EvidenceGateTests(unittest.TestCase):
                 record[key] = value
                 self.assertFalse(gate.validate(record)[0])
 
+    def test_java8_and_safe_relative_references_required(self):
+        for version in ("17.0.1", "1.7.0_80", "java 8", " 1.8.0_402"):
+            with self.subTest(version=version):
+                record = fixture()
+                record["java_version"] = version
+                self.assertFalse(gate.validate(record)[0])
+        for ref in ("../secrets", "/private/trace", "https://example.com/a", "C:\\\\private", "private/../trace", "private\\\\trace", "private/trace?raw=1", "private/trace.json "):
+            with self.subTest(ref=ref):
+                record = fixture()
+                record["predicate_trace_ref"] = ref
+                self.assertFalse(gate.validate(record)[0])
+
     def test_wrong_schema_and_non_object_rejected(self):
         record = fixture()
         record["schema_version"] = 2
