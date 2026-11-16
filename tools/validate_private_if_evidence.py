@@ -5,7 +5,9 @@ import json
 import re
 from pathlib import Path
 
-SHA = re.compile(r'^[0-9a-f]{64}
+SHA = re.compile(r'^[0-9a-f]{64}$')
+JAVA8 = re.compile(r'^(?:1\.8(?:\.0)?(?:[_+.-][0-9A-Za-z]+)*|8(?:[._+.-][0-9A-Za-z]+)*)$')
+SAFE_REF = re.compile(r'^[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*$')
 REQUIRED = {'schema_version','source_swf_sha256','ffdec_jar_sha256','java_version','export_a_manifest_sha256','export_b_manifest_sha256','timeline_frame','doaction_index','if_offset','fallthrough_offset','jump_target_offset','predicate_trace_ref','true_branch_ref','false_branch_ref','independent_review_ref','rights_evidence_ref'}
 
 def validate(data):
