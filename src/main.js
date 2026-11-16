@@ -9,7 +9,7 @@ import {pathToTile} from './tile-path.js';
 import {enterBambooPass,moveBambooSession,talkBambooSession,leaveBambooPass,VILLAGE_GATE} from './region-travel.js';
 import {drawBambooPass} from './bamboo-canvas.js';
 import {bambooTileFromPointer} from './bamboo-pointer.js';
-import {pathToBambooExit} from './bamboo-exit-path.js';
+import {pathToBambooExit,pathToBambooTile} from './bamboo-exit-path.js';
 import {saveBambooSession,loadBambooSession,clearBambooSession} from './bamboo-session-storage.js';
 // Optional original-demo region recovery; never changes the V2 save schema.
 let bambooSession=loadBambooSession(typeof localStorage==='undefined'?null:localStorage);
@@ -140,10 +140,13 @@ canvas.addEventListener('click', event => {
  if(bambooSession){
   const rect=canvas.getBoundingClientRect();
   if(rect.width<=0||rect.height<=0)return;
-  // Canvas tap in the independent region moves at most one adjacent tile.
+  // Click-to-route takes exactly one legal step; never auto-interacts or bypasses persistence.
   const tile=bambooTileFromPointer(event.clientX,event.clientY,rect,canvas.width,canvas.height);
   if(!tile)return;
-  const dx=tile.x-bambooSession.position.x,dy=tile.y-bambooSession.position.y;
+  const route=pathToBambooTile(bambooSession,tile.x,tile.y);
+  if(!route?.length)return;
+  const first=route[0];
+  const dx=first.x-bambooSession.position.x,dy=first.y-bambooSession.position.y;
   if(Math.abs(dx)+Math.abs(dy)===1)doMove(dx,dy);
   return;
  }
