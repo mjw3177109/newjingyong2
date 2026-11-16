@@ -11,6 +11,8 @@ test('bamboo canvas taps only request adjacent moves and return before village r
  const handler=source.slice(start,end);
  assert.match(handler,/if\(bambooSession\)/);
  assert.match(handler,/Math\.abs\(dx\)\+Math\.abs\(dy\)===1/);
+ assert.match(handler,/pathToBambooTile\(bambooSession,tile\.x,tile\.y\)/);
+ assert.match(handler,/route\[0\]/);
  assert.match(handler,/doMove\(dx,dy\)/);
  assert.ok(handler.indexOf('return;',handler.indexOf('if(bambooSession)'))<handler.indexOf('pathToTile(state'));
 });
