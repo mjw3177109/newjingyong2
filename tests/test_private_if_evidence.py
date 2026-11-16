@@ -2,6 +2,7 @@
 """Regression tests for the private IF evidence structural gate (synthetic data only)."""
 import importlib.util
 import unittest
+import tempfile
 from pathlib import Path
 
 SCRIPT = Path(__file__).resolve().parents[1] / "tools" / "validate_private_if_evidence.py"
@@ -119,6 +120,38 @@ class EvidenceGateTests(unittest.TestCase):
                     record = fixture()
                     record[key] = ref
                     self.assertFalse(gate.validate(record)[0])
+
+    def test_private_file_presence_check(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            record = fixture()
+            for key in ("predicate_trace_ref", "true_branch_ref", "false_branch_ref",
+                        "independent_review_ref", "rights_evidence_ref"):
+                target = root / record[key]
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text("synthetic evidence", encoding="utf-8")
+            self.assertTrue(gate.verify_reference_files(record, root)[0])
+            (root / record["false_branch_ref"]).unlink()
+            self.assertFalse(gate.verify_reference_files(record, root)[0])
+            (root / record["false_branch_ref"]).write_bytes(b"")
+            self.assertFalse(gate.verify_reference_files(record, root)[0])
+
+    def test_private_file_symlink_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            record = fixture()
+            for key in ("predicate_trace_ref", "true_branch_ref", "false_branch_ref",
+                        "independent_review_ref", "rights_evidence_ref"):
+                target = root / record[key]
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text("synthetic", encoding="utf-8")
+            target = root / record["predicate_trace_ref"]
+            target.unlink()
+            try:
+                target.symlink_to(root / record["true_branch_ref"])
+            except (OSError, NotImplementedError):
+                self.skipTest("symlink creation unavailable")
+            self.assertFalse(gate.verify_reference_files(record, root)[0])
 
     def test_wrong_schema_and_non_object_rejected(self):
         record = fixture()
