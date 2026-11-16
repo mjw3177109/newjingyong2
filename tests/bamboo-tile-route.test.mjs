@@ -30,3 +30,14 @@ test('clicking NPC routes to adjacent tile without entering occupied position',(
  assert.equal(Math.abs(end.x-BAMBOO_PASS.npc.x)+Math.abs(end.y-BAMBOO_PASS.npc.y),1);
  assert.ok(route.every(p=>p.x!==BAMBOO_PASS.npc.x||p.y!==BAMBOO_PASS.npc.y));
 });
+
+test('malformed session getters and proxies fail closed without throwing',()=>{
+ const badRegion={get regionId(){throw new Error('untrusted region getter');}};
+ const badPosition={regionId:BAMBOO_PASS.id,get position(){throw new Error('untrusted position getter');}};
+ const badProxy=new Proxy({}, {get(){throw new Error('untrusted proxy');}});
+ for(const invalid of [badRegion,badPosition,badProxy]){
+  assert.doesNotThrow(()=>pathToBambooTile(invalid,BAMBOO_PASS.exit.x,BAMBOO_PASS.exit.y));
+  assert.equal(pathToBambooTile(invalid,BAMBOO_PASS.exit.x,BAMBOO_PASS.exit.y),null);
+  assert.equal(pathToBambooExit(invalid),null);
+ }
+});
