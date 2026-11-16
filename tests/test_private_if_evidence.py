@@ -95,6 +95,31 @@ class EvidenceGateTests(unittest.TestCase):
                 record["predicate_trace_ref"] = ref
                 self.assertFalse(gate.validate(record)[0])
 
+    def test_digest_type_and_java_version_types_fail_closed(self):
+        for key, value in (
+            ("source_swf_sha256", None),
+            ("ffdec_jar_sha256", 123),
+            ("export_a_manifest_sha256", []),
+            ("java_version", 8),
+            ("predicate_trace_ref", ["private/predicate.json"]),
+        ):
+            with self.subTest(key=key):
+                record = fixture()
+                record[key] = value
+                self.assertFalse(gate.validate(record)[0])
+
+    def test_all_evidence_references_reject_unsafe_paths(self):
+        keys = (
+            "predicate_trace_ref", "true_branch_ref", "false_branch_ref",
+            "independent_review_ref", "rights_evidence_ref",
+        )
+        for key in keys:
+            for ref in ("../outside.json", "private/../outside.json", "/absolute.json", "https://example.org/x"):
+                with self.subTest(key=key, ref=ref):
+                    record = fixture()
+                    record[key] = ref
+                    self.assertFalse(gate.validate(record)[0])
+
     def test_wrong_schema_and_non_object_rejected(self):
         record = fixture()
         record["schema_version"] = 2
