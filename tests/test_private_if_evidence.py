@@ -73,7 +73,8 @@ class EvidenceGateTests(unittest.TestCase):
         for key, value in (
             ("predicate_trace_ref", "pending"),
             ("true_branch_ref", "unknown"),
-            ("false_branch_ref", "a\\nb"),
+            ("false_branch_ref", "a\nb"),
+            ("true_branch_ref", "a\rb"),
             ("independent_review_ref", ""),
             ("rights_evidence_ref", "none"),
         ):
