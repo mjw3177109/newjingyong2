@@ -35,12 +35,41 @@ def validate(data):
             return False, f'unsafe {key}'
     return True, 'structural evidence gate passed; semantic truth and rights remain subject to independent human review'
 
+def verify_reference_files(data, root):
+    """Check that every private evidence reference resolves to a readable regular file.
+
+    This is an existence/integrity-of-location check only, not semantic verification.
+    """
+    root = Path(root).resolve(strict=True)
+    if not root.is_dir():
+        return False, 'evidence root is not a directory'
+    for key in ('predicate_trace_ref','true_branch_ref','false_branch_ref',
+                'independent_review_ref','rights_evidence_ref'):
+        relative = Path(data[key])
+        candidate = root / relative
+        if any(part.is_symlink() for part in (candidate, *candidate.parents) if part != root and root in part.parents):
+            return False, f'symlink in {key}'
+        try:
+            resolved = candidate.resolve(strict=True)
+            resolved.relative_to(root)
+            if not resolved.is_file() or resolved.stat().st_size == 0:
+                return False, f'empty or non-file {key}'
+            with resolved.open('rb') as stream:
+                stream.read(1)
+        except (OSError, ValueError):
+            return False, f'missing or unsafe file {key}'
+    return True, 'private evidence files present; semantic truth and rights not verified'
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('evidence',type=Path)
+    parser.add_argument('--evidence-root',type=Path,help='Check referenced private files under this directory')
     args=parser.parse_args()
     try:
-        valid,message=validate(json.loads(args.evidence.read_text(encoding='utf-8')))
+        data=json.loads(args.evidence.read_text(encoding='utf-8'))
+        valid,message=validate(data)
+        if valid and args.evidence_root is not None:
+            valid,message=verify_reference_files(data,args.evidence_root)
     except (OSError,UnicodeError,ValueError) as exc:
         valid,message=False,type(exc).__name__
     print(('PASS: ' if valid else 'FAIL: ')+message)
