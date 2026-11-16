@@ -13,7 +13,7 @@ REQUIRED = {'schema_version','source_swf_sha256','ffdec_jar_sha256','java_versio
 def validate(data):
     if not isinstance(data, dict) or set(data) != REQUIRED:
         return False, 'schema fields missing or unexpected'
-    if data['schema_version'] != 1:
+    if type(data['schema_version']) is not int or data['schema_version'] != 1:
         return False, 'unsupported schema'
     for key in ('source_swf_sha256','ffdec_jar_sha256','export_a_manifest_sha256','export_b_manifest_sha256'):
         if not isinstance(data[key], str) or not SHA.fullmatch(data[key]):
