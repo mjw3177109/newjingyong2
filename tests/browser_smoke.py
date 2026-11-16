@@ -213,6 +213,28 @@ def main():
             last = route_page.evaluate(
                 "JSON.parse(localStorage.getItem('newjingyong2:bamboo-session:v1')).position"
             )
+            # A route click must not advance live or persisted position when
+            # the browser silently discards the bamboo session write.
+            route_page.evaluate("""
+                () => {
+                    const original = Storage.prototype.setItem;
+                    window.__restoreRouteSet = () => { Storage.prototype.setItem = original; };
+                    Storage.prototype.setItem = function(key, value) {
+                        if (key === 'newjingyong2:bamboo-session:v1') return;
+                        return original.call(this, key, value);
+                    };
+                }
+            """)
+            route_page.locator('#step-route').click()
+            assert '山径位置保存失败' in route_page.locator('#toast').inner_text()
+            assert route_page.evaluate(
+                "JSON.parse(localStorage.getItem('newjingyong2:bamboo-session:v1')).position"
+            ) == last, 'failed route click changed persisted position'
+            route_page.evaluate("window.__restoreRouteSet()")
+            route_page.reload(wait_until='networkidle')
+            assert route_page.evaluate(
+                "JSON.parse(localStorage.getItem('newjingyong2:bamboo-session:v1')).position"
+            ) == last, 'failed route click changed restored position'
             steps = 0
             for step in range(100):
                 if route_page.locator('#step-route').is_disabled():
