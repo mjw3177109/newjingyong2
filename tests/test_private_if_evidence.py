@@ -161,6 +161,25 @@ class EvidenceGateTests(unittest.TestCase):
                 self.skipTest("symlink creation unavailable")
             self.assertFalse(gate.verify_reference_files(record, root)[0])
 
+    def test_file_verification_rejects_invalid_record_and_root(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            record = fixture()
+            record["predicate_trace_ref"] = "../outside.json"
+            ok, message = gate.verify_reference_files(record, root)
+            self.assertFalse(ok)
+            self.assertIn("unsafe", message)
+            record = fixture()
+            self.assertFalse(gate.verify_reference_files(record, root / "missing")[0])
+            alias = root / "alias"
+            target = root / "evidence"
+            target.mkdir()
+            try:
+                alias.symlink_to(target, target_is_directory=True)
+            except (OSError, NotImplementedError):
+                self.skipTest("directory symlinks unavailable")
+            self.assertFalse(gate.verify_reference_files(record, alias)[0])
+
     def test_wrong_schema_and_non_object_rejected(self):
         record = fixture()
         for invalid in (2, True, 1.0, "1", None):
