@@ -19,17 +19,29 @@ export function pathToBambooTile(session, tx, ty) {
     : p.x === tx && p.y === ty;
   if (reached(start)) return [];
   const key = p => p.x + ',' + p.y;
-  const visited = new Set([key(start)]);
-  const queue = [{position:start, path:[]}];
-  for (let head=0; head<queue.length; head++) {
+  // Store one predecessor per tile rather than copying an entire route for
+  // every queued node. This keeps breadth-first search memory linear in tiles.
+  const startKey = key(start);
+  const parents = new Map([[startKey, null]]);
+  const positions = new Map([[startKey, start]]);
+  const queue = [start];
+  for (let head = 0; head < queue.length; head++) {
     const current = queue[head];
-    for (const [dx,dy] of [[0,-1],[1,0],[0,1],[-1,0]]) {
-      const next = stepInRegion(BAMBOO_PASS,current.position,dx,dy);
-      if (!next || visited.has(key(next))) continue;
-      const path = [...current.path,next];
-      if (reached(next)) return path;
-      visited.add(key(next));
-      queue.push({position:next,path});
+    for (const [dx, dy] of [[0,-1],[1,0],[0,1],[-1,0]]) {
+      const next = stepInRegion(BAMBOO_PASS, current, dx, dy);
+      if (!next) continue;
+      const nextKey = key(next);
+      if (parents.has(nextKey)) continue;
+      parents.set(nextKey, key(current));
+      positions.set(nextKey, next);
+      if (reached(next)) {
+        const route = [];
+        for (let k = nextKey; k !== startKey; k = parents.get(k)) {
+          route.push(positions.get(k));
+        }
+        return route.reverse();
+      }
+      queue.push(next);
     }
   }
   return null;
