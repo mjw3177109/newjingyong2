@@ -1,7 +1,6 @@
 // Original demo-only navigation; never interpreted as SWF pathfinding evidence.
 import {BAMBOO_PASS} from './bamboo-pass.js';
 import {normalizeBambooCheckpoint} from './bamboo-checkpoint.js';
-import {stepInRegion} from './region-navigation.js';
 
 // Return the shortest walkable path to a clicked tile. Occupied NPC tiles
 // are approached from an adjacent tile; neither routing nor clicking interacts.
@@ -25,12 +24,17 @@ export function pathToBambooTile(session, tx, ty) {
   const parents = new Map([[startKey, null]]);
   const positions = new Map([[startKey, start]]);
   const queue = [start];
+  // Region is fixed and checkpoint validated. Avoid revalidating the entire
+  // map on every BFS edge (stepInRegion does this for isolated moves).
+  const blocked = new Set(BAMBOO_PASS.blocks);
+  const npcKey = BAMBOO_PASS.npc.x + ',' + BAMBOO_PASS.npc.y;
   for (let head = 0; head < queue.length; head++) {
     const current = queue[head];
     for (const [dx, dy] of [[0,-1],[1,0],[0,1],[-1,0]]) {
-      const next = stepInRegion(BAMBOO_PASS, current, dx, dy);
-      if (!next) continue;
+      const next = {x: current.x + dx, y: current.y + dy};
+      if (next.x < 0 || next.y < 0 || next.x >= BAMBOO_PASS.width || next.y >= BAMBOO_PASS.height) continue;
       const nextKey = key(next);
+      if (blocked.has(nextKey) || nextKey === npcKey) continue;
       if (parents.has(nextKey)) continue;
       parents.set(nextKey, key(current));
       positions.set(nextKey, next);
