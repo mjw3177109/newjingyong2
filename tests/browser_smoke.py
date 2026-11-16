@@ -245,6 +245,20 @@ def main():
             assert route_page.evaluate(
                 "localStorage.getItem('newjingyong2:bamboo-session:v1')"
             ) is None
+            # Returning from the region must clear the private entry snapshot,
+            # without overwriting the manually saved village checkpoint.
+            assert route_page.evaluate(
+                "localStorage.getItem('newjingyong2:bamboo-entry:v1')"
+            ) is None, 'exit left a stale village entry snapshot'
+            assert route_page.evaluate(
+                "JSON.parse(localStorage.getItem('jianghu-q-save-v1'))"
+            ) == route_gate, 'region travel overwrote the manual village checkpoint'
+            route_page.reload(wait_until='networkidle')
+            assert '竹风山径' not in route_page.locator('#quest-desc').inner_text()
+            assert route_page.locator('#step-route').inner_text() == '沿任务路标走一步'
+            assert route_page.evaluate(
+                "localStorage.getItem('newjingyong2:bamboo-session:v1')"
+            ) is None, 'region resumed after successful exit and reload'
             route_context.close()
             # Exercise the independent bamboo scene in real Chromium, not merely
             # its source-level wiring. This is original demo content, not SWF fidelity.
