@@ -122,8 +122,10 @@ class EvidenceGateTests(unittest.TestCase):
 
     def test_wrong_schema_and_non_object_rejected(self):
         record = fixture()
-        record["schema_version"] = 2
-        self.assertFalse(gate.validate(record)[0])
+        for invalid in (2, True, 1.0, "1", None):
+            with self.subTest(schema_version=invalid):
+                record["schema_version"] = invalid
+                self.assertFalse(gate.validate(record)[0])
         self.assertFalse(gate.validate([])[0])
 
 if __name__ == "__main__":
