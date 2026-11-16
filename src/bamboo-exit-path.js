@@ -6,6 +6,8 @@ import {stepInRegion} from './region-navigation.js';
 // Return the shortest walkable path to a clicked tile. Occupied NPC tiles
 // are approached from an adjacent tile; neither routing nor clicking interacts.
 export function pathToBambooTile(session, tx, ty) {
+  // Treat malformed external session objects as an unreachable route, not a UI crash.
+  try {
   const valid = normalizeBambooCheckpoint(session);
   if (!valid || !Number.isInteger(tx) || !Number.isInteger(ty) ||
       tx < 0 || ty < 0 || tx >= BAMBOO_PASS.width || ty >= BAMBOO_PASS.height ||
@@ -31,6 +33,9 @@ export function pathToBambooTile(session, tx, ty) {
     }
   }
   return null;
+  } catch {
+    return null;
+  }
 }
 
 // Backward-compatible exit guidance; no automatic region transition.
