@@ -43,7 +43,16 @@ def verify_reference_files(data, root):
 
     This is an existence/integrity-of-location check only, not semantic verification.
     """
-    root = Path(root).resolve(strict=True)
+    valid, message = validate(data)
+    if not valid:
+        return False, message
+    root_path = Path(root)
+    if root_path.is_symlink():
+        return False, 'evidence root must not be a symlink'
+    try:
+        root = root_path.resolve(strict=True)
+    except (OSError, ValueError):
+        return False, 'missing or invalid evidence root'
     if not root.is_dir():
         return False, 'evidence root is not a directory'
     for key in ('predicate_trace_ref','true_branch_ref','false_branch_ref',
