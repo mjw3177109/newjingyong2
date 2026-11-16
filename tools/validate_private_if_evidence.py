@@ -33,6 +33,9 @@ def validate(data):
         value = data[key]
         if not SAFE_REF.fullmatch(value) or any(part in ('.', '..') for part in value.split('/')):
             return False, f'unsafe {key}'
+    refs = [data[key] for key in ('predicate_trace_ref','true_branch_ref','false_branch_ref','independent_review_ref','rights_evidence_ref')]
+    if len(set(refs)) != len(refs):
+        return False, 'evidence references must be distinct'
     return True, 'structural evidence gate passed; semantic truth and rights remain subject to independent human review'
 
 def verify_reference_files(data, root):
