@@ -18,7 +18,8 @@ jobs:
         run: |
           for file in hero elder merchant herb bandit; do test -s "assets/${file}.svg" || exit 1; done
   browser-smoke:
-    runs-on: ubuntu-latest
+    # Playwright 1.55.0 does not support the ubuntu-26.04 image currently behind ubuntu-latest.
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
