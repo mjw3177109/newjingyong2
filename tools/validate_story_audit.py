@@ -42,7 +42,12 @@ def _is_placeholder(value):
         return False
     # Punctuation must separate words rather than concatenate them:
     # "not-verified" is the same placeholder as "not verified".
-    # Preserve exact placeholders containing punctuation (notably "n/a") before\n    # splitting punctuation into word separators for variants like "not-verified".\n    if value.strip().lower() in PLACEHOLDERS:\n        return True\n    normalized = "".join(\n        " " if unicodedata.category(ch).startswith("P") else ch
+    # Preserve exact placeholders containing punctuation (notably "n/a") before
+    # splitting punctuation into word separators for variants like "not-verified".
+    if value.strip().lower() in PLACEHOLDERS:
+        return True
+    normalized = "".join(
+        " " if unicodedata.category(ch).startswith("P") else ch
         for ch in value.strip().lower()
     )
     return " ".join(normalized.split()) in PLACEHOLDERS
