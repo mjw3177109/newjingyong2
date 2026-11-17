@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 
 EXPECTED_SWF = "d762a8f95d22b87916ae375968d425b4d4d34390bbc5d234338bfb58f85d4a30"
@@ -22,6 +23,8 @@ def preflight(swf, jar, java_version, ffdec_version):
         raise ValueError("SWF SHA-256 differs from audited candidate; stop and re-baseline")
     if not java_version.strip() or not ffdec_version.strip():
         raise ValueError("Java and FFDec versions must be recorded")
+    if not re.search(r"(?i)(?:\b1\.8(?:[._\s]|$)|\b(?:java|openjdk|jdk)\s*(?:version\s*)?[\x22\x27]?8(?:[.\s\x22\x27]|$))", java_version):
+        raise ValueError("Java 8 required for reproducible FFDec review")
     return {
         "candidate": "root-frame55-doaction9-if6607",
         "source_sha256": swf_hash,
