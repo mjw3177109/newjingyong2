@@ -120,6 +120,18 @@ class PublicationGateRegressionTests(unittest.TestCase):
                 errors = validate([item])
                 self.assertTrue(any("concrete rights evidence reference" in e for e in errors), errors)
 
+    def test_punctuation_separated_placeholder_cannot_claim_authorization(self):
+        for placeholder in ("not-verified", "not/verified", "not_verified",
+                            "not—verified", "not...verified"):
+            with self.subTest(placeholder=placeholder):
+                item = record()
+                item["rights_evidence_ref"] = placeholder
+                errors = validate([item])
+                self.assertTrue(
+                    any("concrete rights evidence reference" in e for e in errors),
+                    errors,
+                )
+
     def test_authorized_publication_requires_nonplaceholder_license_reference(self):
         item = record()
         item["rights_evidence_ref"] = "pending"
