@@ -49,7 +49,12 @@ def _is_placeholder(value):
         return True
     # Strip surrounding punctuation before splitting internal punctuation, so
     # "(n/a)" and "n/a." retain the exact slash-bearing placeholder.
-    trimmed = raw.strip("".join(chr(i) for i in range(128) if unicodedata.category(chr(i)).startswith("P")))
+    start, end = 0, len(raw)
+    while start < end and unicodedata.category(raw[start]).startswith("P"):
+        start += 1
+    while end > start and unicodedata.category(raw[end - 1]).startswith("P"):
+        end -= 1
+    trimmed = raw[start:end]
     if trimmed in PLACEHOLDERS:
         return True
     normalized = "".join(
