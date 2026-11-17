@@ -38,9 +38,15 @@ def _usable_text(value):
 
 
 def _is_placeholder(value):
-    return (isinstance(value, str) and
-            "".join(ch for ch in value.strip().lower()
-                    if not unicodedata.category(ch).startswith("P")).strip() in PLACEHOLDERS)
+    if not isinstance(value, str):
+        return False
+    # Punctuation must separate words rather than concatenate them:
+    # "not-verified" is the same placeholder as "not verified".
+    normalized = "".join(
+        " " if unicodedata.category(ch).startswith("P") else ch
+        for ch in value.strip().lower()
+    )
+    return " ".join(normalized.split()) in PLACEHOLDERS
 
 
 def validate(records):
