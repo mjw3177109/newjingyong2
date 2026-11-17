@@ -18,6 +18,11 @@ def sha256(path):
 def preflight(swf, jar, java_version, ffdec_version):
     if not swf.is_file() or not jar.is_file():
         raise ValueError("Required local SWF or FFDec jar missing")
+    # A fingerprint alone cannot establish that the FFDec input is a readable JAR.
+    # JARs are ZIP archives; reject empty/non-ZIP inputs before recording evidence.
+    import zipfile
+    if not zipfile.is_zipfile(jar):
+        raise ValueError("FFDec jar is not a valid ZIP/JAR archive")
     swf_hash = sha256(swf)
     if swf_hash != EXPECTED_SWF:
         raise ValueError("SWF SHA-256 differs from audited candidate; stop and re-baseline")
