@@ -132,6 +132,14 @@ class PublicationGateRegressionTests(unittest.TestCase):
                     errors,
                 )
 
+    def test_wrapped_slash_placeholder_cannot_claim_authorization(self):
+        for placeholder in ("n/a.", "(n/a)", "【n/a】", "N/A!", "n/a："):
+            with self.subTest(placeholder=placeholder):
+                item = record()
+                item["rights_evidence_ref"] = placeholder
+                errors = validate([item])
+                self.assertTrue(any("concrete rights evidence reference" in e for e in errors), errors)
+
     def test_authorized_publication_requires_nonplaceholder_license_reference(self):
         item = record()
         item["rights_evidence_ref"] = "pending"
