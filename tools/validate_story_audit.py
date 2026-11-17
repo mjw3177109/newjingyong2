@@ -44,7 +44,13 @@ def _is_placeholder(value):
     # "not-verified" is the same placeholder as "not verified".
     # Preserve exact placeholders containing punctuation (notably "n/a") before
     # splitting punctuation into word separators for variants like "not-verified".
-    if value.strip().lower() in PLACEHOLDERS:
+    raw = value.strip().lower()
+    if raw in PLACEHOLDERS:
+        return True
+    # Strip surrounding punctuation before splitting internal punctuation, so
+    # "(n/a)" and "n/a." retain the exact slash-bearing placeholder.
+    trimmed = raw.strip("".join(chr(i) for i in range(128) if unicodedata.category(chr(i)).startswith("P")))
+    if trimmed in PLACEHOLDERS:
         return True
     normalized = "".join(
         " " if unicodedata.category(ch).startswith("P") else ch
