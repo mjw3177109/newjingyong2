@@ -60,6 +60,16 @@ class PrivateIF6607PreflightTests(unittest.TestCase):
                 with self.subTest(version=version):
                     self.assertEqual(MODULE.preflight(self.swf, self.jar, version, "FFDec test")["semantic_review"], "unverified")
 
+    def test_rejects_ambiguous_or_embedded_java_version(self):
+        with patch.object(MODULE, "EXPECTED_SWF", self.swf_hash):
+            for version in ("Java 8 compatibility; runtime Java 21",
+                            "Java 17 (Java 8 supported)",
+                            "openjdk version \"21.0.2\"; Java 8",
+                            "Java 8; unknown runtime"):
+                with self.subTest(version=version):
+                    with self.assertRaisesRegex(ValueError, "Java 8"):
+                        MODULE.preflight(self.swf, self.jar, version, "FFDec test")
+
     def test_rejects_blank_version_metadata(self):
         with patch.object(MODULE, "EXPECTED_SWF", self.swf_hash):
             for java, ffdec in (("", "FFDec"), ("Java 8", "  ")):
