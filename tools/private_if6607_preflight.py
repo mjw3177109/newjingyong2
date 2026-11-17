@@ -23,7 +23,7 @@ def preflight(swf, jar, java_version, ffdec_version):
         raise ValueError("SWF SHA-256 differs from audited candidate; stop and re-baseline")
     if not java_version.strip() or not ffdec_version.strip():
         raise ValueError("Java and FFDec versions must be recorded")
-    if not re.search(r"(?i)(?:\b1\.8(?:[._\s]|$)|\b(?:java|openjdk|jdk)\s*(?:version\s*)?[\x22\x27]?8(?:[.\s\x22\x27]|$))", java_version):
+    if not re.fullmatch(r"(?i)\s*(?:java\s+8|(?:openjdk|java|jdk)\s+version\s+[\x22\x27]?1\.8(?:\.\d+)?(?:_\d+)?[\x22\x27]?)\s*", java_version):
         raise ValueError("Java 8 required for reproducible FFDec review")
     return {
         "candidate": "root-frame55-doaction9-if6607",
