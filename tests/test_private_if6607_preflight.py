@@ -3,6 +3,7 @@ import hashlib
 import importlib.util
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -22,7 +23,8 @@ class PrivateIF6607PreflightTests(unittest.TestCase):
         self.swf = root / "synthetic.swf"
         self.jar = root / "synthetic.jar"
         self.swf.write_bytes(b"synthetic SWF fixture, not an original game")
-        self.jar.write_bytes(b"synthetic FFDec jar fixture")
+        with zipfile.ZipFile(self.jar, "w") as archive:
+            archive.writestr("synthetic.txt", "not a real FFDec executable")
         self.swf_hash = hashlib.sha256(self.swf.read_bytes()).hexdigest()
 
     def test_valid_synthetic_inputs_never_claim_semantic_verification(self):
@@ -36,6 +38,12 @@ class PrivateIF6607PreflightTests(unittest.TestCase):
         self.assertEqual(result["false_branch_effect"], "unknown")
         self.assertEqual(result["semantic_review"], "unverified")
         self.assertIs(result["ready_for_html5_mapping"], False)
+
+    def test_rejects_non_archive_ffdec_input(self):
+        self.jar.write_bytes(b"not a jar")
+        with patch.object(MODULE, "EXPECTED_SWF", self.swf_hash):
+            with self.assertRaisesRegex(ValueError, "ZIP/JAR"):
+                MODULE.preflight(self.swf, self.jar, "Java 8", "FFDec test")
 
     def test_rejects_wrong_swf_fingerprint(self):
         with self.assertRaisesRegex(ValueError, "SHA-256"):
