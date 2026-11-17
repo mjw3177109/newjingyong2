@@ -50,6 +50,16 @@ class PrivateIF6607PreflightTests(unittest.TestCase):
                                          if missing == self.swf else missing.with_name("absent"),
                                          "Java 8", "FFDec test")
 
+    def test_requires_java_8_for_legacy_ffdec(self):
+        with patch.object(MODULE, "EXPECTED_SWF", self.swf_hash):
+            for version in ("Java 17", "openjdk version \"21.0.2\"", "Java 18"):
+                with self.subTest(version=version):
+                    with self.assertRaisesRegex(ValueError, "Java 8"):
+                        MODULE.preflight(self.swf, self.jar, version, "FFDec test")
+            for version in ("Java 8", "openjdk version \"1.8.0_402\""):
+                with self.subTest(version=version):
+                    self.assertEqual(MODULE.preflight(self.swf, self.jar, version, "FFDec test")["semantic_review"], "unverified")
+
     def test_rejects_blank_version_metadata(self):
         with patch.object(MODULE, "EXPECTED_SWF", self.swf_hash):
             for java, ffdec in (("", "FFDec"), ("Java 8", "  ")):
