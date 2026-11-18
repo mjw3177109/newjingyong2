@@ -14,7 +14,7 @@ class IfStructureTests(unittest.TestCase):
 
     def test_bad_target(self):
         with self.assertRaises(ValueError):
-            inspect_target(bytes([0x9d, 2, 0, 1, 0, 0x04, 0]), 0)
+            inspect_target(bytes([0x9d, 2, 0, 2, 0, 0x04, 0]), 0)
 
     def test_not_if(self):
         with self.assertRaises(ValueError):
