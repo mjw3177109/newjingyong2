@@ -183,6 +183,8 @@ export function parseSave(raw){
     (id!=='herb'||!s.flags.herbTaken)&&(id!=='bandit'||!s.flags.banditBeaten)&&
     a.x===p.x&&a.y===p.y))return null;
   if(!Array.isArray(s.inventory)||s.inventory.length>MAX_INVENTORY||s.inventory.some(item=>!['清心草','回春散',DEMO_SWORD].includes(item)))return null;
+  // Reject imported potion stacks that cannot be acquired through the demo merchant.
+  if(s.inventory.filter(item=>item==='回春散').length>MAX_POTIONS)return null;
   if(s.inventory.filter(item=>item===DEMO_SWORD).length>1 ||
      s.inventory.filter(item=>item==='清心草').length>1 ||
      (s.inventory.includes(DEMO_SWORD) && s.quest!=='completed') ||
