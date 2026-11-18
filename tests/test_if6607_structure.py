@@ -1,9 +1,21 @@
 """Synthetic-only tests for source-free IF structural probe."""
 import unittest
-from tools.probe_if6607_structure import inspect_target, decode_records
+import hashlib
+import tempfile
+from pathlib import Path
+from tools.probe_if6607_structure import inspect_target, decode_records, verify_source_fingerprint
 
 
 class IfStructureTests(unittest.TestCase):
+    def test_source_fingerprint_guard(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "input.swf"
+            path.write_bytes(b"synthetic source only")
+            expected = hashlib.sha256(path.read_bytes()).hexdigest()
+            self.assertEqual(verify_source_fingerprint(path, expected.upper()), expected)
+            with self.assertRaisesRegex(ValueError, "does not match"):
+                verify_source_fingerprint(path, "0" * 64)
+
     def test_valid_if(self):
         # ActionIF (5 bytes), ActionNextFrame, ActionPlay, End.
         payload = bytes([0x9d, 2, 0, 1, 0, 0x04, 0x06, 0])
