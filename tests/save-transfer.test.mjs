@@ -45,3 +45,9 @@ test('portable save byte limit counts UTF-8 bytes, not JavaScript characters', (
   state.journal = [multibyte];
   assert.throws(() => exportSaveText(state), /invalid demo save/);
 });
+
+// Oversized inputs are rejected without needing to encode the entire payload.
+test('portable import rejects very large ASCII and multibyte inputs', () => {
+  assert.equal(importSaveText('x'.repeat(MAX_SAVE_FILE_BYTES * 16)), null);
+  assert.equal(importSaveText('江'.repeat(MAX_SAVE_FILE_BYTES * 16)), null);
+});
