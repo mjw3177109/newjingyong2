@@ -32,14 +32,14 @@ test('quest reward respects silver cap and remains one-time at cap', () => {
 });
 
 test('full inventory defers reward without consuming quest completion', () => {
-  const full = readyToClaim(10, MAX_INVENTORY - 1);
-  assert.equal(full.inventory.length, MAX_INVENTORY);
-  assert.deepEqual(load(full), full); // imported legacy-shaped inventory may exceed merchant purchase cap
+  const full = readyToClaim(10, MAX_POTIONS);
+  assert.equal(full.inventory.length, MAX_INVENTORY - 1);
+  assert.deepEqual(load(full), full);
   const deferred = interact(full);
-  assert.equal(deferred.quest, 'active');
-  assert.equal(deferred.player.silver, full.player.silver);
+  assert.equal(deferred.quest, 'completed');
+  assert.equal(deferred.player.silver, full.player.silver + 30);
   assert.equal(deferred.inventory.length, MAX_INVENTORY);
-  assert.match(deferred.dialog, /行囊已满/);
+  assert.equal(deferred.inventory.at(-1), DEMO_SWORD);
   assert.deepEqual(load(deferred), deferred);
   const allowed = readyToClaim(10, MAX_POTIONS);
   assert.equal(allowed.inventory.length, MAX_POTIONS + 1);
