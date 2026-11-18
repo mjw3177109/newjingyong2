@@ -35,3 +35,13 @@ test('portable import supports validated v1 to v2 migration', () => {
   assert.deepEqual(importSaveText(JSON.stringify(legacy)), expected);
   assert.equal(expected.version, SAVE_VERSION);
 });
+
+test('portable save byte limit counts UTF-8 bytes, not JavaScript characters', () => {
+  const multibyte = '江'.repeat(Math.floor(MAX_SAVE_FILE_BYTES / 2));
+  assert.ok(multibyte.length < MAX_SAVE_FILE_BYTES);
+  assert.ok(new TextEncoder().encode(multibyte).byteLength > MAX_SAVE_FILE_BYTES);
+  assert.equal(importSaveText(multibyte), null);
+  const state = initialState();
+  state.journal = [multibyte];
+  assert.throws(() => exportSaveText(state), /invalid demo save/);
+});
