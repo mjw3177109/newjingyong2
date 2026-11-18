@@ -12,6 +12,19 @@ class IfStructureTests(unittest.TestCase):
         self.assertEqual(row["verified_story_events"], 0)
         self.assertEqual(row["condition_stack_origin"], "unknown")
 
+    def test_backward_if_to_action_boundary(self):
+        # Backward IF edges are legal AVM1 control flow and must not be rejected.
+        payload = bytes([0x04, 0x9d, 2, 0, 0xfa, 0xff, 0])
+        row = inspect_target(payload, 1)
+        self.assertEqual((row["fallthrough_offset"], row["branch_offset"]), (6, 0))
+        self.assertEqual(row["relative_displacement"], -6)
+
+    def test_branch_into_operand_is_rejected(self):
+        # Offset 3 is inside the IF operand, not an instruction boundary.
+        payload = bytes([0x9d, 2, 0, 0xfe, 0xff, 0x04, 0])
+        with self.assertRaises(ValueError):
+            inspect_target(payload, 0)
+
     def test_bad_target(self):
         with self.assertRaises(ValueError):
             inspect_target(bytes([0x9d, 2, 0, 2, 0, 0x04, 0]), 0)
