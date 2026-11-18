@@ -81,18 +81,28 @@ def extract_root_action(path, frame=55, ordinal_in_frame=9):
     raise ValueError("root action not found")
 
 
+def verify_source_fingerprint(path, expected_sha256):
+    """Fail closed if the input SWF differs from the audited original."""
+    actual = hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    if actual.lower() != expected_sha256.lower():
+        raise ValueError("SWF SHA-256 does not match audited source")
+    return actual
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("swf")
     parser.add_argument("--out", required=True)
+    parser.add_argument("--expected-swf-sha256", default="d762a8f95d22b87916ae375968d425b4d4d34390bbc5d234338bfb58f85d4a30")
     parser.add_argument("--frame", type=int, default=55)
     parser.add_argument("--action", type=int, default=9)
     parser.add_argument("--offset", type=int, default=6607)
     args = parser.parse_args()
+    source_hash = verify_source_fingerprint(args.swf, args.expected_swf_sha256)
     report = inspect_target(extract_root_action(args.swf, args.frame, args.action), args.offset)
     report["root_frame"] = args.frame
     report["action_ordinal_in_frame"] = args.action
-    report["source_swf_sha256"] = hashlib.sha256(Path(args.swf).read_bytes()).hexdigest()
+    report["source_swf_sha256"] = source_hash
     destination = Path(args.out)
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
