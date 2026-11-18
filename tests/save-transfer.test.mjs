@@ -51,3 +51,13 @@ test('portable import rejects very large ASCII and multibyte inputs', () => {
   assert.equal(importSaveText('x'.repeat(MAX_SAVE_FILE_BYTES * 16)), null);
   assert.equal(importSaveText('江'.repeat(MAX_SAVE_FILE_BYTES * 16)), null);
 });
+
+// The cap is inclusive: a valid JSON save padded with JSON whitespace at
+// exactly 64 KiB must remain importable, while one extra byte is rejected.
+test('portable import enforces the inclusive 64 KiB boundary', () => {
+  const valid = exportSaveText(initialState());
+  const exact = valid + ' '.repeat(MAX_SAVE_FILE_BYTES - new TextEncoder().encode(valid).byteLength);
+  assert.equal(new TextEncoder().encode(exact).byteLength, MAX_SAVE_FILE_BYTES);
+  assert.deepEqual(importSaveText(exact), initialState());
+  assert.equal(importSaveText(exact + ' '), null);
+});
