@@ -46,8 +46,14 @@ class IfStructureTests(unittest.TestCase):
     def test_missing_fallthrough_boundary_is_rejected(self):
         # A five-byte IF with a valid backward target but no next action.
         payload = bytes([0x9d, 2, 0, 0xfb, 0xff])
-        with self.assertRaisesRegex(ValueError, "fallthrough"):
+        with self.assertRaisesRegex(ValueError, "terminal End"):
             inspect_target(payload, 0)
+
+    def test_missing_end_and_trailing_data_rejected(self):
+        with self.assertRaisesRegex(ValueError, "terminal End"):
+            decode_records(bytes([0x04]))
+        with self.assertRaisesRegex(ValueError, "terminal End"):
+            decode_records(bytes([0x04, 0x00, 0x06]))
 
     def test_branch_into_operand_is_rejected(self):
         # Offset 3 is inside the IF operand, not an instruction boundary.
