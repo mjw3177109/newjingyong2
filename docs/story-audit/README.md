@@ -135,3 +135,10 @@
 - 同一运行生成 `if6607-structure-evidence`，Artifact ID `14504845045`，580 字节，SHA-256（ZIP 工件摘要）`6aa66b2acb588c7fe5ad5e01232549c6f8c1088879d8e661187fb23c186350d2`；[工件所在运行](https://github.com/mjw3177109/newjingyong2/actions/runs/44471462745)。**本次仅核实工件元数据和 CI 结论，尚未解包独立读取 JSON。**
 - CI 断言检查 `source_swf_sha256` 与当前 `jin.swf` 一致、根帧 55 / 全局 DoAction 9 / IF 6607、顺序后继 6612、跳转目标 6623、相对位移 11；同时要求 `condition_stack_origin`、`true_path_effects`、`false_path_effects` 为 `unknown` 且 `verified_story_events=0`。这些属于结构检查，不构成原作剧情事件语义证据。
 - **已核实原作剧情事件仍为 0，ready_for_html5_mapping=0。** 下一步须在授权隔离环境中对 IF 前栈来源与真假路径的变量/地图/战斗副作用分别取证并独立复核；在此之前不得映射成原作事件，也不得发布受保护剧情的商业成品。
+
+## 2026-11-19 08:23 UTC：首次独立解包 IF 6607 CI 原始 JSON 工件
+
+- [Actions #1502 / run 44478560415](https://github.com/mjw3177109/newjingyong2/actions/runs/44478560415) 在提交 `12ee110b4a0e147a576dcbf743175f66baf4d6c5` 上四项作业均成功。下载并**实际解包** `if6607-structure-evidence` Artifact ID `14507716100`（ZIP 580 字节），而非只看元数据。
+- JSON schema `avm1-if-structure-v1`；`source_swf_sha256=d762a8f95d22b87916ae375968d425b4d4d34390bbc5d234338bfb58f85d4a30`；`action_sha256=d1004ec542e6a47d89f882b6bc5e4bbfca5156d4ce03fa9d65646c61f45f5760`。根时间轴帧 55 / 全局 DoAction 9 / IF 6607 / 顺序后继 6612 / 跳转目标 6623 / 相对位移 11 均直接来自解包内容。
+- IF 前 12 个 opcode（仅指令类型，**未读取操作数/字符串**）：`96,1c,1d,96,1c,1d,96,1c,1d,96,48,12,12`；其中 `96` 为 Push、`1c` 为 GetVariable、`1d` 为 SetVariable、`48` 为 Less、`12` 为 Not。这只证明该窗口存在变量访问和布尔运算的**结构线索**，不能判定实际变量名、条件含义或真假分支副作用；且窗口仅为有限截取，不代表完整栈溯源。
+- JSON 原值 `condition_stack_origin=unknown`、`true_path_effects=unknown`、`false_path_effects=unknown`、`verified_story_events=0`。**仍不得创建原作事件映射；ready_for_html5_mapping=0。** 下一步在授权隔离环境中按该双哈希锚点分析操作数与双路径运行状态，并独立复核。
