@@ -67,6 +67,10 @@ def inspect_target(payload, target=6607):
                 break
         return result
 
+    fallthrough_window = successor_window(end)
+    branch_window = successor_window(branch)
+    shared_offsets = sorted({r["offset"] for r in fallthrough_window} & {r["offset"] for r in branch_window})
+
     index = next(i for i, r in enumerate(records) if r[0] == target)
     window = records[max(0, index - 12):index + 1]
     # Opcode-only window: no operands, source strings, paths or decoded script.
@@ -79,8 +83,10 @@ def inspect_target(payload, target=6607):
         "relative_displacement": displacement,
         "fallthrough_opcode_hex": f"{by_offset[end][2]:02x}",
         "branch_opcode_hex": f"{by_offset[branch][2]:02x}",
-        "fallthrough_linear_window": successor_window(end),
-        "branch_linear_window": successor_window(branch),
+        "fallthrough_linear_window": fallthrough_window,
+        "branch_linear_window": branch_window,
+        "branch_entry_same_as_fallthrough": branch == end,
+        "shared_linear_window_offsets": shared_offsets,
         "prior_opcode_window": [{"offset": r[0], "opcode_hex": f"{r[2]:02x}"} for r in window],
         "condition_stack_origin": "unknown",
         "true_path_effects": "unknown",
