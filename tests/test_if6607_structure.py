@@ -11,10 +11,10 @@ class IfStructureTests(unittest.TestCase):
     def test_root_tag_ordinal_is_global_not_per_frame(self):
         # Eight root DoAction tags before frame 55, ninth on frame 55.
         tags = [(12, b"x")] * 8 + [(1, b"")] * 54 + [(12, b"target")]
-        with patch("tools.probe_if6607_structure.load_swf", return_value=(b"", b"", 0)), \\
+        with patch("tools.probe_if6607_structure.load_swf", return_value=(b"", b"", 0)), \
              patch("tools.probe_if6607_structure.iter_tags", return_value=iter(tags)):
             self.assertEqual(extract_root_action("synthetic.swf", 55, 9), b"target")
-        with patch("tools.probe_if6607_structure.load_swf", return_value=(b"", b"", 0)), \\
+        with patch("tools.probe_if6607_structure.load_swf", return_value=(b"", b"", 0)), \
              patch("tools.probe_if6607_structure.iter_tags", return_value=iter(tags)):
             with self.assertRaisesRegex(ValueError, "expected frame"):
                 extract_root_action("synthetic.swf", 54, 9)
