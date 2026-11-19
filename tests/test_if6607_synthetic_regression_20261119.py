@@ -57,6 +57,21 @@ class IfStructureSyntheticTests(unittest.TestCase):
                 self.assertEqual(result["fallthrough_linear_window"],
                                  [{"offset": 5, "opcode_hex": f"{opcode:02x}"}])
 
+    def test_successor_window_stops_at_timeline_navigation(self):
+        # Navigation may transfer execution to another frame; do not include
+        # the following action in a purported local successor window.
+        cases = ((0x04, b""), (0x05, b""), (0x06, b""),
+                 (0x07, b""), (0x81, b"\\x01\\x00"),
+                 (0x8C, b"scene\\x00"), (0x9F, b"\\x00"))
+        for opcode, body in cases:
+            with self.subTest(opcode=opcode):
+                action = (bytes([opcode, len(body), 0]) + body
+                          if opcode >= 0x80 else bytes([opcode]))
+                payload = bytes([0x9D, 0x02, 0, 0, 0]) + action + bytes([0x04, 0])
+                result = inspect_target(payload, target=0)
+                self.assertEqual(result["fallthrough_linear_window"],
+                                 [{"offset": 5, "opcode_hex": f"{opcode:02x}"}])
+
     def test_branch_into_action_body_rejected(self):
         payload = bytes([0x96, 0x01, 0x00, 0x00, 0x9d, 0x02, 0x00]) + struct.pack("<h", -8) + bytes([0x04, 0x00])
         with self.assertRaisesRegex(ValueError, "branch target not an action boundary"):
