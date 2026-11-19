@@ -43,6 +43,12 @@ class IfStructureTests(unittest.TestCase):
         self.assertEqual((row["fallthrough_offset"], row["branch_offset"]), (6, 0))
         self.assertEqual(row["relative_displacement"], -6)
 
+    def test_missing_fallthrough_boundary_is_rejected(self):
+        # A five-byte IF with a valid backward target but no next action.
+        payload = bytes([0x9d, 2, 0, 0xfb, 0xff])
+        with self.assertRaisesRegex(ValueError, "fallthrough"):
+            inspect_target(payload, 0)
+
     def test_branch_into_operand_is_rejected(self):
         # Offset 3 is inside the IF operand, not an instruction boundary.
         payload = bytes([0x9d, 2, 0, 0xfe, 0xff, 0x04, 0])
