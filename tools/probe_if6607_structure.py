@@ -55,13 +55,13 @@ def inspect_target(payload, target=6607):
     # Bounded linear windows are structural only; jumps/calls may change execution.
     def successor_window(offset):
         start_index = next(i for i, r in enumerate(records) if r[0] == offset)
-        # Stop at explicit control transfers: subsequent linear bytes are not
-        # evidence of execution on this path. Calls and other dynamic control
-        # transfers remain unverified, even inside this bounded window.
+        # Stop at explicit or conditional control transfers. WaitForFrame
+        # actions can skip subsequent records; Call and Try may change control
+        # flow. A linear opcode window is never an execution trace.
         result = []
         for r in records[start_index:start_index + 4]:
             result.append({"offset": r[0], "opcode_hex": f"{r[2]:02x}"})
-            if r[2] in (0x00, 0x99, 0x9D, 0x3E):  # End, Jump, If, Return
+            if r[2] in (0x00, 0x99, 0x9D, 0x3E, 0x8A, 0x8D, 0x8F, 0x9E):  # End, Jump, If, Return, WaitForFrame(2), Try, Call
                 break
         return result
 
