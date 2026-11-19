@@ -29,6 +29,23 @@ class IfStructureSyntheticTests(unittest.TestCase):
         self.assertEqual(result["branch_opcode_hex"], "04")
         self.assertEqual(result["fallthrough_linear_window"], result["branch_linear_window"])
 
+    def test_successor_window_stops_at_unconditional_jump(self):
+        # IF fallthrough reaches Jump; bytes after Jump are not proven executed.
+        payload = bytes([0x9d, 0x02, 0x00, 0x00, 0x00,
+                         0x99, 0x02, 0x00, 0x01, 0x00,
+                         0x04, 0x00])
+        result = inspect_target(payload, target=0)
+        self.assertEqual(result["fallthrough_linear_window"],
+                         [{"offset": 5, "opcode_hex": "99"}])
+        self.assertEqual(result["branch_linear_window"],
+                         [{"offset": 5, "opcode_hex": "99"}])
+
+    def test_successor_window_stops_at_return(self):
+        payload = bytes([0x9d, 0x02, 0x00, 0x00, 0x00, 0x3e, 0x04, 0x00])
+        result = inspect_target(payload, target=0)
+        self.assertEqual(result["fallthrough_linear_window"],
+                         [{"offset": 5, "opcode_hex": "3e"}])
+
     def test_branch_into_action_body_rejected(self):
         payload = bytes([0x96, 0x01, 0x00, 0x00, 0x9d, 0x02, 0x00]) + struct.pack("<h", -8) + bytes([0x04, 0x00])
         with self.assertRaisesRegex(ValueError, "branch target not an action boundary"):
