@@ -15,7 +15,7 @@ class IfStructureSyntheticTests(unittest.TestCase):
         self.assertEqual(result["relative_displacement"], 1)
         self.assertEqual(result["fallthrough_opcode_hex"], "04")
         self.assertEqual(result["branch_opcode_hex"], "00")
-        self.assertEqual(result["fallthrough_linear_window"], [{"offset": 9, "opcode_hex": "04"}, {"offset": 10, "opcode_hex": "00"}])
+        self.assertEqual(result["fallthrough_linear_window"], [{"offset": 9, "opcode_hex": "04"}])
         self.assertEqual(result["branch_linear_window"], [{"offset": 10, "opcode_hex": "00"}])
         self.assertEqual(result["prior_opcode_window"][-1], {"offset": 4, "opcode_hex": "9d"})
         self.assertEqual(result["verified_story_events"], 0)
@@ -61,8 +61,8 @@ class IfStructureSyntheticTests(unittest.TestCase):
         # Navigation may transfer execution to another frame; do not include
         # the following action in a purported local successor window.
         cases = ((0x04, b""), (0x05, b""), (0x06, b""),
-                 (0x07, b""), (0x81, b"\\x01\\x00"),
-                 (0x8C, b"scene\\x00"), (0x9F, b"\\x00"))
+                 (0x07, b""), (0x81, bytes([1, 0])),
+                 (0x8C, b"scene" + bytes([0])), (0x9F, bytes([0])))
         for opcode, body in cases:
             with self.subTest(opcode=opcode):
                 action = (bytes([opcode, len(body), 0]) + body
