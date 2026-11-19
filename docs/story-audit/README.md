@@ -127,3 +127,11 @@
 - 第一条可映射原作事件的必要证据：①注明 `jin.swf` 文件哈希、FFDec/Java 8 版本与导出批次；②在授权隔离环境中取得真实 AVM1 动作流及偏移一致性；③核对 IF 前的栈来源、变量读取、运行时调用和可能的副作用；④分别记录条件真/假两条路径的可观测状态变化及复现步骤；⑤双导出内容哈希一致或明确解释差异；⑥经独立复核后填写脱敏事件摘要、HTML5 对应测试与权利证明。
 - 任一项缺失时，状态保持 `unverified`，`ready_for_html5_mapping=0`。不得把 `literal_candidate`、单次 CI 成功或脱敏结构统计升级为真实剧情事件。
 - 下一轮优先针对以上证据门禁补齐真实隔离执行记录，而不是继续机械增加 AVM1 opcode 白名单。原作已语义核实事件数仍为 **0**。
+
+
+## 2026-11-19 IF 6607 真实 SWF 结构验收（非剧情验收）
+
+- [Actions #1500 / run 44471462745](https://github.com/mjw3177109/newjingyong2/actions/runs/44471462745) 对提交 `f4945fdefb39f9df689195c4a8f91e67ad6e2ac8` 返回 `completed/success`。该工作流包含真实 `jin.swf` 探针以及独立的结构断言；工作流整体成功表明这些步骤没有报错。
+- 同一运行生成 `if6607-structure-evidence`，Artifact ID `14504845045`，580 字节，SHA-256（ZIP 工件摘要）`6aa66b2acb588c7fe5ad5e01232549c6f8c1088879d8e661187fb23c186350d2`；[工件所在运行](https://github.com/mjw3177109/newjingyong2/actions/runs/44471462745)。**本次仅核实工件元数据和 CI 结论，尚未解包独立读取 JSON。**
+- CI 断言检查 `source_swf_sha256` 与当前 `jin.swf` 一致、根帧 55 / 全局 DoAction 9 / IF 6607、顺序后继 6612、跳转目标 6623、相对位移 11；同时要求 `condition_stack_origin`、`true_path_effects`、`false_path_effects` 为 `unknown` 且 `verified_story_events=0`。这些属于结构检查，不构成原作剧情事件语义证据。
+- **已核实原作剧情事件仍为 0，ready_for_html5_mapping=0。** 下一步须在授权隔离环境中对 IF 前栈来源与真假路径的变量/地图/战斗副作用分别取证并独立复核；在此之前不得映射成原作事件，也不得发布受保护剧情的商业成品。
