@@ -62,6 +62,8 @@ def inspect_target(payload, target=6607):
         "fallthrough_offset": end,
         "branch_offset": branch,
         "relative_displacement": displacement,
+        "fallthrough_opcode_hex": f"{by_offset[end][2]:02x}",
+        "branch_opcode_hex": f"{by_offset[branch][2]:02x}",
         "prior_opcode_window": [{"offset": r[0], "opcode_hex": f"{r[2]:02x}"} for r in window],
         "condition_stack_origin": "unknown",
         "true_path_effects": "unknown",
