@@ -57,11 +57,13 @@ def inspect_target(payload, target=6607):
         start_index = next(i for i, r in enumerate(records) if r[0] == offset)
         # Stop at explicit or conditional control transfers. WaitForFrame
         # actions can skip subsequent records; Call and Try may change control
-        # flow. Timeline navigation also changes which frames/actions may run.\n        # A linear opcode window is never an execution trace.
+        # flow. Timeline navigation also changes which frames/actions may run.
+        # Throw terminates the current path unless caught by an outer handler.
+        # A linear opcode window is never an execution trace.
         result = []
         for r in records[start_index:start_index + 4]:
             result.append({"offset": r[0], "opcode_hex": f"{r[2]:02x}"})
-            if r[2] in (0x00, 0x99, 0x9D, 0x3E, 0x8A, 0x8D, 0x8F, 0x9E, 0x04, 0x05, 0x06, 0x07, 0x81, 0x8C, 0x9F):  # control/timeline transfers
+            if r[2] in (0x00, 0x99, 0x9D, 0x3E, 0x2A, 0x8A, 0x8D, 0x8F, 0x9E, 0x04, 0x05, 0x06, 0x07, 0x81, 0x8C, 0x9F):  # control/timeline transfers
                 break
         return result
 
