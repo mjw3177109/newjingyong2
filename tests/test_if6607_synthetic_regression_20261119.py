@@ -49,7 +49,7 @@ class IfStructureSyntheticTests(unittest.TestCase):
     def test_successor_window_stops_at_conditional_skip_and_dynamic_call(self):
         # IF falls through to a WaitForFrame (skip-count action) or Call.
         # These synthetic records are structurally valid, not execution traces.
-        for opcode, body in ((0x8A, b"\\x01\\x00\\x01"), (0x8D, b"\\x01"), (0x9E, b"")):
+        for opcode, body in ((0x8A, bytes([1, 0, 1])), (0x8D, bytes([1])), (0x9E, b"")):
             with self.subTest(opcode=opcode):
                 transfer = bytes([opcode, len(body), 0]) + body
                 payload = bytes([0x9D, 0x02, 0, 0, 0]) + transfer + bytes([0x04, 0])
