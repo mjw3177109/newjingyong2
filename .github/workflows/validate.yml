@@ -56,6 +56,28 @@ jobs:
         run: python tools/index_swf_action_opcodes.py jin.swf --timeline reports/swf_main_timeline_evidence.json --out reports/swf_root_action_opcode_evidence.json
       - name: Probe audited root IF 6607 against actual SWF (source-free)
         run: python tools/probe_if6607_structure.py jin.swf --out reports/if6607_structure.json
+      - name: Verify IF 6607 evidence identity and branch offsets
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          evidence = json.loads(Path("reports/if6607_structure.json").read_text(encoding="utf-8"))
+          expected_hash = hashlib.sha256(Path("jin.swf").read_bytes()).hexdigest()
+          assert evidence["schema"] == "avm1-if-structure-v1"
+          assert evidence["source_swf_sha256"] == expected_hash
+          assert evidence["root_frame"] == 55
+          assert evidence["root_doaction_tag_ordinal"] == 9
+          assert evidence["if_offset"] == 6607
+          assert evidence["fallthrough_offset"] == 6612
+          assert evidence["branch_offset"] == 6623
+          assert evidence["relative_displacement"] == 11
+          assert evidence["condition_stack_origin"] == "unknown"
+          assert evidence["true_path_effects"] == "unknown"
+          assert evidence["false_path_effects"] == "unknown"
+          assert evidence["verified_story_events"] == 0
+          print("IF 6607 structural evidence checked; semantic claims remain unverified")
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: if6607-structure-evidence
