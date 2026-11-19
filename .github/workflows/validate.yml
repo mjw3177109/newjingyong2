@@ -66,6 +66,11 @@ jobs:
           expected_hash = hashlib.sha256(Path("jin.swf").read_bytes()).hexdigest()
           assert evidence["schema"] == "avm1-if-structure-v1"
           assert evidence["source_swf_sha256"] == expected_hash
+          from tools.probe_if6607_structure import extract_root_action
+          action = extract_root_action("jin.swf", frame=55, tag_ordinal=9)
+          assert evidence["action_sha256"] == hashlib.sha256(action).hexdigest()
+          assert len(evidence["prior_opcode_window"]) == 13
+          assert evidence["prior_opcode_window"][-1] == {"offset": 6607, "opcode_hex": "9d"}
           assert evidence["root_frame"] == 55
           assert evidence["root_doaction_tag_ordinal"] == 9
           assert evidence["if_offset"] == 6607
