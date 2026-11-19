@@ -46,6 +46,8 @@ def inspect_target(payload, target=6607):
         raise ValueError("target not a five-byte AVM1 IF")
     displacement = struct.unpack_from("<h", payload, body)[0]
     branch = end + displacement
+    if end not in by_offset:
+        raise ValueError("fallthrough not an action boundary")
     if branch not in by_offset:
         raise ValueError("branch target not an action boundary")
     index = next(i for i, r in enumerate(records) if r[0] == target)
