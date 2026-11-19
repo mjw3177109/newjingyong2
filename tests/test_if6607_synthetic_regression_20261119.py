@@ -46,6 +46,17 @@ class IfStructureSyntheticTests(unittest.TestCase):
         self.assertEqual(result["fallthrough_linear_window"],
                          [{"offset": 5, "opcode_hex": "3e"}])
 
+    def test_successor_window_stops_at_conditional_skip_and_dynamic_call(self):
+        # IF falls through to a WaitForFrame (skip-count action) or Call.
+        # These synthetic records are structurally valid, not execution traces.
+        for opcode, body in ((0x8A, b"\\x01\\x00\\x01"), (0x8D, b"\\x01"), (0x9E, b"")):
+            with self.subTest(opcode=opcode):
+                transfer = bytes([opcode, len(body), 0]) + body
+                payload = bytes([0x9D, 0x02, 0, 0, 0]) + transfer + bytes([0x04, 0])
+                result = inspect_target(payload, target=0)
+                self.assertEqual(result["fallthrough_linear_window"],
+                                 [{"offset": 5, "opcode_hex": f"{opcode:02x}"}])
+
     def test_branch_into_action_body_rejected(self):
         payload = bytes([0x96, 0x01, 0x00, 0x00, 0x9d, 0x02, 0x00]) + struct.pack("<h", -8) + bytes([0x04, 0x00])
         with self.assertRaisesRegex(ValueError, "branch target not an action boundary"):
