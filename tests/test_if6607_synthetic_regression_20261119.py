@@ -72,6 +72,15 @@ class IfStructureSyntheticTests(unittest.TestCase):
                 self.assertEqual(result["fallthrough_linear_window"],
                                  [{"offset": 5, "opcode_hex": f"{opcode:02x}"}])
 
+    def test_successor_window_stops_at_throw(self):
+        # AVM1 Throw (0x2A) transfers control to an exception handler or exits.
+        payload = bytes([0x9D, 0x02, 0, 0, 0, 0x2A, 0x04, 0])
+        result = inspect_target(payload, target=0)
+        self.assertEqual(result["fallthrough_linear_window"],
+                         [{"offset": 5, "opcode_hex": "2a"}])
+        self.assertEqual(result["branch_linear_window"],
+                         [{"offset": 5, "opcode_hex": "2a"}])
+
     def test_branch_into_action_body_rejected(self):
         payload = bytes([0x96, 0x01, 0x00, 0x00, 0x9d, 0x02, 0x00]) + struct.pack("<h", -8) + bytes([0x04, 0x00])
         with self.assertRaisesRegex(ValueError, "branch target not an action boundary"):
