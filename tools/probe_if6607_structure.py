@@ -66,17 +66,18 @@ def inspect_target(payload, target=6607):
     }
 
 
-def extract_root_action(path, frame=55, ordinal_in_frame=9):
+def extract_root_action(path, frame=55, tag_ordinal=9):
     _, data, start = load_swf(path)
     current_frame = 1
     ordinal = 0
     for code, payload in iter_tags(data, start, len(data)):
         if code == 1:
             current_frame += 1
-            ordinal = 0
         elif code == 12:
             ordinal += 1
-            if current_frame == frame and ordinal == ordinal_in_frame:
+            if ordinal == tag_ordinal:
+                if current_frame != frame:
+                    raise ValueError("root action ordinal does not match expected frame")
                 return payload
     raise ValueError("root action not found")
 
@@ -101,7 +102,7 @@ def main():
     source_hash = verify_source_fingerprint(args.swf, args.expected_swf_sha256)
     report = inspect_target(extract_root_action(args.swf, args.frame, args.action), args.offset)
     report["root_frame"] = args.frame
-    report["action_ordinal_in_frame"] = args.action
+    report["root_doaction_tag_ordinal"] = args.action
     report["source_swf_sha256"] = source_hash
     destination = Path(args.out)
     destination.parent.mkdir(parents=True, exist_ok=True)
