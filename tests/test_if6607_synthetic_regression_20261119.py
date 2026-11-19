@@ -13,9 +13,18 @@ class IfStructureSyntheticTests(unittest.TestCase):
         self.assertEqual(result["fallthrough_offset"], 9)
         self.assertEqual(result["branch_offset"], 10)
         self.assertEqual(result["relative_displacement"], 1)
+        self.assertEqual(result["fallthrough_opcode_hex"], "04")
+        self.assertEqual(result["branch_opcode_hex"], "00")
         self.assertEqual(result["prior_opcode_window"][-1], {"offset": 4, "opcode_hex": "9d"})
         self.assertEqual(result["verified_story_events"], 0)
         self.assertEqual(result["condition_stack_origin"], "unknown")
+
+    def test_branch_to_fallthrough_reports_same_successor(self):
+        payload = bytes([0x9d, 0x02, 0x00, 0x00, 0x00, 0x04, 0x00])
+        result = inspect_target(payload, target=0)
+        self.assertEqual(result["fallthrough_offset"], result["branch_offset"])
+        self.assertEqual(result["fallthrough_opcode_hex"], "04")
+        self.assertEqual(result["branch_opcode_hex"], "04")
 
     def test_branch_into_action_body_rejected(self):
         payload = bytes([0x96, 0x01, 0x00, 0x00, 0x9d, 0x02, 0x00]) + struct.pack("<h", -8) + bytes([0x04, 0x00])
