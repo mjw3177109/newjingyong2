@@ -18,6 +18,8 @@ class IfStructureSyntheticTests(unittest.TestCase):
         self.assertEqual(result["fallthrough_linear_window"], [{"offset": 9, "opcode_hex": "04"}])
         self.assertEqual(result["branch_linear_window"], [{"offset": 10, "opcode_hex": "00"}])
         self.assertEqual(result["prior_opcode_window"][-1], {"offset": 4, "opcode_hex": "9d"})
+        self.assertFalse(result["branch_entry_same_as_fallthrough"])
+        self.assertEqual(result["shared_linear_window_offsets"], [])
         self.assertEqual(result["verified_story_events"], 0)
         self.assertEqual(result["condition_stack_origin"], "unknown")
 
@@ -28,6 +30,16 @@ class IfStructureSyntheticTests(unittest.TestCase):
         self.assertEqual(result["fallthrough_opcode_hex"], "04")
         self.assertEqual(result["branch_opcode_hex"], "04")
         self.assertEqual(result["fallthrough_linear_window"], result["branch_linear_window"])
+        self.assertTrue(result["branch_entry_same_as_fallthrough"])
+        self.assertEqual(result["shared_linear_window_offsets"], [5, 6])
+
+    def test_distinct_entries_can_share_a_later_linear_instruction(self):
+        # IF false enters at 5, true enters at 6; both windows include End at 6.
+        payload = bytes([0x9D, 0x02, 0, 1, 0, 0x4A, 0x00])
+        result = inspect_target(payload, target=0)
+        self.assertFalse(result["branch_entry_same_as_fallthrough"])
+        self.assertEqual(result["shared_linear_window_offsets"], [6])
+        self.assertEqual(result["condition_stack_origin"], "unknown")
 
     def test_successor_window_stops_at_unconditional_jump(self):
         # IF fallthrough reaches Jump; bytes after Jump are not proven executed.
