@@ -33,6 +33,8 @@ def decode_records(payload):
         body = offset
         offset += size
         records.append((start, offset, op, body if op >= 0x80 else None))
+    if not records or records[-1][2] != 0 or records[-1][1] != len(payload):
+        raise ValueError("action stream must end with a single terminal End action")
     return records
 
 
