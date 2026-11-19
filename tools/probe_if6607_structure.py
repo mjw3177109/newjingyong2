@@ -52,6 +52,12 @@ def inspect_target(payload, target=6607):
         raise ValueError("fallthrough not an action boundary")
     if branch not in by_offset:
         raise ValueError("branch target not an action boundary")
+    # Bounded linear windows are structural only; jumps/calls may change execution.
+    def successor_window(offset):
+        start_index = next(i for i, r in enumerate(records) if r[0] == offset)
+        return [{"offset": r[0], "opcode_hex": f"{r[2]:02x}"}
+                for r in records[start_index:start_index + 4]]
+
     index = next(i for i, r in enumerate(records) if r[0] == target)
     window = records[max(0, index - 12):index + 1]
     # Opcode-only window: no operands, source strings, paths or decoded script.
@@ -64,6 +70,8 @@ def inspect_target(payload, target=6607):
         "relative_displacement": displacement,
         "fallthrough_opcode_hex": f"{by_offset[end][2]:02x}",
         "branch_opcode_hex": f"{by_offset[branch][2]:02x}",
+        "fallthrough_linear_window": successor_window(end),
+        "branch_linear_window": successor_window(branch),
         "prior_opcode_window": [{"offset": r[0], "opcode_hex": f"{r[2]:02x}"} for r in window],
         "condition_stack_origin": "unknown",
         "true_path_effects": "unknown",
