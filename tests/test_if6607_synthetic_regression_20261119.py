@@ -31,7 +31,8 @@ class IfStructureSyntheticTests(unittest.TestCase):
         self.assertEqual(result["branch_opcode_hex"], "04")
         self.assertEqual(result["fallthrough_linear_window"], result["branch_linear_window"])
         self.assertTrue(result["branch_entry_same_as_fallthrough"])
-        self.assertEqual(result["shared_linear_window_offsets"], [5, 6])
+        # NextFrame terminates the bounded window; End at offset 6 is excluded.
+        self.assertEqual(result["shared_linear_window_offsets"], [5])
 
     def test_distinct_entries_can_share_a_later_linear_instruction(self):
         # IF false enters at 5, true enters at 6; both windows include End at 6.
