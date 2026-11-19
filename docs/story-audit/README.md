@@ -140,5 +140,5 @@
 
 - [Actions #1502 / run 44478560415](https://github.com/mjw3177109/newjingyong2/actions/runs/44478560415) 在提交 `12ee110b4a0e147a576dcbf743175f66baf4d6c5` 上四项作业均成功。下载并**实际解包** `if6607-structure-evidence` Artifact ID `14507716100`（ZIP 580 字节），而非只看元数据。
 - JSON schema `avm1-if-structure-v1`；`source_swf_sha256=d762a8f95d22b87916ae375968d425b4d4d34390bbc5d234338bfb58f85d4a30`；`action_sha256=d1004ec542e6a47d89f882b6bc5e4bbfca5156d4ce03fa9d65646c61f45f5760`。根时间轴帧 55 / 全局 DoAction 9 / IF 6607 / 顺序后继 6612 / 跳转目标 6623 / 相对位移 11 均直接来自解包内容。
-- IF 前 12 个 opcode（仅指令类型，**未读取操作数/字符串**）：`96,1c,1d,96,1c,1d,96,1c,1d,96,48,12,12`；其中 `96` 为 Push、`1c` 为 GetVariable、`1d` 为 SetVariable、`48` 为 Less、`12` 为 Not。这只证明该窗口存在变量访问和布尔运算的**结构线索**，不能判定实际变量名、条件含义或真假分支副作用；且窗口仅为有限截取，不代表完整栈溯源。
+- IF 前操作码窗口列出的 13 个 opcode（仅指令类型，**未读取操作数/字符串**）：`96,1c,1d,96,1c,1d,96,1c,1d,96,48,12,12`；其中 `96` 为 Push、`1c` 为 GetVariable、`1d` 为 SetVariable、`48` 为 Less、`12` 为 Not。这只证明该窗口存在变量访问和布尔运算的**结构线索**，不能判定实际变量名、条件含义或真假分支副作用；且窗口仅为有限截取，不代表完整栈溯源。
 - JSON 原值 `condition_stack_origin=unknown`、`true_path_effects=unknown`、`false_path_effects=unknown`、`verified_story_events=0`。**仍不得创建原作事件映射；ready_for_html5_mapping=0。** 下一步在授权隔离环境中按该双哈希锚点分析操作数与双路径运行状态，并独立复核。
