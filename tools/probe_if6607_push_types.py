@@ -34,9 +34,9 @@ def push_types(data):
     return result
 
 
-def inventory(action, offsets=(6612, 6623, 6629)):
+def inventory(action, offsets=(6612, 6623, 6629), set_variable_offset=6622):
     records = {start: (end, op, body) for start, end, op, body in decode_records(action)}
-    # This is adjacency evidence only, not proof of a variable assignment.\n    if 6622 not in records or records[6622][1] != 0x1D:\n        raise ValueError("expected SetVariable boundary missing")\n    pushes = []\n    for offset in offsets:
+    # This is adjacency evidence only, not proof of a variable assignment.\n    if set_variable_offset not in records or records[set_variable_offset][1] != 0x1D:\n        raise ValueError("expected SetVariable boundary missing")\n    pushes = []\n    for offset in offsets:
         if offset not in records:
             raise ValueError("expected Push boundary missing")
         end, opcode, body = records[offset]
@@ -46,7 +46,7 @@ def inventory(action, offsets=(6612, 6623, 6629)):
         pushes.append({"offset": offset, "push_type_codes": types,
                        "literal_values_exported": False, "value_count": len(types)})
     return {"schema": "avm1-push-types-v1", "scope": "static-only", "pushes": pushes,
-            "set_variable_offset": 6622, "set_variable_opcode_confirmed": True,\n            "set_variable_target": "unknown", "set_variable_value": "unknown",\n            "condition_stack_origin": "unknown", "verified_story_events": 0}
+            "set_variable_offset": set_variable_offset, "set_variable_opcode_confirmed": True,\n            "set_variable_target": "unknown", "set_variable_value": "unknown",\n            "condition_stack_origin": "unknown", "verified_story_events": 0}
 
 
 def main():
