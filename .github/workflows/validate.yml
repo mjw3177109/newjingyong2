@@ -76,6 +76,26 @@ jobs:
           assert report["verified_story_events"] == 0
           print("Real SWF predecessor audit completed; no story semantics inferred")
           PY
+      - name: Cross-check independent IF 6607 boundary and Push reports
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path("reports")
+          boundary = json.loads((root / "if6607_predecessor_boundary.json").read_text(encoding="utf-8"))
+          pushes = json.loads((root / "if6607_push_types.json").read_text(encoding="utf-8"))
+          assert boundary["schema"] == "avm1-predecessor-boundary-v1"
+          assert pushes["schema"] == "avm1-push-types-v1"
+          assert boundary["scope"] == pushes["scope"] == "static-only"
+          assert boundary["set_variable_offset"] == pushes["set_variable_offset"] == 6622
+          predecessor_pushes = [p["offset"] for p in boundary["set_variable_immediate_predecessors"]
+                                if p["opcode_hex"] == "96"]
+          assert sorted(predecessor_pushes) == sorted(pushes["push_ends_at_set_variable"])
+          assert boundary["set_variable_preceded_by_push"] == bool(predecessor_pushes)
+          assert boundary["verified_story_events"] == pushes["verified_story_events"] == 0
+          assert all(p["literal_values_exported"] is False for p in pushes["pushes"])
+          print("Independent static reports agree; story semantics remain unverified")
+          PY
       - name: Upload source-free IF 6607 predecessor boundaries
         uses: actions/upload-artifact@v4
         with:
