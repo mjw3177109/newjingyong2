@@ -211,7 +211,7 @@ jobs:
           import sys
           import unittest
           suite = unittest.defaultTestLoader.discover(
-              "tests", pattern="test_if6607_real_*.py", top_level_dir="."
+              "tests", pattern="test_if6607_real_*.py"
           )
           result = unittest.TextTestRunner(verbosity=2).run(suite)
           print(f"Real SWF tests: {result.testsRun}; skipped: {len(result.skipped)}")
