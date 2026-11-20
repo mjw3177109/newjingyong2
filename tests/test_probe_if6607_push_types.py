@@ -16,7 +16,15 @@ class PushTypeTests(unittest.TestCase):
         report = inventory(action, (0, 6, 12), set_variable_offset=18)
         self.assertEqual([x["push_type_codes"] for x in report["pushes"]], [[0], [0], [0]])
         self.assertNotIn('"A"', str(report))
-        self.assertEqual(report["verified_story_events"], 0)\n        self.assertTrue(report["set_variable_opcode_confirmed"])\n        self.assertEqual(report["set_variable_target"], "unknown")\n        self.assertEqual([x["value_count"] for x in report["pushes"]], [1, 1, 1])\n\n    def test_requires_set_variable_boundary(self):\n        action = b"\x96\x03\x00\x00A\x00\x96\x03\x00\x00B\x00\x96\x03\x00\x00C\x00\x00"\n        with self.assertRaisesRegex(ValueError, "SetVariable"):\n            inventory(action, (0, 6, 12), set_variable_offset=18)
+        self.assertEqual(report["verified_story_events"], 0)
+        self.assertTrue(report["set_variable_opcode_confirmed"])
+        self.assertEqual(report["set_variable_target"], "unknown")
+        self.assertEqual([x["value_count"] for x in report["pushes"]], [1, 1, 1])
+
+    def test_requires_set_variable_boundary(self):
+        action = b"\x96\x03\x00\x00A\x00\x96\x03\x00\x00B\x00\x96\x03\x00\x00C\x00\x00"
+        with self.assertRaisesRegex(ValueError, "SetVariable"):
+            inventory(action, (0, 6, 12), set_variable_offset=18)
 
 
 if __name__ == "__main__":
