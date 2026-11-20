@@ -33,6 +33,29 @@ class RealIf6607MutationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "branch target not an action boundary"):
             inspect_target(bytes(mutated), 6607)
 
+    def test_backward_jump_to_decoded_boundary_is_accepted(self):
+        records = {start: (end, opcode, body)
+                   for start, end, opcode, body in decode_records(self.action)}
+        self.assertEqual(records[6604][1], 0x48)  # Less2
+        mutated = bytearray(self.action)
+        displacement = 6604 - records[6607][0]
+        self.assertLess(displacement, 0)
+        struct.pack_into("<h", mutated, records[6607][2], displacement)
+        report = inspect_target(bytes(mutated), 6607)
+        self.assertEqual(report["branch_offset"], 6604)
+        self.assertEqual(report["relative_displacement"], displacement)
+        self.assertFalse(report["branch_entry_same_as_fallthrough"])
+        self.assertEqual(report["condition_stack_origin"], "unknown")
+        self.assertEqual(report["verified_story_events"], 0)
+
+    def test_backward_jump_into_instruction_body_is_rejected(self):
+        records = {start: (end, opcode, body)
+                   for start, end, opcode, body in decode_records(self.action)}
+        mutated = bytearray(self.action)
+        struct.pack_into("<h", mutated, records[6607][2], 6605 - records[6607][0])
+        with self.assertRaisesRegex(ValueError, "branch target not an action boundary"):
+            inspect_target(bytes(mutated), 6607)
+
     def test_zero_displacement_is_detected_as_shared_entry(self):
         records = {start: (end, opcode, body)
                    for start, end, opcode, body in decode_records(self.action)}
