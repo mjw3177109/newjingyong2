@@ -52,7 +52,15 @@ class RealIf6607MutationTests(unittest.TestCase):
         records = {start: (end, opcode, body)
                    for start, end, opcode, body in decode_records(self.action)}
         mutated = bytearray(self.action)
-        struct.pack_into("<h", mutated, records[6607][2], 6605 - records[6607][0])
+        # Less2 at 6604 is one byte long: 6605 is itself a valid
+        # instruction boundary, not an interior byte. Select an actual
+        # multi-byte record in the decoded stream instead.
+        candidates = [start for start, (end, _opcode, _body) in records.items()
+                      if start < 6607 and end - start > 1]
+        self.assertTrue(candidates, "expected a multi-byte preceding AVM1 action")
+        interior = max(candidates) + 1
+        self.assertNotIn(interior, records)
+        struct.pack_into("<h", mutated, records[6607][2], interior - records[6607][0])
         with self.assertRaisesRegex(ValueError, "branch target not an action boundary"):
             inspect_target(bytes(mutated), 6607)
 
