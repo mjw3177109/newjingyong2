@@ -19,6 +19,16 @@ class PredecessorBoundaryTests(unittest.TestCase):
         self.assertFalse(result["if_preceded_by_less2"])
         self.assertFalse(result["set_variable_preceded_by_push"])
 
+    def test_not_is_immediate_if_predecessor_not_less2(self):
+        # Less2, Not, If: the direct predecessor is Not, not Less2.
+        action = b"\x48\x12\x9d\x02\x00\x00\x00\x96\x03\x00\x00X\x00\x1d\x00"
+        result = predecessor_audit(action, if_offset=2, set_variable_offset=13)
+        self.assertTrue(result["if_preceded_by_not"])
+        self.assertFalse(result["if_preceded_by_less2"])
+        self.assertEqual(result["if_immediate_predecessors"], [{"offset": 1, "opcode_hex": "12"}])
+        self.assertEqual(result["condition_stack_origin"], "unknown")
+        self.assertEqual(result["verified_story_events"], 0)
+
     def test_reject_wrong_boundaries(self):
         action = b"\x48\x9d\x02\x00\x00\x00\x96\x03\x00\x00X\x00\x1d\x00"
         with self.assertRaisesRegex(ValueError, "If"):
