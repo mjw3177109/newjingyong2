@@ -42,8 +42,9 @@ def inventory(action, offsets=(6612, 6623, 6629)):
         end, opcode, body = records[offset]
         if opcode != 0x96 or body is None:
             raise ValueError("expected Push opcode missing")
-        pushes.append({"offset": offset, "push_type_codes": push_types(action[body:end]),
-                       "literal_values_exported": False, "value_count": len(push_types(action[body:end]))})
+        types = push_types(action[body:end])
+        pushes.append({"offset": offset, "push_type_codes": types,
+                       "literal_values_exported": False, "value_count": len(types)})
     return {"schema": "avm1-push-types-v1", "scope": "static-only", "pushes": pushes,
             "set_variable_offset": 6622, "set_variable_opcode_confirmed": True,\n            "set_variable_target": "unknown", "set_variable_value": "unknown",\n            "condition_stack_origin": "unknown", "verified_story_events": 0}
 
