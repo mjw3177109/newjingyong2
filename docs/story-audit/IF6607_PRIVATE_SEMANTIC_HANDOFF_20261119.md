@@ -36,3 +36,13 @@
 - `swf-inventory` 的“Probe audited root IF 6607”及“Verify IF 6607 evidence identity and branch offsets”步骤均成功；`ffdec-java8-probe` 的 Java 8/FFDec 临时导出步骤成功。步骤通过不能证明条件栈、真假路径状态差分或剧情语义。
 - **执行优先级**：先在授权隔离环境下载并解包该工件，校验其中的 `source_swf_sha256`、`action_sha256`、IF 偏移与真假后继；再对真实动作流执行跨基本块栈追踪及相同初态双路径差分，独立复核后才登记事件。仅在拿到上述证据时才更新原作事件数。
 - 本轮没有新增已核实原作事件；`verified_story_events=0`、`ready_for_html5_mapping=0`，保持 Draft PR，不将原创试玩映射为原作剧情。
+
+## 2026-11-19 17:21 PST：首次独立解包最新真实结构工件
+
+- [Push Actions #1548](https://github.com/mjw3177109/newjingyong2/actions/runs/44645138936) 对提交 `fc44b6c6c7107923e7a02c2e2c0ca0ada09f2171` 的四项作业（HTML5、Chromium、SWF、FFDec）均为 `completed/success`。
+- **本次已实际下载并解包** `if6607-structure-evidence` Artifact `14587953944`，内部仅有 `if6607_structure.json`；ZIP SHA-256 经本地重新计算为 `93fedcb45a34495765fcfc939aa81a4f3027b626a98a1612e65c2186ae3bbc52`，与 GitHub Artifact 元数据摘要一致。
+- JSON 实际核验：`source_swf_sha256=d762a8f95d22b87916ae375968d425b4d4d34390bbc5d234338bfb58f85d4a30`；`action_sha256=d1004ec542e6a47d89f882b6bc5e4bbfca5156d4ce03fa9d65646c61f45f5760`；根帧 `55`、全局 DoAction `9`、IF `6607`、顺序后继 `6612`、跳转目标 `6623`、相对位移 `11`。
+- 新发现的**静态窗口关系**：顺序后继的前四条为 `6612:96`（Push）、`6622:1d`（SetVariable）、`6623:96`（Push）、`6628:1c`（GetVariable）；跳转目标窗口前四条为 `6623:96`、`6628:1c`、`6629:96`、`6637:48`（Less2）。窗口重叠偏移恰为 `[6623,6628]`，但这是有限线性窗口交集，**不是运行时执行轨迹或路径等价证明**。
+- IF 前窗口尾部 `6604:48`（Less2）、`6605:12`（Not）、`6606:12`（Not）、`6607:9d`（If）；仅可确定这些操作码的静态排列，**不能确定操作数、栈顶值来源或真实条件含义**。
+- **下一项有价值的私有验证**：在有权隔离环境读取 `6612` Push 的操作数类型和 `6622` SetVariable 的变量目标，核查这段赋值是否仅在顺序后继路径发生；同时逆向追踪 `6604` 的两个栈操作数，并在同初态下分别执行两条路径。静态存在 SetVariable 不等于确认发生了某项剧情旗标修改。
+- 此次是结构证据的首次独立解包核验，不是语义审计完成。维持 `condition_stack_origin=unknown`、`true_path_effects=unknown`、`false_path_effects=unknown`、`verified_story_events=0`、`ready_for_html5_mapping=0`。
