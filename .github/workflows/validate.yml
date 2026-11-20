@@ -204,6 +204,20 @@ jobs:
           PY
       - name: Test source-free script index and review queue
         run: python -m unittest discover -s tests -p 'test_*.py'
+      - name: Require real IF 6607 regression tests to execute without skips
+        run: |
+          test -s jin.swf
+          python - <<'PY'
+          import sys
+          import unittest
+          suite = unittest.defaultTestLoader.discover(
+              "tests", pattern="test_if6607_real_*.py", top_level_dir="."
+          )
+          result = unittest.TextTestRunner(verbosity=2).run(suite)
+          print(f"Real SWF tests: {result.testsRun}; skipped: {len(result.skipped)}")
+          if not result.wasSuccessful() or result.testsRun < 2 or result.skipped:
+              sys.exit("Real SWF regression gate failed or did not execute")
+          PY
       - name: Smoke-test standalone audit CLI imports
         run: |
           python tools/build_stable_audit_set.py --help > /dev/null
