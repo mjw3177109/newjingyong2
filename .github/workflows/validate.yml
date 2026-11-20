@@ -56,6 +56,14 @@ jobs:
         run: python tools/index_swf_action_opcodes.py jin.swf --timeline reports/swf_main_timeline_evidence.json --out reports/swf_root_action_opcode_evidence.json
       - name: Probe audited root IF 6607 against actual SWF (source-free)
         run: python tools/probe_if6607_structure.py jin.swf --out reports/if6607_structure.json
+      - name: Probe real IF 6607 Push operand types (no literal values)
+        run: python tools/probe_if6607_push_types.py jin.swf --out reports/if6607_push_types.json
+      - name: Upload source-free IF 6607 Push type inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: if6607-push-type-evidence
+          path: reports/if6607_push_types.json
+          if-no-files-found: error
       - name: Verify IF 6607 evidence identity and branch offsets
         run: |
           python - <<'PY'
