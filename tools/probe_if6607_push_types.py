@@ -40,6 +40,7 @@ def inventory(action, offsets=(6612, 6623, 6629), set_variable_offset=6622):
     if set_variable_offset not in records or records[set_variable_offset][1] != 0x1D:
         raise ValueError("expected SetVariable boundary missing")
     pushes = []
+    push_end_offsets = {}
     for offset in offsets:
         if offset not in records:
             raise ValueError("expected Push boundary missing")
@@ -47,10 +48,12 @@ def inventory(action, offsets=(6612, 6623, 6629), set_variable_offset=6622):
         if opcode != 0x96 or body is None:
             raise ValueError("expected Push opcode missing")
         types = push_types(action[body:end])
+        push_end_offsets[offset] = end
         pushes.append({"offset": offset, "push_type_codes": types,
                        "literal_values_exported": False, "value_count": len(types)})
     return {"schema": "avm1-push-types-v1", "scope": "static-only", "pushes": pushes,
             "set_variable_offset": set_variable_offset, "set_variable_opcode_confirmed": True,
+            "push_ends_at_set_variable": [offset for offset in offsets if push_end_offsets[offset] == set_variable_offset],
             "set_variable_target": "unknown", "set_variable_value": "unknown",
             "condition_stack_origin": "unknown", "verified_story_events": 0}
 
