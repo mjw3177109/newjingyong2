@@ -29,6 +29,7 @@ def predecessor_audit(action, if_offset=6607, set_variable_offset=6622):
         "if_offset": if_offset,
         "if_immediate_predecessors": if_predecessors,
         "if_preceded_by_less2": any(p["opcode_hex"] == "48" for p in if_predecessors),
+        "if_preceded_by_not": any(p["opcode_hex"] == "12" for p in if_predecessors),
         "set_variable_offset": set_variable_offset,
         "set_variable_immediate_predecessors": set_predecessors,
         "set_variable_preceded_by_push": any(p["opcode_hex"] == "96" for p in set_predecessors),
