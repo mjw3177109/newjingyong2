@@ -58,6 +58,30 @@ jobs:
         run: python tools/probe_if6607_structure.py jin.swf --out reports/if6607_structure.json
       - name: Probe real IF 6607 Push operand types (no literal values)
         run: python tools/probe_if6607_push_types.py jin.swf --out reports/if6607_push_types.json
+      - name: Audit real IF 6607 immediate instruction predecessors (source-free)
+        run: python tools/probe_if6607_stack_boundary.py jin.swf --out reports/if6607_predecessor_boundary.json
+      - name: Verify predecessor audit stays structural-only
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("reports/if6607_predecessor_boundary.json").read_text(encoding="utf-8"))
+          assert report["schema"] == "avm1-predecessor-boundary-v1"
+          assert report["scope"] == "static-only"
+          assert report["if_offset"] == 6607
+          assert report["set_variable_offset"] == 6622
+          assert report["condition_stack_origin"] == "unknown"
+          assert report["assignment_stack_origin"] == "unknown"
+          assert report["runtime_reachability"] == "unknown"
+          assert report["verified_story_events"] == 0
+          print("Real SWF predecessor audit completed; no story semantics inferred")
+          PY
+      - name: Upload source-free IF 6607 predecessor boundaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: if6607-predecessor-boundary-evidence
+          path: reports/if6607_predecessor_boundary.json
+          if-no-files-found: error
       - name: Upload source-free IF 6607 Push type inventory
         uses: actions/upload-artifact@v4
         with:
