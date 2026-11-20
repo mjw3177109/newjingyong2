@@ -36,17 +36,16 @@ def push_types(data):
 
 def inventory(action, offsets=(6612, 6623, 6629)):
     records = {start: (end, op, body) for start, end, op, body in decode_records(action)}
-    pushes = []
-    for offset in offsets:
+    # This is adjacency evidence only, not proof of a variable assignment.\n    if 6622 not in records or records[6622][1] != 0x1D:\n        raise ValueError("expected SetVariable boundary missing")\n    pushes = []\n    for offset in offsets:
         if offset not in records:
             raise ValueError("expected Push boundary missing")
         end, opcode, body = records[offset]
         if opcode != 0x96 or body is None:
             raise ValueError("expected Push opcode missing")
         pushes.append({"offset": offset, "push_type_codes": push_types(action[body:end]),
-                       "literal_values_exported": False})
+                       "literal_values_exported": False, "value_count": len(push_types(action[body:end]))})
     return {"schema": "avm1-push-types-v1", "scope": "static-only", "pushes": pushes,
-            "condition_stack_origin": "unknown", "verified_story_events": 0}
+            "set_variable_offset": 6622, "set_variable_opcode_confirmed": True,\n            "set_variable_target": "unknown", "set_variable_value": "unknown",\n            "condition_stack_origin": "unknown", "verified_story_events": 0}
 
 
 def main():
