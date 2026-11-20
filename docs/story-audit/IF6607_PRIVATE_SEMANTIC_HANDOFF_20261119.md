@@ -28,3 +28,11 @@
 | 授权范围覆盖拟议使用方式 | 不得发布受保护剧情 |
 
 **禁止**把 CI success、工件生成、操作码结构、FFDec 脚本数量或原创试玩事件当作已核实的原作剧情。
+
+## 2026-11-19 16:20 PST：最新 CI 与证据边界复核
+
+- [提交 `1b4b54e` 的 Actions #1546](https://github.com/mjw3177109/newjingyong2/actions/runs/44636612385) 已核对运行与作业：`completed/success`，`html5-tests`、`browser-smoke`、`swf-inventory`、`ffdec-java8-probe` 四项均成功。此为交接文档提交后的远端验收。
+- 同一运行生成 `if6607-structure-evidence`：Artifact ID `14584731975`，ZIP 大小 671 字节，GitHub 提供的 ZIP 摘要 `sha256:6efdd9d23f27690a5fff0d0ffdf26858e2f88a1e38de05afca07d1b63cfef37d`，来源分支 `feature/html5-qstyle-foundation`，head `1b4b54e650ad8ab414002683213bdda82ee36e67`。本次核实的是工件元数据、运行作业及步骤，**没有独立解包本次 ZIP，也没有读取私有脚本操作数**。
+- `swf-inventory` 的“Probe audited root IF 6607”及“Verify IF 6607 evidence identity and branch offsets”步骤均成功；`ffdec-java8-probe` 的 Java 8/FFDec 临时导出步骤成功。步骤通过不能证明条件栈、真假路径状态差分或剧情语义。
+- **执行优先级**：先在授权隔离环境下载并解包该工件，校验其中的 `source_swf_sha256`、`action_sha256`、IF 偏移与真假后继；再对真实动作流执行跨基本块栈追踪及相同初态双路径差分，独立复核后才登记事件。仅在拿到上述证据时才更新原作事件数。
+- 本轮没有新增已核实原作事件；`verified_story_events=0`、`ready_for_html5_mapping=0`，保持 Draft PR，不将原创试玩映射为原作剧情。
