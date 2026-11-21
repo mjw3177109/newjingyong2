@@ -51,7 +51,12 @@ if(bambooSession){
  }catch{/* Invalid or unavailable storage must not activate an orphaned region. */}
  // A region session without its validated village entry would otherwise
  // render a playable scene with an unrelated default village checkpoint.
- if(!validEntry)bambooSession=null;
+ if(!validEntry){
+  // Discard an orphaned region checkpoint as well as its in-memory copy.
+  // Otherwise every reload attempts the same invalid recovery indefinitely.
+  clearBambooSession(typeof localStorage==='undefined'?null:localStorage);
+  bambooSession=null;
+ }
 }
 function toast(txt){const t=$('toast');t.textContent=txt;t.classList.remove('hidden');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.add('hidden'),1800);}
 function update(next){state=next;paint();}
