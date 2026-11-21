@@ -162,7 +162,12 @@ canvas.addEventListener('click', event => {
   if(!route?.length){if(isNpc&&route?.length===0)toast('已靠近守径人，按 E 交谈');return;}
   const first=route[0];
   const dx=first.x-bambooSession.position.x,dy=first.y-bambooSession.position.y;
-  if(Math.abs(dx)+Math.abs(dy)===1)doMove(dx,dy);
+  if(Math.abs(dx)+Math.abs(dy)===1){
+   doMove(dx,dy);
+   // Only show the dialogue hint after the persisted move actually succeeded.
+   if(isNpc && bambooSession && routeToRegionNpc(BAMBOO_PASS,bambooSession.position)?.length===0)
+    toast('已靠近守径人，按 E 交谈');
+  }
   return;
  }
  const rect=canvas.getBoundingClientRect();
