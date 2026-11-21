@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "python3 -m http.server 5173",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check src/engine.js && node --check src/main.js && node --check src/controls.js && node --check src/save-transfer.js && node --check src/demo-data.js && node --check src/tile-path.js && node --check src/objectives.js && node --check src/region-travel.js && node --check src/region-navigation.js && node --check src/bamboo-entry-validation.js && node --check src/bamboo-session-storage.js && node --check src/browser-checkpoint.js && node --check src/bamboo-session-codec.js && node --check src/bamboo-checkpoint.js && node --check src/bamboo-canvas.js && node --check src/bamboo-pointer.js && node --check src/bamboo-exit-path.js && node --check src/bamboo-pass.js && npm test"
+    "check": "node --check src/engine.js && node --check src/main.js && node --check src/controls.js && node --check src/save-transfer.js && node --check src/demo-data.js && node --check src/tile-path.js && node --check src/objectives.js && node --check src/region-travel.js && node --check src/region-navigation.js && node --check src/bamboo-entry-validation.js && node --check src/bamboo-session-storage.js && node --check src/browser-checkpoint.js && node --check src/bamboo-session-codec.js && node --check src/bamboo-checkpoint.js && node --check src/bamboo-canvas.js && node --check src/bamboo-pointer.js && node --check src/bamboo-exit-path.js && node --check src/bamboo-pass.js && node --check src/region-npc-route.js && npm test"
   },
   "engines": {
     "node": ">=18"
