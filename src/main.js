@@ -11,6 +11,7 @@ import {drawBambooPass} from './bamboo-canvas.js';
 import {bambooTileFromPointer} from './bamboo-pointer.js';
 import {pathToBambooExit,pathToBambooTile} from './bamboo-exit-path.js';
 import {saveBambooSession,loadBambooSession,clearBambooSession} from './bamboo-session-storage.js';
+import {decodeBambooEntry} from './bamboo-entry-validation.js';
 // Optional original-demo region recovery; never changes the V2 save schema.
 let bambooSession=loadBambooSession(typeof localStorage==='undefined'?null:localStorage);
 let state=initialState();
@@ -38,15 +39,11 @@ function persistBambooEntry(){
 if(bambooSession){
  let validEntry=false;
  try{
-  const raw=localStorage.getItem(bambooEntryKey);
-  if(raw && new TextEncoder().encode(raw).byteLength<=MAX_SAVE_FILE_BYTES){
-   const checkpoint=decodeCheckpoint(raw);
-   if(checkpoint && !checkpoint.game.combat && !checkpoint.game.dialog &&
-      checkpoint.game.player.x===VILLAGE_GATE.x && checkpoint.game.player.y===VILLAGE_GATE.y){
-    state=checkpoint.game;
-    eventHistory=checkpoint.eventHistory;
-    validEntry=true;
-   }
+  const checkpoint=decodeBambooEntry(localStorage.getItem(bambooEntryKey));
+  if(checkpoint){
+   state=checkpoint.game;
+   eventHistory=checkpoint.eventHistory;
+   validEntry=true;
   }
  }catch{/* Invalid or unavailable storage must not activate an orphaned region. */}
  // A region session without its validated village entry would otherwise
