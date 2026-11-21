@@ -10,6 +10,8 @@ import {enterBambooPass,moveBambooSession,talkBambooSession,leaveBambooPass,VILL
 import {drawBambooPass} from './bamboo-canvas.js';
 import {bambooTileFromPointer} from './bamboo-pointer.js';
 import {pathToBambooExit,pathToBambooTile} from './bamboo-exit-path.js';
+import {BAMBOO_PASS} from './bamboo-pass.js';
+import {routeToRegionNpc} from './region-npc-route.js';
 import {saveBambooSession,loadBambooSession,clearBambooSession} from './bamboo-session-storage.js';
 import {decodeBambooEntry} from './bamboo-entry-validation.js';
 // Optional original-demo region recovery; never changes the V2 save schema.
@@ -150,8 +152,14 @@ canvas.addEventListener('click', event => {
   // Click-to-route takes exactly one legal step; never auto-interacts or bypasses persistence.
   const tile=bambooTileFromPointer(event.clientX,event.clientY,rect,canvas.width,canvas.height);
   if(!tile)return;
-  const route=pathToBambooTile(bambooSession,tile.x,tile.y);
-  if(!route?.length)return;
+  // Tapping the keeper walks one legal step toward an adjacent tile.
+  // Dialogue still requires E; no automatic interaction or save bypass.
+  const npc=BAMBOO_PASS.npc;
+  const isNpc=tile.x===npc.x&&tile.y===npc.y;
+  const route=isNpc
+    ?routeToRegionNpc(BAMBOO_PASS,bambooSession.position)
+    :pathToBambooTile(bambooSession,tile.x,tile.y);
+  if(!route?.length){if(isNpc&&route?.length===0)toast('已靠近守径人，按 E 交谈');return;}
   const first=route[0];
   const dx=first.x-bambooSession.position.x,dy=first.y-bambooSession.position.y;
   if(Math.abs(dx)+Math.abs(dy)===1)doMove(dx,dy);
