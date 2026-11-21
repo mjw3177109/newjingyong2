@@ -36,6 +36,7 @@ function persistBambooEntry(){
 // A restored bamboo session must retain its matching village gate checkpoint.
 // Never trust arbitrary localStorage state or bypass the normal save validator.
 if(bambooSession){
+ let validEntry=false;
  try{
   const raw=localStorage.getItem(bambooEntryKey);
   if(raw && new TextEncoder().encode(raw).byteLength<=MAX_SAVE_FILE_BYTES){
@@ -44,9 +45,13 @@ if(bambooSession){
       checkpoint.game.player.x===VILLAGE_GATE.x && checkpoint.game.player.y===VILLAGE_GATE.y){
     state=checkpoint.game;
     eventHistory=checkpoint.eventHistory;
+    validEntry=true;
    }
   }
- }catch{/* Keep the region active; do not synthesize a village checkpoint. */}
+ }catch{/* Invalid or unavailable storage must not activate an orphaned region. */}
+ // A region session without its validated village entry would otherwise
+ // render a playable scene with an unrelated default village checkpoint.
+ if(!validEntry)bambooSession=null;
 }
 function toast(txt){const t=$('toast');t.textContent=txt;t.classList.remove('hidden');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.add('hidden'),1800);}
 function update(next){state=next;paint();}
