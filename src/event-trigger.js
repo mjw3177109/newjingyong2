@@ -75,6 +75,8 @@ export function triggerEvent(event,state) {
     for (const key of effect.path.slice(0,-1)) cursor=cursor[key];
     cursor[effect.path.at(-1)]=effect.value;
   }
-  next.eventHistory={...history,[event.id]:true};
+  // Build the ledger from the cloned snapshot, not the original input.
+  // This keeps reward effects and completion history in the same snapshot.
+  next.eventHistory={...(next.eventHistory ?? {}),[event.id]:true};
   return {applied:true,state:next};
 }
