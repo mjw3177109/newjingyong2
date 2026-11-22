@@ -40,6 +40,17 @@ test('bamboo canvas shows one breadcrumb per legal remaining exit step',()=>{
  assert.equal(drawBambooPass(ctx,session),true);
  // Exit, keeper and hero markers are three additional circles.
  assert.equal(calls.filter(c=>c[0]==='arc').length,route.length+3);
+ // Breadcrumb geometry must match each legal path cell, not merely its count.
+ const cell=Math.min(900/BAMBOO_PASS.width,540/BAMBOO_PASS.height);
+ const ox=(900-cell*BAMBOO_PASS.width)/2;
+ const oy=(540-cell*BAMBOO_PASS.height)/2;
+ const circles=calls.filter(c=>c[0]==='arc');
+ for(let i=0;i<route.length;i++){
+  const [,x,y,radius]=circles[i];
+  assert.ok(Math.abs(x-(ox+(route[i].x+.5)*cell))<1e-8);
+  assert.ok(Math.abs(y-(oy+(route[i].y+.5)*cell))<1e-8);
+  assert.ok(Math.abs(radius-cell*.085)<1e-8);
+ }
  const atExit={...session,position:{...BAMBOO_PASS.exit}};
  const finished=fakeCanvas();
  assert.deepEqual(pathToBambooExit(atExit),[]);
