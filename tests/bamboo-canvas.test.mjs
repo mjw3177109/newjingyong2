@@ -126,3 +126,19 @@ test('next-step cue refreshes after moving and never points to the previous tile
  assert.deepEqual(cues.map(c=>c[1]),[`下一步：${direction}`]);
  assert.ok(calls.some(c=>c[0]==='text'&&c[1]===`距出口 ${route.length-1} 步`));
 });
+
+test('canvas refuses malformed checkpoints without drawing any pixels',()=>{
+ const good={regionId:BAMBOO_PASS.id,position:{...BAMBOO_PASS.entry}};
+ const invalid=[
+  {...good,unexpected:true},
+  {...good,position:{...good.position,unexpected:true}},
+  {...good,position:{x:Number.MAX_SAFE_INTEGER+1,y:good.position.y}},
+  {...good,position:{...BAMBOO_PASS.npc}},
+  {...good,position:{...good.position,x:-1}},
+ ];
+ for(const session of invalid){
+  const {ctx,calls}=fakeCanvas();
+  assert.equal(drawBambooPass(ctx,session),false);
+  assert.deepEqual(calls,[]);
+ }
+});
