@@ -32,6 +32,8 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Exercise actual HTML5 game in headless Chromium
         run: python tests/browser_smoke.py
+      - name: Exercise real NPC canvas clicks and refresh
+        run: python tests/browser_bamboo_npc_click.py
       - name: Upload original-demo browser screenshot
         if: always()
         uses: actions/upload-artifact@v4
