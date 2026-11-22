@@ -286,7 +286,8 @@ function paint(){
   const exitHint=exitRoute===null?'出口路线暂不可达':exitRoute.length===0?'已到达出口，按 E 返回青竹村':`距离东侧出口 ${exitRoute.length} 步`;
   $('quest-title').textContent='竹风山径 · 探索';
   $('quest-progress').textContent=npcRoute===null?'守径人路线不可达':npcRoute.length===0?'守径人：可交谈（按 E）':`守径人：还需 ${npcRoute.length} 步`;
-  $('quest-desc').textContent=`竹风山径：${npcHint}；${exitHint}。方向键移动，或点击「向山径出口走一步」。区域位置独立保存于本机；不写入 V2 存档。`;
+  const exitAction=exitRoute===null?'请改用方向键探索可通行道路':exitRoute.length===0?'按 E 返回青竹村':'可点击出口寻路按钮逐步前进';
+  $('quest-desc').textContent=`竹风山径：${npcHint}；${exitHint}。${exitAction}。区域位置独立保存于本机；不写入 V2 存档。`;
   return;
  }
  $('save').disabled=false;$('export-save').disabled=false;
