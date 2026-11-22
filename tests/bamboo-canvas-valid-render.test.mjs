@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {drawBambooPass} from '../src/bamboo-canvas.js';
 import {BAMBOO_PASS} from '../src/bamboo-pass.js';
+import {pathToBambooExit} from '../src/bamboo-exit-path.js';
 
 test('valid bamboo session draws centered grid and markers',()=>{
  const calls=[];
@@ -16,7 +17,9 @@ test('valid bamboo session draws centered grid and markers',()=>{
  const arcs=calls.filter(c=>c[0]==='arc');
  assert.equal(strokes.length,BAMBOO_PASS.width*BAMBOO_PASS.height);
  assert.ok(fills.length>=1+BAMBOO_PASS.width*BAMBOO_PASS.height);
- assert.equal(arcs.length,3,'exit, NPC, player');
+ const route=pathToBambooExit(session);
+ assert.ok(route,'the entry should have a walkable route to the exit');
+ assert.equal(arcs.length,route.length+3,'route breadcrumbs plus exit, NPC, player');
  for(const call of calls){
   if(['fillRect','strokeRect','arc'].includes(call[0])){
    assert.ok(call.slice(1).every(Number.isFinite),JSON.stringify(call));
