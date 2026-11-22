@@ -37,6 +37,12 @@ export function drawBambooPass(ctx,session,canvasWidth=900,canvasHeight=540){
   const direction=dx===1?'右':dx===-1?'左':dy===1?'下':dy===-1?'上':null;
   if(direction){ctx.font='bold 14px system-ui';ctx.fillText(`下一步：${direction}`,canvasWidth-16,52);}
  }
+ // Make the existing NPC interaction discoverable without changing dialogue rules.
+ const keeperDistance=Math.abs(session.position.x-r.npc.x)+Math.abs(session.position.y-r.npc.y);
+ if(keeperDistance===1){
+  ctx.textAlign='center';ctx.font='bold 14px system-ui';ctx.fillStyle='#fff0c9';
+  ctx.fillText('按 E 与守径人交谈',ox+(r.npc.x+.5)*cell,oy+r.npc.y*cell-6);
+ }
  marker(r.exit,'#e9c66f',cell*.29);
  marker(r.npc,'#496d9b',cell*.28);
  marker(session.position,'#f4e1bd',cell*.29);
