@@ -279,7 +279,7 @@ function paint(){
   for(const id of ['rematch','rest-village','equip-weapon','discard-potion','sell-potion','use-potion','attack','guard','drink','flee'])$(id).disabled=true;
   const exitRoute=pathToBambooExit(bambooSession);
   $('step-route').disabled=!exitRoute?.length;
-  $('step-route').textContent=exitRoute?.length ? `向山径出口走一步（剩余 ${exitRoute.length} 步）` : '已到山径出口（按 E 返回）';
+  $('step-route').textContent=exitRoute===null ? '出口路线不可达' : exitRoute.length ? `向山径出口走一步（剩余 ${exitRoute.length} 步）` : '已到山径出口（按 E 返回）';
   $('save').disabled=true;$('export-save').disabled=true;
   const npcRoute=routeToRegionNpc(BAMBOO_PASS,bambooSession.position);
   const npcHint=npcRoute===null?'守径人当前不可达':npcRoute.length===0?'已靠近守径人，按 E 交谈':`距守径人交谈位置 ${npcRoute.length} 步（点击守径人可逐步靠近）`;
