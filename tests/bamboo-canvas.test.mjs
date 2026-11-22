@@ -79,3 +79,18 @@ test('breadcrumb route updates after a legal step and never draws the old starti
   assert.ok(Math.abs(arcs[i][2]-(oy+(remaining[i].y+.5)*cell))<1e-8);
  }
 });
+
+test('canvas announces remaining exit steps and arrival without stale distance',()=>{
+ const start={regionId:BAMBOO_PASS.id,position:{...BAMBOO_PASS.entry}};
+ const route=pathToBambooExit(start);
+ assert.ok(route?.length>0);
+ const before=fakeCanvas();
+ assert.equal(drawBambooPass(before.ctx,start),true);
+ assert.ok(before.calls.some(c=>c[0]==='text'&&c[1]===`距出口 ${route.length} 步`));
+ const moved=fakeCanvas();
+ assert.equal(drawBambooPass(moved.ctx,{...start,position:{...route[0]}}),true);
+ assert.ok(moved.calls.some(c=>c[0]==='text'&&c[1]===`距出口 ${route.length-1} 步`));
+ const arrived=fakeCanvas();
+ assert.equal(drawBambooPass(arrived.ctx,{...start,position:{...BAMBOO_PASS.exit}}),true);
+ assert.ok(arrived.calls.some(c=>c[0]==='text'&&c[1]==='已到出口 · 按 E 返回'));
+});
