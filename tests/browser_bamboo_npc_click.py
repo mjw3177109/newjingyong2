@@ -76,6 +76,16 @@ def main():
             assert '青竹村' in page.locator('#quest-desc').inner_text() or '已返回青竹村' in page.locator('#toast').inner_text(), 'village return not visible'
             page.reload(wait_until='networkidle')
             assert session(page) is None, 'refresh unexpectedly restored departed region'
+            # Re-enter after leaving: the old NPC-adjacent checkpoint must not leak
+            # into a new region session, including after a browser refresh.
+            for _ in range(80):
+                click_tile(page, 24, 7, 25, 15)
+            page.keyboard.press('e')
+            reentered = session(page)
+            assert reentered and reentered['regionId'] == 'bamboo-pass', 'could not re-enter bamboo region'
+            assert reentered['position'] != current['position'], 'old region position leaked into fresh entry'
+            page.reload(wait_until='networkidle')
+            assert session(page) == reentered, 'fresh region checkpoint not restored after reload'
             assert not errors, f'page errors: {errors}'
             browser.close()
             print('PASS: Chromium NPC clicks, persistence, E dialogue, exit routing and village return')
