@@ -54,6 +54,12 @@ def main():
             else:
                 raise AssertionError('NPC was not reachable by repeated real clicks')
             assert '按 E 交谈' in page.locator('#toast').inner_text()
+            # Once adjacent, clicking the occupied NPC tile must not move the
+            # player or auto-start dialogue; E remains the explicit action.
+            adjacent = session(page)
+            click_tile(page, 6, 3, 12, 9)
+            assert session(page) == adjacent, 'clicking adjacent NPC unexpectedly moved player'
+            assert '按 E 交谈' in page.locator('#toast').inner_text(), 'NPC click skipped explicit E interaction'
             page.reload(wait_until='networkidle')
             assert session(page) == current, 'refresh lost the persisted NPC approach'
             page.keyboard.press('e')
