@@ -110,3 +110,19 @@ test('canvas next-step hint follows the actual route and disappears at the exit'
  assert.equal(drawBambooPass(arrived.ctx,{...start,position:{...BAMBOO_PASS.exit}}),true);
  assert.equal(arrived.calls.some(c=>c[0]==='text'&&String(c[1]).startsWith('下一步：')),false);
 });
+
+test('next-step cue refreshes after moving and never points to the previous tile',()=>{
+ const start={regionId:BAMBOO_PASS.id,position:{...BAMBOO_PASS.entry}};
+ const route=pathToBambooExit(start);
+ assert.ok(route?.length>1);
+ const moved={...start,position:{...route[0]}};
+ const next=route[1];
+ const dx=next.x-moved.position.x,dy=next.y-moved.position.y;
+ const direction=dx===1?'右':dx===-1?'左':dy===1?'下':dy===-1?'上':null;
+ assert.ok(direction,'next path cell must be orthogonally adjacent');
+ const {ctx,calls}=fakeCanvas();
+ assert.equal(drawBambooPass(ctx,moved),true);
+ const cues=calls.filter(c=>c[0]==='text'&&String(c[1]).startsWith('下一步：'));
+ assert.deepEqual(cues.map(c=>c[1]),[`下一步：${direction}`]);
+ assert.ok(calls.some(c=>c[0]==='text'&&c[1]===`距出口 ${route.length-1} 步`));
+});
