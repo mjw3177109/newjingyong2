@@ -279,11 +279,12 @@ function paint(){
   for(const id of ['rematch','rest-village','equip-weapon','discard-potion','sell-potion','use-potion','attack','guard','drink','flee'])$(id).disabled=true;
   const exitRoute=pathToBambooExit(bambooSession);
   $('step-route').disabled=!exitRoute?.length;
-  $('step-route').textContent='向山径出口走一步';
+  $('step-route').textContent=exitRoute?.length ? `向山径出口走一步（剩余 ${exitRoute.length} 步）` : '已到山径出口（按 E 返回）';
   $('save').disabled=true;$('export-save').disabled=true;
   const npcRoute=routeToRegionNpc(BAMBOO_PASS,bambooSession.position);
   const npcHint=npcRoute===null?'守径人当前不可达':npcRoute.length===0?'已靠近守径人，按 E 交谈':`距守径人交谈位置 ${npcRoute.length} 步（点击守径人可逐步靠近）`;
-  $('quest-desc').textContent=`竹风山径：${npcHint}。方向键移动，到东侧金色出口按 E 返回。区域位置独立保存于本机；不写入 V2 存档。`;
+  const exitHint=exitRoute===null?'出口路线暂不可达':exitRoute.length===0?'已到达出口，按 E 返回青竹村':`距离东侧出口 ${exitRoute.length} 步`;
+  $('quest-desc').textContent=`竹风山径：${npcHint}；${exitHint}。方向键移动，或点击「向山径出口走一步」。区域位置独立保存于本机；不写入 V2 存档。`;
   return;
  }
  $('save').disabled=false;$('export-save').disabled=false;
