@@ -155,3 +155,17 @@ test('keeper interaction cue appears only at an orthogonally adjacent tile',()=>
  assert.equal(drawBambooPass(far.ctx,{regionId:BAMBOO_PASS.id,position:{...BAMBOO_PASS.entry}}),true);
  assert.equal(far.calls.filter(c=>c[0]==='text'&&c[1]==='按 E 与守径人交谈').length,0);
 });
+
+test('canvas labels original region landmarks using centered tile coordinates',()=>{
+ const {ctx,calls}=fakeCanvas();
+ const session={regionId:BAMBOO_PASS.id,position:{...BAMBOO_PASS.entry}};
+ assert.equal(drawBambooPass(ctx,session),true);
+ const cell=Math.min(900/BAMBOO_PASS.width,540/BAMBOO_PASS.height);
+ const ox=(900-cell*BAMBOO_PASS.width)/2,oy=(540-cell*BAMBOO_PASS.height)/2;
+ for(const [name,p] of [['出口',BAMBOO_PASS.exit],[BAMBOO_PASS.npc.name,BAMBOO_PASS.npc]]){
+  const labels=calls.filter(c=>c[0]==='text'&&c[1]===name);
+  assert.equal(labels.length,1);
+  assert.ok(Math.abs(labels[0][2]-(ox+(p.x+.5)*cell))<1e-8);
+  assert.ok(Math.abs(labels[0][3]-(oy+(p.y+.5)*cell-cell*.35))<1e-8);
+ }
+});
