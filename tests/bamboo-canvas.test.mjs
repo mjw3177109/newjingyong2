@@ -142,3 +142,16 @@ test('canvas refuses malformed checkpoints without drawing any pixels',()=>{
   assert.deepEqual(calls,[]);
  }
 });
+
+test('keeper interaction cue appears only at an orthogonally adjacent tile',()=>{
+ const keeper=BAMBOO_PASS.npc;
+ const adjacent=[{x:keeper.x-1,y:keeper.y},{x:keeper.x+1,y:keeper.y},{x:keeper.x,y:keeper.y-1},{x:keeper.x,y:keeper.y+1}]
+  .filter(p=>p.x>=0&&p.y>=0&&p.x<BAMBOO_PASS.width&&p.y<BAMBOO_PASS.height&&!BAMBOO_PASS.blocks.includes(p.x+','+p.y));
+ assert.ok(adjacent.length>0);
+ const near=fakeCanvas();
+ assert.equal(drawBambooPass(near.ctx,{regionId:BAMBOO_PASS.id,position:adjacent[0]}),true);
+ assert.equal(near.calls.filter(c=>c[0]==='text'&&c[1]==='按 E 与守径人交谈').length,1);
+ const far=fakeCanvas();
+ assert.equal(drawBambooPass(far.ctx,{regionId:BAMBOO_PASS.id,position:{...BAMBOO_PASS.entry}}),true);
+ assert.equal(far.calls.filter(c=>c[0]==='text'&&c[1]==='按 E 与守径人交谈').length,0);
+});
