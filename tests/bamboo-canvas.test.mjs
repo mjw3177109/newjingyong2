@@ -94,3 +94,19 @@ test('canvas announces remaining exit steps and arrival without stale distance',
  assert.equal(drawBambooPass(arrived.ctx,{...start,position:{...BAMBOO_PASS.exit}}),true);
  assert.ok(arrived.calls.some(c=>c[0]==='text'&&c[1]==='已到出口 · 按 E 返回'));
 });
+
+
+test('canvas next-step hint follows the actual route and disappears at the exit',()=>{
+ const start={regionId:BAMBOO_PASS.id,position:{...BAMBOO_PASS.entry}};
+ const route=pathToBambooExit(start);
+ assert.ok(route?.length>0);
+ const first=route[0],dx=first.x-start.position.x,dy=first.y-start.position.y;
+ const direction=dx===1?'右':dx===-1?'左':dy===1?'下':dy===-1?'上':null;
+ assert.ok(direction,'first step must be adjacent');
+ const before=fakeCanvas();
+ assert.equal(drawBambooPass(before.ctx,start),true);
+ assert.ok(before.calls.some(c=>c[0]==='text'&&c[1]===`下一步：${direction}`));
+ const arrived=fakeCanvas();
+ assert.equal(drawBambooPass(arrived.ctx,{...start,position:{...BAMBOO_PASS.exit}}),true);
+ assert.equal(arrived.calls.some(c=>c[0]==='text'&&String(c[1]).startsWith('下一步：')),false);
+});
