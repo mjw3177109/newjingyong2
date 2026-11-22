@@ -1,5 +1,6 @@
 // Original canvas scene for the independent bamboo-pass demo; no SWF assets.
 import {BAMBOO_PASS} from './bamboo-pass.js';
+import {pathToBambooExit} from './bamboo-exit-path.js';
 export function drawBambooPass(ctx,session,canvasWidth=900,canvasHeight=540){
  if(!ctx||session?.regionId!==BAMBOO_PASS.id||!Number.isFinite(canvasWidth)||!Number.isFinite(canvasHeight)||canvasWidth<=0||canvasHeight<=0||!Number.isInteger(session?.position?.x)||!Number.isInteger(session?.position?.y)||session.position.x<0||session.position.y<0||session.position.x>=BAMBOO_PASS.width||session.position.y>=BAMBOO_PASS.height)return false;
  const r=BAMBOO_PASS;
@@ -20,6 +21,9 @@ export function drawBambooPass(ctx,session,canvasWidth=900,canvasHeight=540){
   if(blocked){ctx.fillStyle='#234438';ctx.fillRect(X+cell*.2,Y+cell*.2,cell*.6,cell*.6);}
  }
  const marker=(p,color,radius)=>{ctx.fillStyle=color;ctx.beginPath();ctx.arc(ox+(p.x+.5)*cell,oy+(p.y+.5)*cell,radius,0,Math.PI*2);ctx.fill();};
+ // Show the actual walkable shortest route rather than a misleading straight line.
+ const exitRoute=pathToBambooExit(session);
+ if(exitRoute)for(const step of exitRoute)marker(step,'#f8e6a6',cell*.085);
  marker(r.exit,'#e9c66f',cell*.29);
  marker(r.npc,'#496d9b',cell*.28);
  marker(session.position,'#f4e1bd',cell*.29);
