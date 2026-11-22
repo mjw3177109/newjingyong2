@@ -1,8 +1,11 @@
 // Original canvas scene for the independent bamboo-pass demo; no SWF assets.
 import {BAMBOO_PASS} from './bamboo-pass.js';
 import {pathToBambooExit} from './bamboo-exit-path.js';
+import {normalizeBambooCheckpoint} from './bamboo-checkpoint.js';
 export function drawBambooPass(ctx,session,canvasWidth=900,canvasHeight=540){
- if(!ctx||session?.regionId!==BAMBOO_PASS.id||!Number.isFinite(canvasWidth)||!Number.isFinite(canvasHeight)||canvasWidth<=0||canvasHeight<=0||!Number.isInteger(session?.position?.x)||!Number.isInteger(session?.position?.y)||session.position.x<0||session.position.y<0||session.position.x>=BAMBOO_PASS.width||session.position.y>=BAMBOO_PASS.height)return false;
+ // Use the same checkpoint validation as movement and pathfinding; malformed
+ // region state must not be rendered as a seemingly playable position.
+ if(!ctx||!normalizeBambooCheckpoint(session)||!Number.isFinite(canvasWidth)||!Number.isFinite(canvasHeight)||canvasWidth<=0||canvasHeight<=0)return false;
  const r=BAMBOO_PASS;
  // Reject impossible session locations before drawing any pixels.
  if(r.blocks.includes(session.position.x+','+session.position.y) ||
