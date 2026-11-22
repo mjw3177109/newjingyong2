@@ -285,11 +285,15 @@ function paint(){
   const npcHint=npcRoute===null?'守径人当前不可达':npcRoute.length===0?'已靠近守径人，按 E 交谈':`距守径人交谈位置 ${npcRoute.length} 步（点击守径人可逐步靠近）`;
   const exitHint=exitRoute===null?'出口路线暂不可达':exitRoute.length===0?'已到达出口，按 E 返回青竹村':`距离东侧出口 ${exitRoute.length} 步`;
   $('quest-title').textContent='竹风山径 · 探索';
+  document.querySelector('.scene-heading').setAttribute('aria-label','当前地图：竹风山径');
+  document.querySelector('.scene-heading').firstElementChild.querySelector('.scene-name').textContent='竹风山径';
   $('quest-progress').textContent=npcRoute===null?'守径人路线不可达':npcRoute.length===0?'守径人：可交谈（按 E）':`守径人：还需 ${npcRoute.length} 步`;
   const exitAction=exitRoute===null?'请改用方向键探索可通行道路':exitRoute.length===0?'按 E 返回青竹村':'可点击出口寻路按钮逐步前进';
   $('quest-desc').textContent=`竹风山径：${npcHint}；${exitHint}。${exitAction}。区域位置独立保存于本机；不写入 V2 存档。`;
   return;
  }
+ document.querySelector('.scene-heading').setAttribute('aria-label','当前地图：青竹村');
+ document.querySelector('.scene-heading').firstElementChild.querySelector('.scene-name').textContent='青竹村';
  $('save').disabled=false;$('export-save').disabled=false;
  $('step-route').textContent='沿任务路标走一步';
  for(const id of ['attack','guard','flee'])$(id).disabled=false;
