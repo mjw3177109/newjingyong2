@@ -28,6 +28,12 @@ export function drawBambooPass(ctx,session,canvasWidth=900,canvasHeight=540){
  // Never suggest a reachable exit when pathfinding reports no route.
  ctx.textAlign='right';ctx.font='bold 16px system-ui';ctx.fillStyle='#fff0c9';
  ctx.fillText(exitRoute===null?'出口路线不可达':exitRoute.length===0?'已到出口 · 按 E 返回':`距出口 ${exitRoute.length} 步`,canvasWidth-16,30);
+ // The first breadcrumb is the next legal step; give keyboard users a direction cue.
+ if(exitRoute?.length){
+  const step=exitRoute[0],dx=step.x-session.position.x,dy=step.y-session.position.y;
+  const direction=dx===1?'右':dx===-1?'左':dy===1?'下':dy===-1?'上':null;
+  if(direction){ctx.font='bold 14px system-ui';ctx.fillText(`下一步：${direction}`,canvasWidth-16,52);}
+ }
  marker(r.exit,'#e9c66f',cell*.29);
  marker(r.npc,'#496d9b',cell*.28);
  marker(session.position,'#f4e1bd',cell*.29);
