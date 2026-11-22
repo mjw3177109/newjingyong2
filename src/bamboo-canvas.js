@@ -43,6 +43,11 @@ export function drawBambooPass(ctx,session,canvasWidth=900,canvasHeight=540){
   ctx.textAlign='center';ctx.font='bold 14px system-ui';ctx.fillStyle='#fff0c9';
   ctx.fillText('按 E 与守径人交谈',ox+(r.npc.x+.5)*cell,oy+r.npc.y*cell-6);
  }
+ // Identify landmarks on the map even before the player reaches them.
+ // Labels use the same centered tile geometry as markers, with no external assets.
+ ctx.textAlign='center';ctx.font='bold 12px system-ui';ctx.fillStyle='#fff0c9';
+ ctx.fillText('出口',ox+(r.exit.x+.5)*cell,oy+(r.exit.y+.5)*cell-cell*.35);
+ ctx.fillText(r.npc.name,ox+(r.npc.x+.5)*cell,oy+(r.npc.y+.5)*cell-cell*.35);
  marker(r.exit,'#e9c66f',cell*.29);
  marker(r.npc,'#496d9b',cell*.28);
  marker(session.position,'#f4e1bd',cell*.29);
