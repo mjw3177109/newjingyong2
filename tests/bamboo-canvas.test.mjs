@@ -57,3 +57,25 @@ test('bamboo canvas shows one breadcrumb per legal remaining exit step',()=>{
  assert.equal(drawBambooPass(finished.ctx,atExit),true);
  assert.equal(finished.calls.filter(c=>c[0]==='arc').length,3);
 });
+
+test('breadcrumb route updates after a legal step and never draws the old starting tile',()=>{
+ const start={regionId:BAMBOO_PASS.id,position:{...BAMBOO_PASS.entry}};
+ const route=pathToBambooExit(start);
+ assert.ok(route?.length>1);
+ const next={...start,position:{...route[0]}};
+ const remaining=pathToBambooExit(next);
+ assert.ok(remaining);
+ assert.equal(remaining.length,route.length-1);
+ assert.deepEqual(remaining,route.slice(1));
+ const {ctx,calls}=fakeCanvas();
+ assert.equal(drawBambooPass(ctx,next),true);
+ const arcs=calls.filter(c=>c[0]==='arc');
+ assert.equal(arcs.length,remaining.length+3);
+ const cell=Math.min(900/BAMBOO_PASS.width,540/BAMBOO_PASS.height);
+ const ox=(900-cell*BAMBOO_PASS.width)/2;
+ const oy=(540-cell*BAMBOO_PASS.height)/2;
+ for(let i=0;i<remaining.length;i++){
+  assert.ok(Math.abs(arcs[i][1]-(ox+(remaining[i].x+.5)*cell))<1e-8);
+  assert.ok(Math.abs(arcs[i][2]-(oy+(remaining[i].y+.5)*cell))<1e-8);
+ }
+});
