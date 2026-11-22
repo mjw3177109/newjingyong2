@@ -209,6 +209,9 @@ def main():
             route_page.locator('#load').click()
             route_page.locator('#interact').click()
             assert '竹风山径' in route_page.locator('#quest-desc').inner_text()
+            assert route_page.locator('#quest-title').inner_text() == '竹风山径 · 探索'
+            assert '守径人：' in route_page.locator('#quest-progress').inner_text()
+            assert '可点击出口寻路按钮逐步前进' in route_page.locator('#quest-desc').inner_text()
             assert route_page.locator('#step-route').inner_text().startswith('向山径出口走一步（剩余 ')
             last = route_page.evaluate(
                 "JSON.parse(localStorage.getItem('newjingyong2:bamboo-session:v1')).position"
