@@ -83,6 +83,7 @@ def main():
             page.keyboard.press('e')
             reentered = session(page)
             assert reentered and reentered['regionId'] == 'bamboo-pass', 'could not re-enter bamboo region'
+            assert reentered['position'] == {'x': 1, 'y': 4}, 'fresh region entry did not reset to the declared spawn tile'
             assert reentered['position'] != current['position'], 'old region position leaked into fresh entry'
             page.reload(wait_until='networkidle')
             assert session(page) == reentered, 'fresh region checkpoint not restored after reload'
