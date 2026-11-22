@@ -58,9 +58,27 @@ def main():
             assert session(page) == current, 'refresh lost the persisted NPC approach'
             page.keyboard.press('e')
             assert '山路曲折' in page.locator('#toast').inner_text() or '山路曲折' in page.locator('#quest-desc').inner_text(), 'NPC dialogue not visible'
+            # Complete the actual browser journey: route to the exit, return, and
+            # verify the independent region checkpoint was cleared.
+            for _ in range(108):
+                current = session(page)
+                if current['position'] == {'x': 10, 'y': 4}:
+                    break
+                page.locator('#step-route').click()
+                next_session = session(page)
+                assert next_session, 'region checkpoint vanished before exit'
+                distance = abs(next_session['position']['x'] - current['position']['x']) + abs(next_session['position']['y'] - current['position']['y'])
+                assert distance == 1, 'exit routing did not make exactly one legal step'
+            else:
+                raise AssertionError('could not reach bamboo exit through browser controls')
+            page.keyboard.press('e')
+            assert session(page) is None, 'region checkpoint remained after returning to village'
+            assert '青竹村' in page.locator('#quest-desc').inner_text() or '已返回青竹村' in page.locator('#toast').inner_text(), 'village return not visible'
+            page.reload(wait_until='networkidle')
+            assert session(page) is None, 'refresh unexpectedly restored departed region'
             assert not errors, f'page errors: {errors}'
             browser.close()
-            print('PASS: real Chromium NPC clicks, legal persisted steps, refresh, and E dialogue')
+            print('PASS: Chromium NPC clicks, persistence, E dialogue, exit routing and village return')
     finally:
         server.shutdown()
         server.server_close()
