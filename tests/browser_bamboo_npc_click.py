@@ -33,17 +33,10 @@ def main():
             errors = []
             page.on('pageerror', lambda error: errors.append(str(error)))
             page.goto(f'http://127.0.0.1:{server.server_port}/index.html', wait_until='networkidle')
-            # Walk to the village's east gate through actual canvas clicks.
+            # Walk to the village's east gate (24,7) before interacting.
             for _ in range(80):
                 click_tile(page, 24, 7, 25, 15)
-                if '竹风山径' in page.locator('#quest-desc').inner_text():
-                    break
-                if '山径入口' in page.locator('#toast').inner_text():
-                    break
-                # Interact when the player reaches the gate vicinity.
-                page.keyboard.press('e')
-                if '竹风山径' in page.locator('#quest-desc').inner_text():
-                    break
+            page.keyboard.press('e')
             assert '竹风山径' in page.locator('#quest-desc').inner_text(), 'could not enter bamboo region'
             before = session(page)
             assert before and before['regionId'] == 'bamboo-pass'
