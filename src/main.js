@@ -281,7 +281,9 @@ function paint(){
   $('step-route').disabled=!exitRoute?.length;
   $('step-route').textContent='向山径出口走一步';
   $('save').disabled=true;$('export-save').disabled=true;
-  $('quest-desc').textContent='竹风山径：方向键移动，靠近守径人按 E 交谈，到东侧金色出口按 E 返回。区域位置独立保存于本机；不写入 V2 存档。';
+  const npcRoute=routeToRegionNpc(BAMBOO_PASS,bambooSession.position);
+  const npcHint=npcRoute===null?'守径人当前不可达':npcRoute.length===0?'已靠近守径人，按 E 交谈':`距守径人交谈位置 ${npcRoute.length} 步（点击守径人可逐步靠近）`;
+  $('quest-desc').textContent=`竹风山径：${npcHint}。方向键移动，到东侧金色出口按 E 返回。区域位置独立保存于本机；不写入 V2 存档。`;
   return;
  }
  $('save').disabled=false;$('export-save').disabled=false;
