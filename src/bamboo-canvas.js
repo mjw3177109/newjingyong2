@@ -24,6 +24,10 @@ export function drawBambooPass(ctx,session,canvasWidth=900,canvasHeight=540){
  // Show the actual walkable shortest route rather than a misleading straight line.
  const exitRoute=pathToBambooExit(session);
  if(exitRoute)for(const step of exitRoute)marker(step,'#f8e6a6',cell*.085);
+ // Route status belongs to this canvas too (including fullscreen/embedded views).
+ // Never suggest a reachable exit when pathfinding reports no route.
+ ctx.textAlign='right';ctx.font='bold 16px system-ui';ctx.fillStyle='#fff0c9';
+ ctx.fillText(exitRoute===null?'出口路线不可达':exitRoute.length===0?'已到出口 · 按 E 返回':`距出口 ${exitRoute.length} 步`,canvasWidth-16,30);
  marker(r.exit,'#e9c66f',cell*.29);
  marker(r.npc,'#496d9b',cell*.28);
  marker(session.position,'#f4e1bd',cell*.29);
