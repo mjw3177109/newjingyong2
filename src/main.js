@@ -223,9 +223,11 @@ function exportSave() {
    link.href = url; link.download = 'zhuying-jianghu-save-v2.json';
    document.body.appendChild(link); link.click();
   } finally {
-   link?.remove();
-   // Release even if the download click fails; do not leak object URLs.
-   setTimeout(() => URL.revokeObjectURL(url), 1000);
+   try { link?.remove(); }
+   finally {
+    // A failed DOM cleanup must not prevent releasing the Blob URL.
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+   }
   }
   toast('已导出原创试玩存档 JSON');
  } catch { toast('存档导出失败'); }
