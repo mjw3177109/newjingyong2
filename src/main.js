@@ -217,10 +217,16 @@ function exportSave() {
   if(!raw || new TextEncoder().encode(raw).byteLength>MAX_SAVE_FILE_BYTES)throw new Error('invalid checkpoint');
   const blob = new Blob([raw], {type:'application/json;charset=utf-8'});
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url; link.download = 'zhuying-jianghu-save-v2.json';
-  document.body.appendChild(link); link.click(); link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  let link;
+  try {
+   link = document.createElement('a');
+   link.href = url; link.download = 'zhuying-jianghu-save-v2.json';
+   document.body.appendChild(link); link.click();
+  } finally {
+   link?.remove();
+   // Release even if the download click fails; do not leak object URLs.
+   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
   toast('已导出原创试玩存档 JSON');
  } catch { toast('存档导出失败'); }
 }
