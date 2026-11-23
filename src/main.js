@@ -78,7 +78,8 @@ function newGame(){
  if(!window.confirm('确定重新开始原创试玩并清除本机存档？此操作无法撤销。'))return;
  // Do not reset the live game if the independent region checkpoint remains.
  if(!clearBambooSession(localStorage)){toast('无法清除山径记录，未重新开始');return;}
- clearBambooEntry();
+ // Do not reset while a stale village entry can reactivate an inconsistent region recovery.
+ if(!clearBambooEntry()){toast('无法清除山径入口快照，未重新开始');return;}
  try{
   localStorage.removeItem(keyName);
   if(localStorage.getItem(keyName)!==null){toast('本机存档未能清除，未重新开始');return;}
