@@ -12,9 +12,10 @@ test('world interaction and consumable shortcuts do not auto-repeat', () => {
   for (const key of ['e', 'Enter', ' ']) assert.deepEqual(commandForKey(event(key)), {kind: 'interact'});
   assert.deepEqual(commandForKey(event('H')), {kind: 'potion'});
   assert.deepEqual(commandForKey(event('G')), {kind: 'route-step'});
+  assert.deepEqual(commandForKey(event('N')), {kind: 'npc-step'});
   assert.deepEqual(commandForKey(event('b')), {kind: 'inventory'});
   assert.deepEqual(commandForKey(event('j')), {kind: 'quest'});
-  for (const key of ['e', 'Enter', ' ', 'h', 'g']) assert.equal(commandForKey(event(key, {repeat: true})), null);
+  for (const key of ['e', 'Enter', ' ', 'h', 'g', 'n']) assert.equal(commandForKey(event(key, {repeat: true})), null);
 });
 test('combat shortcuts are exclusive and non-repeating', () => {
   for (const [key, action] of Object.entries({'1': 'attack', '2': 'guard', '3': 'drink', '4': 'flee'}))
@@ -41,7 +42,7 @@ test('game buttons retain movement/combat hotkeys but preserve native activation
   for (const key of ['Enter', ' ']) {
     assert.equal(commandForKey(event(key, {target: button})), null);
   }
-  for (const [key, kind] of [['e','interact'], ['h','potion'], ['g','route-step'], ['b','inventory'], ['j','quest']]) {
+  for (const [key, kind] of [['e','interact'], ['h','potion'], ['g','route-step'], ['n','npc-step'], ['b','inventory'], ['j','quest']]) {
     assert.deepEqual(commandForKey(event(key, {target: button})), {kind});
     assert.equal(commandForKey(event(key, {target: button, repeat: true})), null);
   }
