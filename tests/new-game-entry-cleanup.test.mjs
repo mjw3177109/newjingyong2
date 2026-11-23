@@ -30,12 +30,18 @@ test('load and import abort before replacing progress when bamboo entry cleanup 
 });
 
 
-test('leaving bamboo region reports entry cleanup failure rather than unconditional success',()=>{
+test('leaving bamboo region restores session and aborts exit when entry cleanup fails',()=>{
  const start=main.indexOf('function action(){');
  const end=main.indexOf('const DEMO_FIRST_VICTORY_MARKER',start);
  assert.ok(start>=0 && end>start);
  const body=main.slice(start,end);
- assert.match(body,/const entryCleared=clearBambooEntry\(\)/);
- assert.match(body,/toast\(entryCleared\?'已返回青竹村':'已返回青竹村，但入口快照清理失败；请检查浏览器存储'\)/);
- assert.doesNotMatch(body,/clearBambooEntry\(\);bambooSession=null;update\(returned\);toast\('已返回青竹村'\)/);
+ assert.match(body,/if\(!clearBambooEntry\(\)\)\{/);
+ assert.match(body,/const restored=saveBambooSession\(localStorage,bambooSession\)/);
+ assert.match(body,/入口快照清理失败且山径记录恢复失败；请勿刷新页面/);
+ const guard=body.indexOf('if(!clearBambooEntry())');
+ const restore=body.indexOf('saveBambooSession(localStorage,bambooSession)',guard);
+ const abort=body.indexOf('return;',restore);
+ const leave=body.indexOf('bambooSession=null;update(returned)',guard);
+ assert.ok(guard>=0 && restore>guard && abort>restore && leave>abort);
+ assert.match(body,/toast\('已返回青竹村'\)/);
 });
