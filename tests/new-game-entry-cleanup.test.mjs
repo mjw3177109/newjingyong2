@@ -9,7 +9,10 @@ test('new game refuses to reset if bamboo entry snapshot cannot be removed',()=>
  const end=main.indexOf('function doMove(',start);
  assert.ok(start>=0 && end>start);
  const body=main.slice(start,end);
- assert.match(body,/if\(!clearBambooEntry\(\)\)\{toast\('无法清除山径入口快照，未重新开始'\);return;\}/);
+ assert.match(body,/if\(!clearBambooEntry\(\)\)\{/);
+ assert.match(body,/const restored=!bambooSession \|\| saveBambooSession\(localStorage,bambooSession\)/);
+ assert.match(body,/山径入口清理失败且位置恢复失败；请勿刷新页面/);
+ assert.ok(body.indexOf('saveBambooSession(localStorage,bambooSession)')<body.indexOf('localStorage.removeItem(keyName)'));
  assert.ok(body.indexOf('if(!clearBambooEntry())')<body.indexOf('localStorage.removeItem(keyName)'));
  assert.ok(body.indexOf('if(!clearBambooEntry())')<body.indexOf('update(initialState())'));
 });
