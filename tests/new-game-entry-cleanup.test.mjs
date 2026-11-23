@@ -28,3 +28,14 @@ test('load and import abort before replacing progress when bamboo entry cleanup 
  assert.ok(importBody.indexOf('if(!clearBambooEntry())')<importBody.indexOf('if(!clearBambooSession(localStorage))'));
  assert.ok(importBody.indexOf('if(!clearBambooEntry())')<importBody.indexOf('update(imported)'));
 });
+
+
+test('leaving bamboo region reports entry cleanup failure rather than unconditional success',()=>{
+ const start=main.indexOf('function action(){');
+ const end=main.indexOf('const DEMO_FIRST_VICTORY_MARKER',start);
+ assert.ok(start>=0 && end>start);
+ const body=main.slice(start,end);
+ assert.match(body,/const entryCleared=clearBambooEntry\(\)/);
+ assert.match(body,/toast\(entryCleared\?'已返回青竹村':'已返回青竹村，但入口快照清理失败；请检查浏览器存储'\)/);
+ assert.doesNotMatch(body,/clearBambooEntry\(\);bambooSession=null;update\(returned\);toast\('已返回青竹村'\)/);
+});
