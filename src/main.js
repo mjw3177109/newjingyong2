@@ -307,6 +307,9 @@ function paint(){
  document.querySelector('.scene-heading').setAttribute('aria-label','当前地图：青竹村');
  document.querySelector('.scene-heading').firstElementChild.querySelector('.scene-name').textContent='青竹村';
  $('save').disabled=false;$('export-save').disabled=false;
+ // The keeper only exists in the bamboo region; disable its touch shortcut in the village.
+ $('step-npc').disabled=true;
+ $('step-npc').textContent='靠近守径人（仅竹风山径可用）';
  $('step-route').textContent='沿任务路标走一步';
  for(const id of ['attack','guard','flee'])$(id).disabled=false;
  ctx.clearRect(0,0,900,540);
