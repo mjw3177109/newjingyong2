@@ -39,6 +39,7 @@ export function commandForKey(event, inCombat = false, inDialog = false) {
   if (key === 'h') return {kind: 'potion'};
   if (key === 'r') return {kind: 'rest'};
   if (key === 'g') return {kind: 'route-step'};
+  if (key === 'n') return {kind: 'npc-step'};
   if (key === 'b') return {kind: 'inventory'};
   if (key === 'j') return {kind: 'quest'};
   return null;
