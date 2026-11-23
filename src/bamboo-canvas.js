@@ -41,7 +41,7 @@ export function drawBambooPass(ctx,session,canvasWidth=900,canvasHeight=540){
  const keeperDistance=Math.abs(session.position.x-r.npc.x)+Math.abs(session.position.y-r.npc.y);
  if(keeperDistance===1){
   ctx.textAlign='center';ctx.font='bold 14px system-ui';ctx.fillStyle='#fff0c9';
-  ctx.fillText('按 E 与守径人交谈',ox+(r.npc.x+.5)*cell,oy+r.npc.y*cell-6);
+  ctx.fillText('按 E 与守径人交谈',ox+(r.npc.x+.5)*cell,oy+(r.npc.y+.5)*cell+cell*.48);
  }
  // Identify landmarks on the map even before the player reaches them.
  // Labels use the same centered tile geometry as markers, with no external assets.
