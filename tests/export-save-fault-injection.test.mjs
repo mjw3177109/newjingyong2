@@ -10,7 +10,7 @@ const end=source.indexOf("\n$('interact').onclick=",start);
 assert.ok(start>=0 && end>start,'export handler must be present');
 const exportSource=source.slice(start,end);
 
-function exercise({session=null,raw='{"version":2}',fail=false,clickFail=false,removeFail=false}={}){
+function exercise({session=null,raw='{"version":2}',fail=false,clickFail=false,removeFail=false,appendFail=false}={}){
  const messages=[],links=[],urls=[],revoked=[];
  const context={
   bambooSession:session,state:{},eventHistory:{},MAX_SAVE_FILE_BYTES:65536,
@@ -18,7 +18,7 @@ function exercise({session=null,raw='{"version":2}',fail=false,clickFail=false,r
   URL:{createObjectURL:()=>{if(fail)throw Error('blocked');urls.push('blob:test');return 'blob:test';},revokeObjectURL:url=>revoked.push(url)},
   document:{
    createElement:()=>{const link={click(){link.clicked=true;if(clickFail)throw Error('download blocked')},remove(){link.removed=true;if(removeFail)throw Error('remove blocked')}};links.push(link);return link},
-   body:{appendChild(){}}
+   body:{appendChild(){if(appendFail)throw Error('append blocked')}}
   },
   setTimeout:fn=>fn(),toast:msg=>messages.push(msg)
  };
@@ -66,5 +66,15 @@ test('export revokes Blob URL even if link removal throws',()=>{
  assert.deepEqual(r.messages,['存档导出失败']);
  assert.equal(r.links.length,1);
  assert.equal(r.links[0].clicked,true);
+ assert.deepEqual(r.revoked,['blob:test']);
+});
+
+
+test('export revokes Blob URL when inserting download link fails',()=>{
+ const r=exercise({appendFail:true});
+ assert.deepEqual(r.messages,['存档导出失败']);
+ assert.equal(r.links.length,1);
+ assert.equal(r.links[0].clicked,undefined);
+ assert.equal(r.links[0].removed,true);
  assert.deepEqual(r.revoked,['blob:test']);
 });
