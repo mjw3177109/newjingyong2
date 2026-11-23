@@ -108,11 +108,15 @@ function action(){
   if(returned){
    // Do not leave the region while its persisted checkpoint still exists.
    if(!clearBambooSession(localStorage)){toast('无法清除山径记录，未离开山径');return;}
-   // A failed entry cleanup must not be reported as a fully clean region exit.
-   // The village is safe to display, but recovery metadata needs attention.
-   const entryCleared=clearBambooEntry();
+   // If the entry snapshot cannot be cleared, restore the region session
+   // rather than silently returning to the village with stale recovery data.
+   if(!clearBambooEntry()){
+    const restored=saveBambooSession(localStorage,bambooSession);
+    toast(restored?'入口快照清理失败，已恢复山径记录；仍留在山径':'入口快照清理失败且山径记录恢复失败；请勿刷新页面');
+    return;
+   }
    bambooSession=null;update(returned);
-   toast(entryCleared?'已返回青竹村':'已返回青竹村，但入口快照清理失败；请检查浏览器存储');return;
+   toast('已返回青竹村');return;
   }
   const talk=talkBambooSession(bambooSession);
   toast(talk?.dialog||'山径中暂无可交互目标；到达东侧出口按 E 返回');return;
