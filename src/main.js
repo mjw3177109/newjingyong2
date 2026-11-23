@@ -183,7 +183,7 @@ document.addEventListener('keydown',e=>{
  const command=commandForKey(e,!!state.combat,!!state.dialog);
  if(!command)return;
  // The independent region must not mutate the village state through shortcuts.
- if(bambooSession && !['move','interact','dismiss-dialog','route-step'].includes(command.kind))return;
+ if(bambooSession && !['move','interact','dismiss-dialog','route-step','npc-step'].includes(command.kind))return;
  e.preventDefault();
  if(command.kind==='move')doMove(command.dx,command.dy);
  else if(command.kind==='interact')action();
@@ -191,6 +191,7 @@ document.addEventListener('keydown',e=>{
  else if(command.kind==='potion')update(usePotion(state));
  else if(command.kind==='rest')update(restAtVillage(state));
  else if(command.kind==='route-step')stepRoute();
+ else if(command.kind==='npc-step' && bambooSession)stepTowardKeeper();
  else if(command.kind==='combat' && (command.action!=='drink' || canDrinkPotion(state))) combatAction(command.action);
  else if(command.kind==='inventory')toast(`背包：${state.inventory.join('、')||'空空如也'}`);
  else if(command.kind==='quest')toast(questStatus(state).progress);
@@ -230,6 +231,14 @@ $('import-save-file').onchange=async e=>{
   toast('已导入当前游戏，请点击保存进度以持久化');
  } catch { toast('读取存档文件失败'); }
 };
+function stepTowardKeeper(){
+ if(!bambooSession)return;
+ const route=routeToRegionNpc(BAMBOO_PASS,bambooSession.position);
+ if(route===null){toast('守径人当前不可达');return;}
+ if(route.length===0){toast('已靠近守径人，按 E 交谈');return;}
+ const next=route[0];
+ doMove(next.x-bambooSession.position.x,next.y-bambooSession.position.y);
+}
 function stepRoute(){
  if(!bambooSession){update(stepTowardObjective(state));return;}
  const route=pathToBambooExit(bambooSession);
@@ -282,7 +291,7 @@ function paint(){
   $('step-route').textContent=exitRoute===null ? '出口路线不可达' : exitRoute.length ? `向山径出口走一步（剩余 ${exitRoute.length} 步）` : '已到山径出口（按 E 返回）';
   $('save').disabled=true;$('export-save').disabled=true;
   const npcRoute=routeToRegionNpc(BAMBOO_PASS,bambooSession.position);
-  const npcHint=npcRoute===null?'守径人当前不可达':npcRoute.length===0?'已靠近守径人，按 E 交谈':`距守径人交谈位置 ${npcRoute.length} 步（点击守径人可逐步靠近）`;
+  const npcHint=npcRoute===null?'守径人当前不可达':npcRoute.length===0?'已靠近守径人，按 E 交谈':`距守径人交谈位置 ${npcRoute.length} 步（按 N 或点击守径人逐步靠近）`;
   const exitHint=exitRoute===null?'出口路线暂不可达':exitRoute.length===0?'已到达出口，按 E 返回青竹村':`距离东侧出口 ${exitRoute.length} 步`;
   $('quest-title').textContent='竹风山径 · 探索';
   document.querySelector('.scene-heading').setAttribute('aria-label','当前地图：竹风山径');
