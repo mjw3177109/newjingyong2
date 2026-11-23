@@ -247,6 +247,7 @@ function stepRoute(){
  doMove(first.x-bambooSession.position.x,first.y-bambooSession.position.y);
 }
 $('step-route').onclick=stepRoute;
+$('step-npc').onclick=stepTowardKeeper;
 $('rematch').onclick=()=>{if(!bambooSession)update(startRematch(state));};
 $('rest-village').onclick=()=>{if(!bambooSession)update(restAtVillage(state));};
 $('equip-weapon').onclick=()=>{if(!bambooSession)update(equipWeapon(state));};
@@ -291,6 +292,8 @@ function paint(){
   $('step-route').textContent=exitRoute===null ? '出口路线不可达' : exitRoute.length ? `向山径出口走一步（剩余 ${exitRoute.length} 步）` : '已到山径出口（按 E 返回）';
   $('save').disabled=true;$('export-save').disabled=true;
   const npcRoute=routeToRegionNpc(BAMBOO_PASS,bambooSession.position);
+  $('step-npc').disabled=!npcRoute?.length;
+  $('step-npc').textContent=npcRoute===null?'守径人不可达':npcRoute.length===0?'已靠近守径人（按 E 交谈）':`靠近守径人一步（剩余 ${npcRoute.length} 步 · N）`;
   const npcHint=npcRoute===null?'守径人当前不可达':npcRoute.length===0?'已靠近守径人，按 E 交谈':`距守径人交谈位置 ${npcRoute.length} 步（按 N 或点击守径人逐步靠近）`;
   const exitHint=exitRoute===null?'出口路线暂不可达':exitRoute.length===0?'已到达出口，按 E 返回青竹村':`距离东侧出口 ${exitRoute.length} 步`;
   $('quest-title').textContent='竹风山径 · 探索';
