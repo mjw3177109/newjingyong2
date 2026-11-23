@@ -169,3 +169,18 @@ test('canvas labels original region landmarks using centered tile coordinates',(
   assert.ok(Math.abs(labels[0][3]-(oy+(p.y+.5)*cell-cell*.35))<1e-8);
  }
 });
+
+test('keeper cue is below the NPC marker and separate from the landmark name',()=>{
+ const keeper=BAMBOO_PASS.npc;
+ const session={regionId:BAMBOO_PASS.id,position:{x:keeper.x-1,y:keeper.y}};
+ const {ctx,calls}=fakeCanvas();
+ assert.equal(drawBambooPass(ctx,session),true);
+ const cell=Math.min(900/BAMBOO_PASS.width,540/BAMBOO_PASS.height);
+ const oy=(540-cell*BAMBOO_PASS.height)/2;
+ const centerY=oy+(keeper.y+.5)*cell;
+ const cue=calls.find(c=>c[0]==='text'&&c[1]==='按 E 与守径人交谈');
+ const name=calls.find(c=>c[0]==='text'&&c[1]===keeper.name);
+ assert.ok(cue&&name);
+ assert.ok(name[3]<centerY-cell*.28,'name stays above the NPC marker');
+ assert.ok(cue[3]>centerY+cell*.28,'interaction cue stays below the NPC marker');
+});
