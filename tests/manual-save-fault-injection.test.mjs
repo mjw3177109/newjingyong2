@@ -10,10 +10,10 @@ const end=source.indexOf('function load(){',start);
 assert.ok(start>=0 && end>start,'manual save implementation must be found');
 const saveSource=source.slice(start,end);
 
-function exercise(storage, raw='{"version":2}'){
+function exercise(storage, raw='{"version":2}', session=null){
  const messages=[];
  const context={
-  bambooSession:null,
+  bambooSession:session,
   state:{},eventHistory:{},
   encodeCheckpoint:()=>raw,
   MAX_SAVE_FILE_BYTES:65536,
@@ -53,5 +53,22 @@ test('manual save refuses invalid and oversized checkpoints without writing',()=
  const storage={setItem:()=>{writes++},getItem:()=>null};
  assert.deepEqual(exercise(storage,''),['存档无效或浏览器存储不可用']);
  assert.deepEqual(exercise(storage,'汉'.repeat(22000)),['存档无效或浏览器存储不可用']);
+ assert.equal(writes,0);
+});
+
+
+test('manual save refuses to overwrite village checkpoint while exploring bamboo pass',()=>{
+ let writes=0,reads=0;
+ const storage={setItem:()=>{writes++},getItem:()=>{reads++;return null}};
+ assert.deepEqual(exercise(storage,'{"version":2}',{region:'bamboo-pass'}),['请先返回青竹村再保存；山径探索暂不支持存档']);
+ assert.equal(writes,0);
+ assert.equal(reads,0);
+});
+
+test('manual save rejects encoder failure without touching browser storage',()=>{
+ let writes=0;
+ const storage={setItem:()=>{writes++},getItem:()=>null};
+ const messages=exercise(storage,null);
+ assert.deepEqual(messages,['存档无效或浏览器存储不可用']);
  assert.equal(writes,0);
 });
