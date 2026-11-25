@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+"""Fail closed on incomplete private AVM1 IF evidence; never print source text."""
+import argparse
+import json
+import re
+from pathlib import Path
+
+SHA = re.compile(r'^[0-9a-f]{64}$')
+JAVA8 = re.compile(r'^(?:1\.8(?:\.0)?(?:[_+.-][0-9A-Za-z]+)*|8(?:[._+.-][0-9A-Za-z]+)*)$')
+SAFE_REF = re.compile(r'^[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*$')
+REQUIRED = {'schema_version','source_swf_sha256','ffdec_jar_sha256','java_version','export_a_manifest_sha256','export_b_manifest_sha256','timeline_frame','doaction_index','if_offset','fallthrough_offset','jump_target_offset','predicate_trace_ref','true_branch_ref','false_branch_ref','independent_review_ref','rights_evidence_ref'}
+
+def validate(data):
+    if not isinstance(data, dict) or set(data) != REQUIRED:
+        return False, 'schema fields missing or unexpected'
+    if type(data['schema_version']) is not int or data['schema_version'] != 1:
+        return False, 'unsupported schema'
+    for key in ('source_swf_sha256','ffdec_jar_sha256','export_a_manifest_sha256','export_b_manifest_sha256'):
+        if not isinstance(data[key], str) or not SHA.fullmatch(data[key]):
+            return False, f'invalid {key}'
+    if data['export_a_manifest_sha256'] != data['export_b_manifest_sha256']:
+        return False, 'divergent exports'
+    for key, expected in {'timeline_frame':55,'doaction_index':9,'if_offset':6607,'fallthrough_offset':6612,'jump_target_offset':6623}.items():
+        if type(data[key]) is not int or data[key] != expected:
+            return False, f'wrong {key}'
+    for key in ('java_version','predicate_trace_ref','true_branch_ref','false_branch_ref','independent_review_ref','rights_evidence_ref'):
+        value = data[key]
+        if not isinstance(value,str) or not (3 <= len(value) <= 160) or '\n' in value or '\r' in value or value.lower() in ('unknown','pending','none','unverified'):
+            return False, f'missing or invalid {key}'
+    if not JAVA8.fullmatch(data['java_version']):
+        return False, 'Java 8 version required'
+    for key in ('predicate_trace_ref','true_branch_ref','false_branch_ref','independent_review_ref','rights_evidence_ref'):
+        value = data[key]
+        if not SAFE_REF.fullmatch(value) or any(part in ('.', '..') for part in value.split('/')):
+            return False, f'unsafe {key}'
+    refs = [data[key] for key in ('predicate_trace_ref','true_branch_ref','false_branch_ref','independent_review_ref','rights_evidence_ref')]
+    if len(set(refs)) != len(refs):
+        return False, 'evidence references must be distinct'
+    return True, 'structural evidence gate passed; semantic truth and rights remain subject to independent human review'
+
+def verify_reference_files(data, root):
+    """Check that every private evidence reference resolves to a readable regular file.
+
+    This is an existence/integrity-of-location check only, not semantic verification.
+    """
+    valid, message = validate(data)
+    if not valid:
+        return False, message
+    root_path = Path(root)
+    if root_path.is_symlink():
+        return False, 'evidence root must not be a symlink'
+    try:
+        root = root_path.resolve(strict=True)
+    except (OSError, ValueError):
+        return False, 'missing or invalid evidence root'
+    if not root.is_dir():
+        return False, 'evidence root is not a directory'
+    for key in ('predicate_trace_ref','true_branch_ref','false_branch_ref',
+                'independent_review_ref','rights_evidence_ref'):
+        relative = Path(data[key])
+        candidate = root / relative
+        if any(part.is_symlink() for part in (candidate, *candidate.parents) if part != root and root in part.parents):
+            return False, f'symlink in {key}'
+        try:
+            resolved = candidate.resolve(strict=True)
+            resolved.relative_to(root)
+            if not resolved.is_file() or resolved.stat().st_size == 0:
+                return False, f'empty or non-file {key}'
+            with resolved.open('rb') as stream:
+                stream.read(1)
+        except (OSError, ValueError):
+            return False, f'missing or unsafe file {key}'
+    return True, 'private evidence files present; semantic truth and rights not verified'
+
+def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('evidence',type=Path)
+    parser.add_argument('--evidence-root',type=Path,help='Check referenced private files under this directory')
+    args=parser.parse_args()
+    try:
+        data=json.loads(args.evidence.read_text(encoding='utf-8'))
+        valid,message=validate(data)
+        if valid and args.evidence_root is not None:
+            valid,message=verify_reference_files(data,args.evidence_root)
+    except (OSError,UnicodeError,ValueError) as exc:
+        valid,message=False,type(exc).__name__
+    print(('PASS: ' if valid else 'FAIL: ')+message)
+    raise SystemExit(0 if valid else 1)
+
+if __name__=='__main__':
+    main()
